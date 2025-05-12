@@ -1,0 +1,22 @@
+name = "lmpify"
+compatibility_date = "2025-04-21"
+dev.port = 3000
+assets.directory = "./"
+main = "main.js"
+
+routes = [
+  { pattern = "lmpify.com", custom_domain = true }
+]
+
+kv_namespaces = [
+  { binding = "RESULTS", id = "b2114f92150c41908dea35d7bdd2a25b" }
+]
+
+vars = { BASE_PATH = "https://api.deepseek.com", MODEL = "deepseek-chat" }
+
+[[queues.producers]]
+queue = "lmpify"
+binding = "PROCESS_QUEUE"
+
+[[queues.consumers]]
+queue = "lmpify"

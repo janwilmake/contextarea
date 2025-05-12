@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lmpify.com - Result</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #2a2a2a;
+            color: #e5e5e5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 300;
+            color: #e5e5e5;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        .icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border-radius: 50%;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 12px;
+        }
+
+        .content-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .column {
+            flex: 1;
+            background-color: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 24px;
+            padding: 24px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .column-header {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #4a4a4a;
+        }
+
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .prompt-content {
+            color: #e5e5e5;
+        }
+
+        .result-content {
+            color: #e5e5e5;
+        }
+
+        .pending {
+            color: #feca57;
+            font-style: italic;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .spinner:after {
+            content: " ";
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid #feca57;
+            border-color: #feca57 transparent #feca57 transparent;
+            animation: spinner 1.2s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Links in prompt */
+        .prompt-content a {
+            color: #4a9eff;
+            text-decoration: none;
+        }
+
+        .prompt-content a:hover {
+            text-decoration: underline;
+        }
+
+        /* Copy button */
+        .copy-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: #e5e5e5;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+
+        .copy-button:hover {
+            background-color: #4a4a4a;
+        }
+
+        .copy-button.copied {
+            background-color: #4a9eff;
+            border-color: #4a9eff;
+        }
+
+        .copy-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Scrollbar styling */
+        .column::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .column::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .column::-webkit-scrollbar-thumb {
+            background-color: #5a5a5a;
+            border-radius: 4px;
+        }
+
+        .column::-webkit-scrollbar-thumb:hover {
+            background-color: #6a6a6a;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .content-container {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .icon {
+                width: 28px;
+                height: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1><span class="icon"></span>let me prompt it for you</h1>
+
+        <div class="content-container">
+            <div class="column">
+                <div class="column-header">Prompt</div>
+                <div class="prompt-content" id="promptContent">Loading...</div>
+            </div>
+
+            <div class="column" style="position: relative;">
+                <div class="column-header">Result</div>
+                <button class="copy-button" id="copyButton" style="display: none;" title="Copy result">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copy</span>
+                </button>
+                <div class="result-content" id="resultContent">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get the KV data from window.kvData (injected by the worker)
+        const kvData = window.kvData || null;
+
+        const promptContent = document.getElementById('promptContent');
+        const resultContent = document.getElementById('resultContent');
+        const copyButton = document.getElementById('copyButton');
+
+        // Function to linkify URLs in text
+        function linkifyUrls(text) {
+            const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
+            return text.replace(urlRegex, '<a href="$&" target="_blank" rel="noopener noreferrer">$&</a>');
+        }
+
+        // Display the data
+        if (kvData) {
+            // Show prompt (with linked URLs)
+            promptContent.innerHTML = linkifyUrls(kvData.prompt);
+
+            // Show result based on status
+            if (kvData.pending) {
+                resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Processing... Please refresh the page in a few moments.</span>';
+            } else if (kvData.error) {
+                resultContent.innerHTML = `<span class="error">Error: ${kvData.error}</span>`;
+            } else if (kvData.result) {
+                resultContent.textContent = kvData.result;
+                copyButton.style.display = 'flex';
+            } else {
+                resultContent.innerHTML = '<span class="error">No result available</span>';
+            }
+        } else {
+            promptContent.innerHTML = '<span class="error">Error loading data</span>';
+            resultContent.innerHTML = '<span class="error">Error loading data</span>';
+        }
+
+        // Copy button functionality
+        copyButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(kvData.result);
+                copyButton.classList.add('copied');
+                copyButton.querySelector('span').textContent = 'Copied!';
+
+                setTimeout(() => {
+                    copyButton.classList.remove('copied');
+                    copyButton.querySelector('span').textContent = 'Copy';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        });
+
+        // Auto-refresh if pending
+        if (kvData && kvData.pending) {
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000); // Refresh every 5 seconds
+        }
+    </script>
+</body>
+
+</html>
