@@ -85,10 +85,17 @@
 
         .prompt-content {
             color: #e5e5e5;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         .result-content {
             color: #e5e5e5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
         }
 
         .pending {
@@ -215,7 +222,7 @@
         <div class="content-container">
             <div class="column">
                 <div class="column-header">Prompt</div>
-                <div class="prompt-content" id="promptContent">Loading...</div>
+                <pre class="prompt-content" id="promptContent">Loading...</pre>
             </div>
 
             <div class="column" style="position: relative;">
@@ -227,7 +234,7 @@
                     </svg>
                     <span>Copy</span>
                 </button>
-                <div class="result-content" id="resultContent">Loading...</div>
+                <pre class="result-content" id="resultContent">Loading...</pre>
             </div>
         </div>
     </div>

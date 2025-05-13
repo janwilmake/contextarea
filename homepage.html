@@ -302,6 +302,9 @@
                                 <path d="M12 6h.01M12 12h.01M12 18h.01" stroke="currentColor" stroke-linecap="round" />
                             </svg>
                         </button>
+                        <!-- modal for selecting models -->
+                        <div id="model-modal"></div>
+                        <script src="./model-modal.js"></script>
                     </div>
                     <textarea id="promptTextarea" name="prompt" placeholder="Type your prompt..." rows="3"></textarea>
                     <div class="button-container">
@@ -522,6 +525,11 @@
         adjustTextareaHeight();
         submitButton.disabled = true;
         loadConfig();
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const textarea = document.getElementById("promptTextarea")
+            textarea.focus()
+        })
     </script>
 </body>
 

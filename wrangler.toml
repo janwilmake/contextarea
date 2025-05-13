@@ -1,18 +1,26 @@
 name = "lmpify"
 compatibility_date = "2025-04-21"
 dev.port = 3000
+main = "main.ts"
 assets.directory = "./"
-main = "main.js"
-
 routes = [
-  { pattern = "lmpify.com", custom_domain = true }
+  { pattern = "lmpify.com", custom_domain = true },
+  { pattern = "www.lmpify.com", custom_domain = true }
 ]
 
 kv_namespaces = [
   { binding = "RESULTS", id = "b2114f92150c41908dea35d7bdd2a25b" }
 ]
 
-vars = { BASE_PATH = "https://api.deepseek.com", MODEL = "deepseek-chat" }
+[[durable_objects.bindings]]
+name = "DORM_NAMESPACE"
+class_name = "DORM"
+
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DORM"]
+
 
 [[queues.producers]]
 queue = "lmpify"
