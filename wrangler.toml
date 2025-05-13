@@ -9,7 +9,7 @@ routes = [
 ]
 
 kv_namespaces = [
-  { binding = "RESULTS", id = "b2114f92150c41908dea35d7bdd2a25b" }
+  { binding = "RESULTS", id = "e698f458a5c0411b8998f335bd24dc11" }
 ]
 
 [[durable_objects.bindings]]

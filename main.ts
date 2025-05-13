@@ -8,8 +8,6 @@ import {
 } from "stripeflare";
 export { DORM } from "stripeflare";
 //@ts-ignore
-import shareHtml from "./share.html";
-//@ts-ignore
 import homepageHtml from "./homepage.html";
 //@ts-ignore
 import resultHtml from "./result.html";
@@ -23,7 +21,7 @@ interface Env extends StripeflareEnv {
   MODEL: string;
   BASE_PATH: string;
   ANTHROPIC_SECRET: string;
-  GEMINI_SECRET: string;
+  FREE_SECRET: string;
 }
 
 /**
@@ -39,11 +37,7 @@ interface User extends StripeUser {
 interface KVData {
   pending: boolean; // Whether the request is still being processed
   prompt: string; // The user's prompt
-  model: {
-    model: string;
-    basePath: string;
-    apiKey: string;
-  };
+  model: string;
   context?: string;
   result?: string; // The result from the LLM (when completed)
   error?: string; // Error message if processing failed
@@ -123,7 +117,22 @@ export default {
       )) as KVData | null;
 
       if (existingData) {
-        // Return result.html with the KV data and user data injected
+        // Check Accept header
+        const acceptHeader = request.headers.get("Accept") || "";
+
+        // If no Accept header or it starts with, return JSON
+        if (!acceptHeader || !acceptHeader.startsWith("text/html")) {
+          headers.set("Content-Type", "application/json");
+          return new Response(
+            JSON.stringify({
+              ...existingData,
+              user,
+            }),
+            { headers },
+          );
+        }
+
+        // Otherwise return HTML as before
         let html = resultHtml;
         html = injectWindowData(html, {
           ...existingData,
@@ -147,10 +156,15 @@ export default {
       const formData = await request.formData();
       const prompt = formData.get("prompt");
       const models = [
+        // {
+        //   model: "models/gemini-2.5-flash-preview-04-17",
+        //   basePath: "https://generativelanguage.googleapis.com/v1beta/openai",
+        //   apiKey: env.GEMINI_SECRET,
+        // },
         {
-          model: "models/gemini-2.5-flash-preview-04-17",
-          basePath: "https://generativelanguage.googleapis.com/v1beta/openai",
-          apiKey: env.GEMINI_SECRET,
+          model: "gpt-4.1-mini",
+          basePath: "https://api.openai.com/v1",
+          apiKey: env.FREE_SECRET,
         },
         {
           model: "claude-3.7-sonnet",
@@ -160,8 +174,9 @@ export default {
         },
       ];
 
-      const model = formData.get("model")
-        ? models.find((x) => x.model === formData.get("model")) || models[0]
+      const modelFormData = formData.get("model");
+      const model = modelFormData
+        ? models.find((x) => x.model === modelFormData) || models[0]
         : models[0];
 
       if (model.premium && (!user.balance || user.balance <= 0)) {
@@ -183,7 +198,7 @@ export default {
       const kvData: KVData = {
         pending: true,
         prompt: String(prompt),
-        model,
+        model: modelFormData,
       };
 
       await env.RESULTS.put(pathname, JSON.stringify(kvData));
@@ -197,9 +212,18 @@ export default {
 
       await env.PROCESS_QUEUE.send(queueMessage);
 
-      // Return the share.html page with user data
-      let html = shareHtml;
-      html = injectWindowData(html, { user });
+      // Check Accept header for response format
+      const acceptHeader = request.headers.get("Accept") || "";
+
+      // If no Accept header or it starts with, return JSON
+      if (!acceptHeader || !acceptHeader.startsWith("text/html")) {
+        headers.set("Content-Type", "application/json");
+        return new Response(JSON.stringify({ user, ...kvData }), { headers });
+      }
+
+      // Otherwise return HTML
+      let html = resultHtml;
+      html = injectWindowData(html, { user, ...kvData });
 
       headers.set("Content-Type", "text/html");
       return new Response(html, { headers });
@@ -291,7 +315,7 @@ export default {
             pending: false,
             prompt,
             context,
-            model,
+            model: model.model,
             error: await llmResponse.text(),
           };
 
@@ -303,13 +327,13 @@ export default {
 
         const llmData = (await llmResponse.json()) as any;
         const result = llmData.choices[0].message.content;
-
+        console.log("GOT RESULT", result);
         // Update KV with the result
         const updatedData: KVData = {
           pending: false,
           prompt,
           context,
-          model,
+          model: model.model,
           result,
         };
 
@@ -324,7 +348,7 @@ export default {
         const errorData: KVData = {
           pending: false,
           prompt: message.body.prompt,
-          model: message.body.model,
+          model: message.body.model.model,
           error: error.message,
         };
 

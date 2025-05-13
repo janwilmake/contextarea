@@ -83,11 +83,25 @@
             word-wrap: break-word;
         }
 
-        .prompt-content {
+        .prompt-textarea {
+            width: 100%;
+            background-color: #2a2a2a;
+            border: 1px solid #4a4a4a;
+            border-radius: 12px;
             color: #e5e5e5;
+            font-size: 16px;
+            padding: 16px;
+            resize: vertical;
+            outline: none;
+            font-family: inherit;
             line-height: 1.6;
-            white-space: pre-wrap;
-            word-wrap: break-word;
+            min-height: 200px;
+            flex: 1;
+            transition: border-color 0.2s ease;
+        }
+
+        .prompt-textarea:focus {
+            border-color: #6a6a6a;
         }
 
         .result-content {
@@ -137,16 +151,6 @@
             }
         }
 
-        /* Links in prompt */
-        .prompt-content a {
-            color: #4a9eff;
-            text-decoration: none;
-        }
-
-        .prompt-content a:hover {
-            text-decoration: underline;
-        }
-
         /* Copy button */
         .copy-button {
             position: absolute;
@@ -179,20 +183,132 @@
             height: 16px;
         }
 
+        /* Footer styles */
+        .footer {
+            background-color: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 24px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .share-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .share-label {
+            font-size: 14px;
+            color: #b5b5b5;
+        }
+
+        .share-input {
+            flex: 1;
+            background-color: #2a2a2a;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: #e5e5e5;
+            font-size: 14px;
+            padding: 8px 12px;
+            outline: none;
+            font-family: monospace;
+            cursor: text;
+            user-select: all;
+        }
+
+        .footer-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            border: 0.5px #e5e5e575 solid;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #4a4a4a;
+        }
+
+        .try-again-button {
+            background-color: #e5e5e5;
+            color: #2a2a2a;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .try-again-button:hover {
+            background-color: #d5d5d5;
+        }
+
+        .try-again-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .try-again-button:disabled:hover {
+            background-color: #e5e5e5;
+        }
+
+        .footer-copy-button {
+            background-color: transparent;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: #e5e5e5;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+        }
+
+        .footer-copy-button:hover {
+            background-color: #4a4a4a;
+        }
+
+        .footer-copy-button.copied {
+            background-color: #4a9eff;
+            border-color: #4a9eff;
+        }
+
         /* Scrollbar styling */
+        textarea::-webkit-scrollbar,
         .column::-webkit-scrollbar {
             width: 8px;
         }
 
+        textarea::-webkit-scrollbar-track,
         .column::-webkit-scrollbar-track {
             background: transparent;
         }
 
+        textarea::-webkit-scrollbar-thumb,
         .column::-webkit-scrollbar-thumb {
             background-color: #5a5a5a;
             border-radius: 4px;
         }
 
+        textarea::-webkit-scrollbar-thumb:hover,
         .column::-webkit-scrollbar-thumb:hover {
             background-color: #6a6a6a;
         }
@@ -211,18 +327,34 @@
                 width: 28px;
                 height: 28px;
             }
+
+            .footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .share-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .footer-actions {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <h1><span class="icon"></span>let me prompt it for you</h1>
+        <a href="/">
+            <h1><span class="icon"></span>let me prompt it for you</h1>
+        </a>
 
         <div class="content-container">
             <div class="column">
                 <div class="column-header">Prompt</div>
-                <pre class="prompt-content" id="promptContent">Loading...</pre>
+                <textarea class="prompt-textarea" id="promptTextarea">Loading...</textarea>
             </div>
 
             <div class="column" style="position: relative;">
@@ -237,45 +369,136 @@
                 <pre class="result-content" id="resultContent">Loading...</pre>
             </div>
         </div>
+
+        <div class="footer">
+            <div class="share-container">
+                <span class="share-label">Share:</span>
+                <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
+                <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                    <span>Copy</span>
+                </button>
+            </div>
+
+            <div class="footer-actions">
+                <div id="model-modal"></div>
+                <button type="button" class="try-again-button" id="tryAgainButton">
+                    <span>Try again</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
 
+    <script src="./model-modal.js"></script>
     <script>
-        // Get the KV data from window.data (injected by the worker)
-        const kvData = window.data || null;
+        // Get the initial KV data from window.data (injected by the worker)
+        let kvData = window.data || null;
+        let refreshInterval = null;
 
-        const promptContent = document.getElementById('promptContent');
+        const promptTextarea = document.getElementById('promptTextarea');
         const resultContent = document.getElementById('resultContent');
         const copyButton = document.getElementById('copyButton');
+        const shareInput = document.getElementById('shareInput');
+        const footerCopyButton = document.getElementById('footerCopyButton');
+        const tryAgainButton = document.getElementById('tryAgainButton');
 
-        // Function to linkify URLs in text
-        function linkifyUrls(text) {
-            const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
-            return text.replace(urlRegex, '<a href="$&" target="_blank" rel="noopener noreferrer">$&</a>');
-        }
+        // Set share URL
+        const currentUrl = window.location.href;
+        shareInput.value = currentUrl;
 
-        // Display the data
-        if (kvData) {
-            // Show prompt (with linked URLs)
-            promptContent.innerHTML = linkifyUrls(kvData.prompt);
+        // Function to update the UI with data
+        function updateUI(data) {
+            if (!data) {
+                promptTextarea.value = 'Error loading data';
+                resultContent.innerHTML = '<span class="error">Error loading data</span>';
+                return;
+            }
 
-            // Show result based on status
-            if (kvData.pending) {
-                resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Processing... Please refresh the page in a few moments.</span>';
-            } else if (kvData.error) {
-                resultContent.innerHTML = `<span class="error">Error: ${kvData.error}</span>`;
-            } else if (kvData.result) {
-                resultContent.textContent = kvData.result;
+            // Update prompt in textarea (only on initial load)
+            if (promptTextarea.value === 'Loading...') {
+                promptTextarea.value = data.prompt;
+                adjustTextareaHeight();
+            }
+
+            // Update result based on status
+            if (data.pending) {
+                resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Processing... This will automatically update when ready.</span>';
+                // Hide copy button while pending
+                copyButton.style.display = 'none';
+            } else if (data.error) {
+                resultContent.innerHTML = `<span class="error">Error: ${data.error}</span>`;
+                copyButton.style.display = 'none';
+                // Stop refreshing on error
+                stopRefreshing();
+            } else if (data.result) {
+                resultContent.textContent = data.result;
                 copyButton.style.display = 'flex';
+                // Stop refreshing once we have a result
+                stopRefreshing();
             } else {
                 resultContent.innerHTML = '<span class="error">No result available</span>';
+                copyButton.style.display = 'none';
             }
-        } else {
-            promptContent.innerHTML = '<span class="error">Error loading data</span>';
-            resultContent.innerHTML = '<span class="error">Error loading data</span>';
         }
 
-        // Copy button functionality
+        // Function to fetch the latest data
+        async function fetchLatestData() {
+            try {
+                const response = await fetch(window.location.href, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                kvData = data;
+                updateUI(data);
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+                // Don't update UI on fetch error - keep the current state
+            }
+        }
+
+        // Function to start the refresh interval
+        function startRefreshing() {
+            if (!refreshInterval) {
+                refreshInterval = setInterval(fetchLatestData, 2000); // Every 2 seconds
+            }
+        }
+
+        // Function to stop the refresh interval
+        function stopRefreshing() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        // Initial UI update
+        updateUI(kvData);
+
+        // Start auto-refresh if pending
+        if (kvData && kvData.pending) {
+            startRefreshing();
+        }
+
+        // Copy result functionality
         copyButton.addEventListener('click', async () => {
+            if (!kvData || !kvData.result) return;
+
             try {
                 await navigator.clipboard.writeText(kvData.result);
                 copyButton.classList.add('copied');
@@ -290,12 +513,110 @@
             }
         });
 
-        // Auto-refresh if pending
-        if (kvData && kvData.pending) {
-            setTimeout(() => {
-                window.location.reload();
-            }, 5000); // Refresh every 5 seconds
+        // Copy share link functionality
+        footerCopyButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(currentUrl);
+                footerCopyButton.classList.add('copied');
+                footerCopyButton.querySelector('span').textContent = 'Copied!';
+
+                setTimeout(() => {
+                    footerCopyButton.classList.remove('copied');
+                    footerCopyButton.querySelector('span').textContent = 'Copy';
+                }, 2000);
+            } catch (err) {
+                shareInput.select();
+                document.execCommand('copy');
+                alert('Link copied to clipboard!');
+            }
+        });
+
+        // Slugify function
+        function slugify(text) {
+            return text
+                .toLowerCase()
+                .trim()
+                .replace(/[^\w\s-]/g, '')
+                .replace(/[\s_-]+/g, '-')
+                .replace(/^-+|-+$/g, '');
         }
+
+        // Simple hash function for 7-character SHA-like string
+        function simpleHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, '0');
+        }
+
+        // Load config from localStorage
+        function loadConfig() {
+            return {
+                model: localStorage.getItem('model') || '',
+                basePath: localStorage.getItem('basePath') || '',
+                apiKey: localStorage.getItem('apiKey') || ''
+            };
+        }
+
+        // Try again functionality
+        tryAgainButton.addEventListener('click', async () => {
+            const promptText = promptTextarea.value.trim();
+            if (!promptText) return;
+
+            // Generate slug from first 20 characters
+            const first20 = promptText.substring(0, 20);
+            const slug = slugify(first20);
+            const hash = simpleHash(promptText);
+
+            // Create the URL path
+            const path = `/${slug}-${hash}`;
+
+            // Create form data with config values
+            const formData = new FormData();
+            formData.append('prompt', promptText);
+
+            const config = loadConfig();
+            formData.append('model', config.model);
+            formData.append('basePath', config.basePath);
+            formData.append('apiKey', config.apiKey);
+
+            // Create a form and submit it
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = path;
+            form.style.display = 'none';
+
+            // Add all form data as hidden inputs
+            for (const [key, value] of formData.entries()) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+
+        // Auto-resize textarea
+        function adjustTextareaHeight() {
+            promptTextarea.style.height = 'auto';
+            promptTextarea.style.height = promptTextarea.scrollHeight + 'px';
+        }
+
+        promptTextarea.addEventListener('input', adjustTextareaHeight);
+
+        // Initialize textarea height
+        setTimeout(adjustTextareaHeight, 0);
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopRefreshing();
+        });
     </script>
 </body>
 
