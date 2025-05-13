@@ -25,6 +25,8 @@ new_sqlite_classes = ["DORM"]
 [[queues.producers]]
 queue = "lmpify"
 binding = "PROCESS_QUEUE"
+delivery_delay = 0
+
 
 [[queues.consumers]]
 queue = "lmpify"

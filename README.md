@@ -46,11 +46,12 @@ ADR:
 PRIORITY: use myself
 
 - ✅ use "stripeflare" to serve all pages with user-balance and dynamic payment link.
-- count free requests at user-level, and reset daily. limit max free requests per day to 10
+- Add gemini and anthropic and proper credit deduction
 - also add `model-modal.js` to resultpage, making it possible to repost it with a different model
 - remove byok (for now) and focus on 1 cheap model and 1 high-quality model
 - prune long fetch text responses and sanitise html
 - ensure claude sonnet and gemini flash are indeed available and selectable.
+- count free requests at user-level, and reset daily. limit max free requests per day to 10
 
 CONNECTION WITH context.json
 
@@ -58,7 +59,7 @@ CONNECTION WITH context.json
 
 CONNECTION WITH MCP
 
-- maybe stripeflare with mcp is a better connection than this. this, however, could be refined into something that generates an mcp. All i need is todo, is create a landingpage where the textarea text is prefixed with context on how to build an MCP and instructions to actually build an MCP.
+- maybe stripeflare with MCP is a better connection than this. this, however, could be refined into something that generates an mcp. All i need is todo, is create a landingpage where the textarea text is prefixed with context on how to build an MCP and instructions to actually build an MCP.
 - then, on the result page, we wanna allow actions with the codeblocks like i had with chat.forgithub.com. chatcompletions is a good building block here. ideally, you wanna allow turning it into a repo
 - keep the mcp boilerplate private!
 

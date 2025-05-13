@@ -240,8 +240,8 @@
     </div>
 
     <script>
-        // Get the KV data from window.kvData (injected by the worker)
-        const kvData = window.kvData || null;
+        // Get the KV data from window.data (injected by the worker)
+        const kvData = window.data || null;
 
         const promptContent = document.getElementById('promptContent');
         const resultContent = document.getElementById('resultContent');

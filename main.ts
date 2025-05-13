@@ -126,7 +126,7 @@ export default {
         // Return result.html with the KV data and user data injected
         let html = resultHtml;
         html = injectWindowData(html, {
-          kvData: existingData,
+          ...existingData,
           user,
         });
 
@@ -148,8 +148,9 @@ export default {
       const prompt = formData.get("prompt");
       const models = [
         {
-          model: "gemini-2.5-flash",
-          basePath: "https://api.gemini.com",
+          //models/
+          model: "gemini-2.5-flash-preview-04-17",
+          basePath: "https://generativelanguage.googleapis.com/v1beta/openai",
           apiKey: env.GEMINI_SECRET,
         },
         {
@@ -173,7 +174,7 @@ export default {
 
       // Validate required fields
       if (!prompt) {
-        return new Response("Missing required fields", {
+        return new Response("Missing prompt", {
           status: 400,
           headers,
         });
