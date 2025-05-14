@@ -1,4 +1,4 @@
-name = "lmpify2"
+name = "lmpify3"
 compatibility_date = "2025-04-21"
 dev.port = 3000
 main = "main.ts"
@@ -17,13 +17,13 @@ name = "DORM_NAMESPACE"
 class_name = "DORM"
 
 [[durable_objects.bindings]]
-name = "LMPIFY_DO"
-class_name = "LmpifyDO"
+name = "STREAM_PROMPT_DO"
+class_name = "StreamPromptDO"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["DORM"]
 
 [[migrations]]
-tag = "v2"
-new_classes = ["LmpifyDO"]
+tag = "v1"
+new_sqlite_classes = ["StreamPromptDO"]

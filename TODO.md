@@ -26,7 +26,9 @@ Shorter flow:be the product
 - ✅ make stream.chatcompletions.com cache proxy
 - ✅ Integrate with LLMStreamDO or variant thereof to make things instant. pattern is: instant-in-do-stream(-and-back-if-needed-or-later), globally subscribable realtime, eventually-pushed-to-the-edge https://x.com/janwilmake/status/1922437388258726270
 - 🟠 Resultpage loads somewhat slow now due to stripe middleware. It was supposed to be fast, so let's figure out why it is NOT fast. in private window, the DO is super fast. in current safari https://lmpify.com is slow (500+ms). figure out where it's located and how this is possible!? https://x.com/janwilmake/status/1922592298904219859 - potential solution; refresh access token after 24h so the DO doesn't stay slow, but gets refreshed; but need a proper transfer method for this too. It'd also be good to understand the problem better: log DO response time in `stripeflare` package with warning if its over 100ms?
-- In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
+- 🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
+- 🟠 `Error in DO fetch: RangeError: Values cannot be larger than 131072` - storage of prompt is too large! Also context! This needs solving, potentially use SQLite one row per key, and prune when going over 2mb.
+- ✅ 🔥 Added `/from/{promptUrl}` endpoint to integrate with any URL as startingpoint more easily (e.g. from github). Refactored logic to allow for GET request to DO
 - Prune long fetch text responses from URLs, and sanitise html
 - Ensure claude sonnet 3.7 works too. model must be stored in localstorage
 - Count free requests at user-level, give max 10 total free requests.
@@ -55,3 +57,4 @@ QOL:
 - bonus: /context/{url} to pre-add context (including nice card for it)
 - improve funnyness when entering the page??? be creative. how can i make this super viral
 - super idea: if at least one URL returns a `multipart/form-data` stream or file object, take the biggest of those, and use it with `uithub.filetransformers` with the rest of the prompt. we now apply the prompt on every file. Critical component: detecting streamable url response early + proxy traffic.
+- IDEA Bruna: edit history; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.

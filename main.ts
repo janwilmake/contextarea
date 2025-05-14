@@ -17,9 +17,10 @@ import resultHtml from "./result.html";
  */
 interface Env extends StripeflareEnv {
   RESULTS: KVNamespace; // KV namespace for storing results
-  LMPIFY_DO: DurableObjectNamespace; // Durable Object namespace
+  STREAM_PROMPT_DO: DurableObjectNamespace; // Durable Object namespace
   ANTHROPIC_SECRET: string;
   FREE_SECRET: string;
+  SELF: Fetcher;
 }
 
 /**
@@ -94,8 +95,19 @@ export class LmpifyDO {
 
     try {
       // Handle initial setup from POST request
+
+      if (url.pathname === "/details") {
+        const modelConfig = await this.state.storage.get<ModelConfig>(
+          "modelConfig",
+        );
+        const prompt = await this.state.storage.get<string>("prompt");
+        return new Response(
+          JSON.stringify({ prompt, model: modelConfig?.model }),
+          { headers: { "content-type": "application/json" } },
+        );
+      }
       if (request.method === "POST" && url.pathname === "/setup") {
-        const data = await request.json();
+        const data: any = await request.json();
 
         // Store the data in the Durable Object storage
         const storedState: StoredState = {
@@ -524,125 +536,129 @@ export const migrations = {
   ],
 };
 
-export default {
-  async fetch(
-    request: Request,
-    env: Env,
-    ctx: ExecutionContext,
-  ): Promise<Response> {
-    const url = new URL(request.url);
-    const pathname = url.pathname;
-    const acceptHeader = request.headers.get("Accept");
+const requestHandler = async (
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<Response> => {
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+  const acceptHeader = request.headers.get("Accept");
 
+  const t = Date.now();
+  // Apply stripeflare middleware
+  const result = await stripeBalanceMiddleware<User>(
+    request,
+    env,
+    ctx,
+    migrations,
+  );
+
+  console.log({ stripeMiddlewareMs: Date.now() - t });
+
+  // If middleware returned a response, return it directly
+  if (result.response) {
+    return result.response;
+  }
+
+  // Get user data from stripeflare
+  const { access_token, ...user } = (result.user || {}) as Partial<User>;
+  const headers = result.headers || new Headers();
+
+  // Only accept POST and GET methods
+  if (!["POST", "GET"].includes(request.method)) {
+    return new Response("Method not allowed", { status: 405, headers });
+  }
+
+  try {
     const t = Date.now();
-    // Apply stripeflare middleware
-    const result = await stripeBalanceMiddleware<User>(
-      request,
-      env,
-      ctx,
-      migrations,
-    );
+    // Check if result already exists in KV
+    const existingData =
+      pathname === "/"
+        ? null
+        : ((await env.RESULTS.get(pathname, "json")) as KVData | null);
+    console.log({ kvRequestMs: Date.now() - t });
 
-    console.log({ stripeMiddlewareMs: Date.now() - t });
+    if (existingData) {
+      // For API calls, return JSON
+      if (request.headers.get("Accept")?.includes("application/json")) {
+        headers.set("Content-Type", "application/json");
+        return new Response(
+          JSON.stringify({
+            ...existingData,
+            user,
+            status: "complete",
+          }),
+          { headers },
+        );
+      }
 
-    // If middleware returned a response, return it directly
-    if (result.response) {
-      return result.response;
+      // For browser, return HTML
+      let html = resultHtml;
+      const scriptData = {
+        ...existingData,
+        user,
+        status: "complete",
+        streaming: false,
+      };
+      html = html.replace(
+        "</head>",
+        `<script>window.data = ${JSON.stringify(scriptData)};</script></head>`,
+      );
+
+      headers.set("Content-Type", "text/html");
+      return new Response(html, { headers });
     }
 
-    // Get user data from stripeflare
-    const { access_token, ...user } = (result.user || {}) as Partial<User>;
-    const headers = result.headers || new Headers();
+    const isEventStream = acceptHeader?.includes("text/event-stream");
 
-    // Only accept POST and GET methods
-    if (!["POST", "GET"].includes(request.method)) {
-      return new Response("Method not allowed", { status: 405, headers });
+    // If no existing data and it's a GET request, show the form
+    if (url.pathname === "/") {
+      let html = homepageHtml;
+      html = html.replace(
+        "</head>",
+        `<script>window.data = ${JSON.stringify({ user })};</script></head>`,
+      );
+
+      headers.set("Content-Type", "text/html");
+      return new Response(html, { headers });
     }
 
-    try {
-      const t = Date.now();
-      // Check if result already exists in KV
-      const existingData =
-        pathname === "/"
-          ? null
-          : ((await env.RESULTS.get(pathname, "json")) as KVData | null);
-      console.log({ kvRequestMs: Date.now() - t });
+    // Handle EventSource GET requests
+    if (request.method === "GET" && isEventStream) {
+      const doId = env.LMPIFY_DO.idFromName(pathname);
+      const doStub = env.LMPIFY_DO.get(doId);
 
-      if (existingData) {
-        // For API calls, return JSON
-        if (request.headers.get("Accept")?.includes("application/json")) {
-          headers.set("Content-Type", "application/json");
-          return new Response(
-            JSON.stringify({
-              ...existingData,
-              user,
-              status: "complete",
-            }),
-            { headers },
-          );
-        }
+      // Connect to the Durable Object SSE stream
+      const doRequest = new Request("https://do/stream", {
+        method: "GET",
+        headers: { Accept: "text/event-stream" },
+      });
 
-        // For browser, return HTML
-        let html = resultHtml;
-        const scriptData = {
-          ...existingData,
-          user,
-          status: "complete",
-          streaming: false,
-        };
-        html = html.replace(
-          "</head>",
-          `<script>window.data = ${JSON.stringify(
-            scriptData,
-          )};</script></head>`,
-        );
+      const response = await doStub.fetch(doRequest);
 
-        headers.set("Content-Type", "text/html");
-        return new Response(html, { headers });
-      }
+      // Forward the SSE response with CORS headers
+      const sseHeaders = new Headers(response.headers);
+      sseHeaders.set("Access-Control-Allow-Origin", "*");
+      sseHeaders.set("Access-Control-Allow-Headers", "*");
 
-      const isEventStream = acceptHeader?.includes("text/event-stream");
+      return new Response(response.body, {
+        status: response.status,
+        headers: sseHeaders,
+      });
+    }
 
-      // If no existing data and it's a GET request, show the form
-      if (request.method === "GET" && !isEventStream) {
-        let html = homepageHtml;
-        html = html.replace(
-          "</head>",
-          `<script>window.data = ${JSON.stringify({ user })};</script></head>`,
-        );
+    // Process POST request
 
-        headers.set("Content-Type", "text/html");
-        return new Response(html, { headers });
-      }
-
-      // Handle EventSource GET requests
-      if (request.method === "GET" && isEventStream) {
-        const doId = env.LMPIFY_DO.idFromName(pathname);
-        const doStub = env.LMPIFY_DO.get(doId);
-
-        // Connect to the Durable Object SSE stream
-        const doRequest = new Request("https://do/stream", {
-          method: "GET",
-          headers: { Accept: "text/event-stream" },
-        });
-
-        const response = await doStub.fetch(doRequest);
-
-        // Forward the SSE response with CORS headers
-        const sseHeaders = new Headers(response.headers);
-        sseHeaders.set("Access-Control-Allow-Origin", "*");
-        sseHeaders.set("Access-Control-Allow-Headers", "*");
-
-        return new Response(response.body, {
-          status: response.status,
-          headers: sseHeaders,
-        });
-      }
-
-      // Process POST request
+    // Get or create Durable Object
+    const doId = env.STREAM_PROMPT_DO.idFromName(pathname);
+    const doStub = env.STREAM_PROMPT_DO.get(doId);
+    let model: string | undefined = undefined;
+    let prompt: string | undefined = undefined;
+    if (request.method === "POST") {
       const formData = await request.formData();
-      const prompt = formData.get("prompt")?.toString();
-      const modelName = formData.get("model")?.toString();
+      prompt = formData?.get("prompt")?.toString();
+      const modelName = formData?.get("model")?.toString();
 
       if (!prompt) {
         console.log("missing prompt");
@@ -667,15 +683,12 @@ export default {
       const modelConfig =
         models.find((m) => m.model === modelName) || models[0];
 
+      model = modelConfig?.model;
+
       // Check balance for premium models
       if (modelConfig.premium && (!user.balance || user.balance <= 0)) {
         return new Response("Payment required", { status: 402, headers });
       }
-
-      // Get or create Durable Object
-      const doId = env.LMPIFY_DO.idFromName(pathname);
-      const doStub = env.LMPIFY_DO.get(doId);
-
       // Setup the Durable Object with the request data
       const setupRequest = new Request("https://do/setup", {
         method: "POST",
@@ -689,27 +702,111 @@ export default {
       });
 
       await doStub.fetch(setupRequest);
+    } else {
+      const result: { prompt: string; model: string } = await doStub
+        .fetch(new Request("https://do/details"))
+        .then((res) => res.json());
 
-      // Return HTML that will connect via EventSource
-      let html = resultHtml;
-      const scriptData = {
-        pathname,
-        prompt,
-        model: modelConfig.model,
-        user,
-        status: "pending",
-        streaming: true,
-      };
-      html = html.replace(
-        "</head>",
-        `<script>window.data = ${JSON.stringify(scriptData)};</script></head>`,
-      );
-
-      headers.set("Content-Type", "text/html");
-      return new Response(html, { headers });
-    } catch (error) {
-      console.error("Error in fetch handler:", error);
-      return new Response("Internal server error", { status: 500, headers });
+      prompt = result.prompt;
+      model = result.model;
+      console.log("GET METHOD got details", { prompt, model });
     }
+
+    // Return HTML that will connect via EventSource
+    let html = resultHtml;
+    const scriptData = {
+      pathname,
+      prompt,
+      model,
+      user,
+      status: "pending",
+      streaming: true,
+    };
+
+    html = html.replace(
+      "</head>",
+      `<script>window.data = ${JSON.stringify(scriptData)};</script></head>`,
+    );
+
+    headers.set("Content-Type", "text/html");
+    return new Response(html, { headers });
+  } catch (error) {
+    console.error("Error in fetch handler:", error);
+    return new Response("Internal server error", { status: 500, headers });
+  }
+};
+
+export default {
+  fetch: async (request: Request, env: Env, ctx: ExecutionContext) => {
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    if (pathname.startsWith("/from/")) {
+      // redirect to post
+      try {
+        const contextUrl = new URL(pathname.slice("/from/".length));
+        const response = await fetch(contextUrl);
+        if (!response.ok) {
+          return new Response("Invalid URL - returned " + response.status, {
+            status: 400,
+          });
+        }
+        const promptText = await response.text();
+
+        const first20 = promptText.substring(0, 20);
+        function slugify(text) {
+          return text
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/[\s_-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+        }
+
+        // Simple hash function for 7-character SHA-like string
+        function simpleHash(str) {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = (hash << 5) - hash + char;
+            hash = hash & hash;
+          }
+          return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, "0");
+        }
+
+        const slug = slugify(first20);
+        const hash = simpleHash(promptText);
+
+        // Create the URL path
+        const path = `/${slug}-${hash}`;
+        const formData = new FormData();
+        formData.append("prompt", promptText);
+
+        const postResponse = await requestHandler(
+          new Request(new URL(url.origin + path), {
+            method: "POST",
+            body: formData,
+          }),
+          env,
+          ctx,
+        );
+        const result = await postResponse.text();
+        console.log(
+          "result from ",
+          postResponse.status,
+          contextUrl.toString(),
+          result.length,
+        );
+
+        return new Response("Redirect", {
+          status: 302,
+          headers: { location: path },
+        });
+      } catch (e) {
+        console.log(e);
+        return new Response("Invalid url", { status: 400 });
+      }
+    }
+
+    return requestHandler(request, env, ctx);
   },
 };
