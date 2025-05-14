@@ -3,8 +3,8 @@
   // Hardcoded models array
   const MODELS = [
     {
-      id: "gemini-2.5-flash",
-      name: "Gemini 2.5 Flash",
+      id: "gpt-4.1-mini",
+      name: "ChatGPT 4.1 Mini",
       icon: "⚡",
       description: "",
       features: ["vision", "globe"],
@@ -487,7 +487,7 @@
   // Modal functionality
   class ModelModal {
     constructor() {
-      this.selectedModelId = "gemini-2.5-flash"; // Default selection
+      this.selectedModelId = MODELS[0].id; // Default selection
       this.modalElement = null;
       this.onSelectCallback = null;
       this.showingAll = false;

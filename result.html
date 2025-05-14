@@ -76,6 +76,10 @@
             border-bottom: 1px solid #4a4a4a;
         }
 
+        a {
+            text-decoration: none;
+        }
+
         .content {
             font-size: 16px;
             line-height: 1.6;
@@ -400,9 +404,11 @@
 
     <script src="./model-modal.js"></script>
     <script>
-        // Get the initial KV data from window.data (injected by the worker)
-        let kvData = window.data || null;
-        let refreshInterval = null;
+        // Get the initial data from window.data (injected by the worker)
+        let data = window.data || {};
+        let eventSource = null;
+        let currentResult = "";
+        let isStreaming = false;
 
         const promptTextarea = document.getElementById('promptTextarea');
         const resultContent = document.getElementById('resultContent');
@@ -415,92 +421,120 @@
         const currentUrl = window.location.href;
         shareInput.value = currentUrl;
 
-        // Function to update the UI with data
-        function updateUI(data) {
-            if (!data) {
-                promptTextarea.value = 'Error loading data';
-                resultContent.innerHTML = '<span class="error">Error loading data</span>';
-                return;
-            }
-
-            // Update prompt in textarea (only on initial load)
-            if (promptTextarea.value === 'Loading...') {
-                promptTextarea.value = data.prompt;
+        // Update UI with current state
+        function updateUI(state) {
+            // Update prompt
+            if (state.prompt) {
+                promptTextarea.value = state.prompt;
                 adjustTextareaHeight();
             }
 
             // Update result based on status
-            if (data.pending) {
-                resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Processing... This will automatically update when ready.</span>';
-                // Hide copy button while pending
-                copyButton.style.display = 'none';
-            } else if (data.error) {
-                resultContent.innerHTML = `<span class="error">Error: ${data.error}</span>`;
-                copyButton.style.display = 'none';
-                // Stop refreshing on error
-                stopRefreshing();
-            } else if (data.result) {
-                resultContent.textContent = data.result;
-                copyButton.style.display = 'flex';
-                // Stop refreshing once we have a result
-                stopRefreshing();
-            } else {
-                resultContent.innerHTML = '<span class="error">No result available</span>';
-                copyButton.style.display = 'none';
-            }
-        }
-
-        // Function to fetch the latest data
-        async function fetchLatestData() {
-            try {
-                const response = await fetch(window.location.href, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+            if (state.status === "pending" && data.streaming) {
+                if (!isStreaming) {
+                    resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                    copyButton.style.display = 'none';
                 }
-
-                const data = await response.json();
-                kvData = data;
-                updateUI(data);
-            } catch (error) {
-                console.error('Failed to fetch data:', error);
-                // Don't update UI on fetch error - keep the current state
+            } else if (state.status === "error" || state.error) {
+                resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
+                copyButton.style.display = 'none';
+            } else if (state.result) {
+                currentResult = state.result;
+                resultContent.textContent = currentResult;
+                copyButton.style.display = 'flex';
+            } else if (state.status === "complete") {
+                copyButton.style.display = 'flex';
             }
         }
 
-        // Function to start the refresh interval
-        function startRefreshing() {
-            if (!refreshInterval) {
-                refreshInterval = setInterval(fetchLatestData, 2000); // Every 2 seconds
+        // Initialize SSE connection if needed
+        function initializeSSE() {
+            if (data.streaming && data.status === "pending") {
+                eventSource = new EventSource(window.location.pathname);
+
+                eventSource.onopen = () => {
+                    console.log('SSE connection opened');
+                };
+
+                eventSource.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        handleSSEMessage(message);
+                    } catch (e) {
+                        console.error('Error parsing SSE message:', e);
+                    }
+                };
+
+                eventSource.onerror = (error) => {
+                    console.error('SSE error:', error);
+                    if (eventSource.readyState === EventSource.CLOSED) {
+                        console.log('SSE connection closed');
+                        eventSource = null;
+                    }
+                };
             }
         }
 
-        // Function to stop the refresh interval
-        function stopRefreshing() {
-            if (refreshInterval) {
-                clearInterval(refreshInterval);
-                refreshInterval = null;
+        // Handle SSE messages
+        function handleSSEMessage(message) {
+            switch (message.type) {
+                case 'init':
+                    // Initial state
+                    if (message.data.status === "pending") {
+                        resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                        currentResult = message.data.result || "";
+                    } else {
+                        updateUI(message.data);
+                    }
+                    break;
+
+                case 'token':
+                    // Streaming token
+                    if (!isStreaming) {
+                        isStreaming = true;
+                        resultContent.textContent = "";
+                    }
+                    currentResult += message.data.text;
+                    resultContent.textContent = currentResult;
+                    break;
+
+                case 'update':
+                    // Update field
+                    if (message.data.field === 'context') {
+                        // Context updated
+                        console.log('Context updated');
+                    }
+                    break;
+
+                case 'complete':
+                    // Stream complete
+                    currentResult = message.data.result;
+                    resultContent.textContent = currentResult;
+                    copyButton.style.display = 'flex';
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    break;
+
+                case 'error':
+                    // Error occurred
+                    resultContent.innerHTML = `<span class="error">Error: ${message.data.message}</span>`;
+                    copyButton.style.display = 'none';
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                    }
+                    break;
             }
-        }
-
-        // Initial UI update
-        updateUI(kvData);
-
-        // Start auto-refresh if pending
-        if (kvData && kvData.pending) {
-            startRefreshing();
         }
 
         // Copy result functionality
         copyButton.addEventListener('click', async () => {
-            if (!kvData || !kvData.result) return;
+            if (!currentResult) return;
 
             try {
-                await navigator.clipboard.writeText(kvData.result);
+                await navigator.clipboard.writeText(currentResult);
                 copyButton.classList.add('copied');
                 copyButton.querySelector('span').textContent = 'Copied!';
 
@@ -552,16 +586,9 @@
             return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, '0');
         }
 
-        // Load config from localStorage
-        function loadConfig() {
-            return {
-                model: localStorage.getItem('model') || '',
-                basePath: localStorage.getItem('basePath') || '',
-                apiKey: localStorage.getItem('apiKey') || ''
-            };
-        }
-
         // Try again functionality
+        tryAgainButton.setAttribute('title', 'Click or press Shift+Enter');
+
         tryAgainButton.addEventListener('click', async () => {
             const promptText = promptTextarea.value.trim();
             if (!promptText) return;
@@ -574,14 +601,13 @@
             // Create the URL path
             const path = `/${slug}-${hash}`;
 
-            // Create form data with config values
+            // Get selected model from the modal
+            const selectedModel = window.getSelectedModel();
+
+            // Create form data
             const formData = new FormData();
             formData.append('prompt', promptText);
-
-            const config = loadConfig();
-            formData.append('model', config.model);
-            formData.append('basePath', config.basePath);
-            formData.append('apiKey', config.apiKey);
+            formData.append('model', selectedModel.id);
 
             // Create a form and submit it
             const form = document.createElement('form');
@@ -610,12 +636,45 @@
 
         promptTextarea.addEventListener('input', adjustTextareaHeight);
 
-        // Initialize textarea height
+        // Initial setup
+        updateUI(data);
+
+        // Add retry logic for SSE connection
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 1000;
+
+        function initializeWithRetry() {
+            try {
+                initializeSSE();
+                retryCount = 0;
+            } catch (error) {
+                console.error('Error initializing SSE:', error);
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    setTimeout(() => {
+                        console.log(`Retrying SSE connection (${retryCount}/${maxRetries})...`);
+                        initializeWithRetry();
+                    }, retryDelay * retryCount);
+                }
+            }
+        }
+
+        initializeWithRetry();
         setTimeout(adjustTextareaHeight, 0);
+
+        promptTextarea.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && event.shiftKey) {
+                event.preventDefault(); // Prevent default behavior (new line)
+                tryAgainButton.click(); // Trigger the try again button
+            }
+        });
 
         // Clean up on page unload
         window.addEventListener('beforeunload', () => {
-            stopRefreshing();
+            if (eventSource) {
+                eventSource.close();
+            }
         });
     </script>
 </body>

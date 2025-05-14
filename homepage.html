@@ -297,14 +297,14 @@
                                 <path d="M12 5v14M5 12h14" stroke="currentColor" />
                             </svg>
                         </button>
-                        <button type="button" class="icon-button" id="configButton" title="Configuration">
+                        <!-- <button type="button" class="icon-button" id="configButton" title="Configuration">
                             <svg viewBox="0 0 24 24">
                                 <path d="M12 6h.01M12 12h.01M12 18h.01" stroke="currentColor" stroke-linecap="round" />
                             </svg>
-                        </button>
+                        </button> -->
                         <!-- modal for selecting models -->
                         <div id="model-modal"></div>
-                        <script src="./model-modal.js"></script>
+                        <script src="/model-modal.js"></script>
                     </div>
                     <textarea id="promptTextarea" name="prompt" placeholder="Type your prompt..." rows="3"></textarea>
                     <div class="button-container">
@@ -320,7 +320,7 @@
             </form>
         </div>
 
-        <div class="config-container" id="configView">
+        <!-- <div class="config-container" id="configView">
             <div class="config-header">
                 <div class="config-title">Configuration</div>
             </div>
@@ -343,7 +343,7 @@
                     <button class="config-button cancel-button" id="cancelConfigButton">Cancel</button>
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 
     <script>
@@ -367,17 +367,18 @@
                 basePath: localStorage.getItem('basePath') || '',
                 apiKey: localStorage.getItem('apiKey') || ''
             };
-            modelInput.value = config.model;
-            basePathInput.value = config.basePath;
-            apiKeyInput.value = config.apiKey;
+            // Only update if elements exist (they might be commented out)
+            if (modelInput) modelInput.value = config.model;
+            if (basePathInput) basePathInput.value = config.basePath;
+            if (apiKeyInput) apiKeyInput.value = config.apiKey;
             return config;
         }
 
         // Save config to localStorage
         function saveConfig() {
-            localStorage.setItem('model', modelInput.value);
-            localStorage.setItem('basePath', basePathInput.value);
-            localStorage.setItem('apiKey', apiKeyInput.value);
+            if (modelInput) localStorage.setItem('model', modelInput.value);
+            if (basePathInput) localStorage.setItem('basePath', basePathInput.value);
+            if (apiKeyInput) localStorage.setItem('apiKey', apiKeyInput.value);
         }
 
         // Auto-resize textarea
@@ -434,25 +435,29 @@
             }
         });
 
-        // Config button click
-        configButton.addEventListener('click', () => {
-            formView.style.display = 'none';
-            configView.classList.add('active');
-            loadConfig();
-        });
+        // Only add config listeners if elements exist
+        if (configButton) {
+            configButton.addEventListener('click', () => {
+                formView.style.display = 'none';
+                configView.classList.add('active');
+                loadConfig();
+            });
+        }
 
-        // Save config button click
-        saveConfigButton.addEventListener('click', () => {
-            saveConfig();
-            configView.classList.remove('active');
-            formView.style.display = 'block';
-        });
+        if (saveConfigButton) {
+            saveConfigButton.addEventListener('click', () => {
+                saveConfig();
+                configView.classList.remove('active');
+                formView.style.display = 'block';
+            });
+        }
 
-        // Cancel config button click
-        cancelConfigButton.addEventListener('click', () => {
-            configView.classList.remove('active');
-            formView.style.display = 'block';
-        });
+        if (cancelConfigButton) {
+            cancelConfigButton.addEventListener('click', () => {
+                configView.classList.remove('active');
+                formView.style.display = 'block';
+            });
+        }
 
         // Slugify function
         function slugify(text) {
@@ -490,35 +495,39 @@
             // Create the URL path
             const path = `/${slug}-${hash}`;
 
-            // Update form action
+            // Update form action and submit the form with POST method
             form.action = path;
+            form.method = 'POST';
 
-            // Create form data with config values
-            const formData = new FormData();
-            formData.append('prompt', promptText);
+            // Create hidden input fields for the data
+            const promptInput = document.createElement('input');
+            promptInput.type = 'hidden';
+            promptInput.name = 'prompt';
+            promptInput.value = promptText;
+            form.appendChild(promptInput);
 
             const config = loadConfig();
-            formData.append('model', config.model);
-            formData.append('basePath', config.basePath);
-            formData.append('apiKey', config.apiKey);
 
-            // Submit the form (in a real app, you'd submit to your server)
-            console.log('Submitting to:', path);
-            console.log('Form data:', {
-                prompt: promptText,
-                model: config.model,
-                basePath: config.basePath,
-                apiKey: config.apiKey
-            });
+            const modelHidden = document.createElement('input');
+            modelHidden.type = 'hidden';
+            modelHidden.name = 'model';
+            modelHidden.value = config.model || window.getSelectedModel?.()?.id || 'gpt-4.1-mini';
+            form.appendChild(modelHidden);
 
-            // For demo purposes, we'll just log the data
-            // In production, uncomment the next line:
+            const basePathHidden = document.createElement('input');
+            basePathHidden.type = 'hidden';
+            basePathHidden.name = 'basePath';
+            basePathHidden.value = config.basePath;
+            form.appendChild(basePathHidden);
+
+            const apiKeyHidden = document.createElement('input');
+            apiKeyHidden.type = 'hidden';
+            apiKeyHidden.name = 'apiKey';
+            apiKeyHidden.value = config.apiKey;
+            form.appendChild(apiKeyHidden);
+
+            // Submit the form - this will navigate to the new page
             form.submit();
-
-            // Reset form after submission
-            textarea.value = '';
-            adjustTextareaHeight();
-            submitButton.disabled = true;
         });
 
         // Initialize
@@ -527,9 +536,9 @@
         loadConfig();
 
         document.addEventListener("DOMContentLoaded", () => {
-            const textarea = document.getElementById("promptTextarea")
-            textarea.focus()
-        })
+            const textarea = document.getElementById("promptTextarea");
+            textarea.focus();
+        });
     </script>
 </body>
 

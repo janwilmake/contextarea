@@ -1,4 +1,4 @@
-name = "lmpify"
+name = "lmpify2"
 compatibility_date = "2025-04-21"
 dev.port = 3000
 main = "main.ts"
@@ -16,17 +16,14 @@ kv_namespaces = [
 name = "DORM_NAMESPACE"
 class_name = "DORM"
 
+[[durable_objects.bindings]]
+name = "LMPIFY_DO"
+class_name = "LmpifyDO"
 
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["DORM"]
 
-
-[[queues.producers]]
-queue = "lmpify"
-binding = "PROCESS_QUEUE"
-delivery_delay = 0
-
-
-[[queues.consumers]]
-queue = "lmpify"
+[[migrations]]
+tag = "v2"
+new_classes = ["LmpifyDO"]
