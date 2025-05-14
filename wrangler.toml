@@ -16,14 +16,16 @@ kv_namespaces = [
 name = "DORM_NAMESPACE"
 class_name = "DORM"
 
+
 [[durable_objects.bindings]]
-name = "STREAM_PROMPT_DO"
-class_name = "StreamPromptDO"
+name = "SQL_STREAM_PROMPT_DO"
+class_name = "SQLStreamPromptDO"
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["DORM"]
+new_sqlite_classes = ["DORM", "StreamPromptDO"]
 
 [[migrations]]
-tag = "v1"
-new_sqlite_classes = ["StreamPromptDO"]
+tag = "v3"
+deleted_classes = ["StreamPromptDO"]
+new_sqlite_classes = ["SQLStreamPromptDO"]

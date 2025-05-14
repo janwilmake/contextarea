@@ -17,7 +17,7 @@ import resultHtml from "./result.html";
  */
 interface Env extends StripeflareEnv {
   RESULTS: KVNamespace; // KV namespace for storing results
-  STREAM_PROMPT_DO: DurableObjectNamespace; // Durable Object namespace
+  SQL_STREAM_PROMPT_DO: DurableObjectNamespace; // Durable Object namespace
   ANTHROPIC_SECRET: string;
   FREE_SECRET: string;
   SELF: Fetcher;
@@ -79,15 +79,52 @@ interface StoredState {
 /**
  * Durable Object for handling streaming LLM responses
  */
-export class LmpifyDO {
+export class SQLStreamPromptDO {
   private state: DurableObjectState;
   private env: Env;
   private activeControllers: ReadableStreamDefaultController<Uint8Array>[] = [];
   private encoder = new TextEncoder();
+  private sql: any;
 
   constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.env = env;
+    this.sql = state.storage.sql;
+
+    // Initialize the KV table
+    this.sql.exec(`
+      CREATE TABLE IF NOT EXISTS _kv (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    `);
+  }
+
+  // Helper function to set a value
+  private set(key: string, value: any): void {
+    const jsonValue = JSON.stringify(value);
+    this.sql.exec(
+      `INSERT OR REPLACE INTO _kv (key, value) VALUES (?, ?)`,
+      key,
+      jsonValue,
+    );
+  }
+
+  // Helper function to get a value
+  private get<T = any>(key: string): T | null {
+    const result = this.sql
+      .exec(`SELECT value FROM _kv WHERE key = ?`, key)
+      .toArray();
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(result[0].value);
+    } catch (e) {
+      return result[0].value;
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -97,10 +134,8 @@ export class LmpifyDO {
       // Handle initial setup from POST request
 
       if (url.pathname === "/details") {
-        const modelConfig = await this.state.storage.get<ModelConfig>(
-          "modelConfig",
-        );
-        const prompt = await this.state.storage.get<string>("prompt");
+        const modelConfig = this.get<ModelConfig>("modelConfig");
+        const prompt = this.get<string>("prompt");
         return new Response(
           JSON.stringify({ prompt, model: modelConfig?.model }),
           { headers: { "content-type": "application/json" } },
@@ -123,21 +158,15 @@ export class LmpifyDO {
         };
 
         // Save each field to storage
-        await this.state.storage.put("pathname", storedState.pathname);
-        await this.state.storage.put("prompt", storedState.prompt);
-        await this.state.storage.put("modelConfig", storedState.modelConfig);
-        await this.state.storage.put("initialized", storedState.initialized);
-        await this.state.storage.put(
-          "accumulatedData",
-          storedState.accumulatedData,
-        );
-        await this.state.storage.put(
-          "streamComplete",
-          storedState.streamComplete,
-        );
-        await this.state.storage.put("error", storedState.error);
-        await this.state.storage.put("isProcessing", storedState.isProcessing);
-        await this.state.storage.put("context", storedState.context);
+        this.set("pathname", storedState.pathname);
+        this.set("prompt", storedState.prompt);
+        this.set("modelConfig", storedState.modelConfig);
+        this.set("initialized", storedState.initialized);
+        this.set("accumulatedData", storedState.accumulatedData);
+        this.set("streamComplete", storedState.streamComplete);
+        this.set("error", storedState.error);
+        this.set("isProcessing", storedState.isProcessing);
+        this.set("context", storedState.context);
 
         console.log("Setup complete:", {
           pathname: storedState.pathname,
@@ -152,9 +181,7 @@ export class LmpifyDO {
 
       // Handle SSE stream requests
       if (request.method === "GET" && url.pathname === "/stream") {
-        const initialized = await this.state.storage.get<boolean>(
-          "initialized",
-        );
+        const initialized = this.get<boolean>("initialized");
 
         if (!initialized) {
           console.log("NOT INITIALIZED");
@@ -162,25 +189,14 @@ export class LmpifyDO {
         }
 
         // Get stored state
-        const [
-          pathname,
-          prompt,
-          modelConfig,
-          context,
-          accumulatedData,
-          streamComplete,
-          error,
-          isProcessing,
-        ] = await Promise.all([
-          this.state.storage.get<string>("pathname"),
-          this.state.storage.get<string>("prompt"),
-          this.state.storage.get<ModelConfig>("modelConfig"),
-          this.state.storage.get<string>("context"),
-          this.state.storage.get<string>("accumulatedData") || "",
-          this.state.storage.get<boolean>("streamComplete") || false,
-          this.state.storage.get<string>("error"),
-          this.state.storage.get<boolean>("isProcessing") || false,
-        ]);
+        const pathname = this.get<string>("pathname");
+        const prompt = this.get<string>("prompt");
+        const modelConfig = this.get<ModelConfig>("modelConfig");
+        const context = this.get<string>("context");
+        const accumulatedData = this.get<string>("accumulatedData") || "";
+        const streamComplete = this.get<boolean>("streamComplete") || false;
+        const error = this.get<string>("error");
+        const isProcessing = this.get<boolean>("isProcessing") || false;
 
         console.log(
           "Starting SSE stream for:",
@@ -212,7 +228,7 @@ export class LmpifyDO {
 
             // If not already processing, start the stream
             if (!isProcessing) {
-              await this.state.storage.put("isProcessing", true);
+              this.set("isProcessing", true);
               const user = await request.json().catch(() => ({}));
               this.processRequest(user);
             }
@@ -247,13 +263,10 @@ export class LmpifyDO {
   private async processRequest(user: any) {
     try {
       // Get stored state
-      const prompt = await this.state.storage.get<string>("prompt");
-      const modelConfig = await this.state.storage.get<ModelConfig>(
-        "modelConfig",
-      );
-      const pathname = await this.state.storage.get<string>("pathname");
-      let accumulatedData =
-        (await this.state.storage.get<string>("accumulatedData")) || "";
+      const prompt = this.get<string>("prompt");
+      const modelConfig = this.get<ModelConfig>("modelConfig");
+      const pathname = this.get<string>("pathname");
+      let accumulatedData = this.get<string>("accumulatedData") || "";
 
       if (!prompt || !modelConfig) {
         throw new Error("Missing required state");
@@ -295,7 +308,7 @@ export class LmpifyDO {
           )
           .join("\n");
 
-        await this.state.storage.put("context", context);
+        this.set("context", context);
         console.log({ context });
 
         // Update prompt with token counts
@@ -307,7 +320,7 @@ export class LmpifyDO {
             );
           }
         });
-        await this.state.storage.put("prompt", updatedPrompt);
+        this.set("prompt", updatedPrompt);
 
         // Send context update
         this.broadcastEvent("update", {
@@ -396,10 +409,7 @@ export class LmpifyDO {
 
               if (token) {
                 accumulatedData += token;
-                await this.state.storage.put(
-                  "accumulatedData",
-                  accumulatedData,
-                );
+                this.set("accumulatedData", accumulatedData);
                 this.broadcastEvent("token", {
                   text: token,
                   position: position++,
@@ -415,7 +425,7 @@ export class LmpifyDO {
       await this.handleStreamComplete();
     } catch (error: any) {
       console.error("Error processing request:", error);
-      await this.state.storage.put("error", error.message);
+      this.set("error", error.message);
 
       // Send error to all connected clients
       this.broadcastEvent("error", {
@@ -424,12 +434,10 @@ export class LmpifyDO {
       });
 
       // Store error state in KV
-      const pathname = await this.state.storage.get<string>("pathname");
-      const prompt = await this.state.storage.get<string>("prompt");
-      const modelConfig = await this.state.storage.get<ModelConfig>(
-        "modelConfig",
-      );
-      const context = await this.state.storage.get<string>("context");
+      const pathname = this.get<string>("pathname");
+      const prompt = this.get<string>("prompt");
+      const modelConfig = this.get<ModelConfig>("modelConfig");
+      const context = this.get<string>("context");
 
       if (pathname && prompt && modelConfig) {
         const errorData: KVData = {
@@ -456,10 +464,9 @@ export class LmpifyDO {
   }
 
   private async handleStreamComplete() {
-    await this.state.storage.put("streamComplete", true);
+    this.set("streamComplete", true);
 
-    const accumulatedData =
-      (await this.state.storage.get<string>("accumulatedData")) || "";
+    const accumulatedData = this.get<string>("accumulatedData") || "";
 
     // Send complete event
     this.broadcastEvent("complete", {
@@ -467,12 +474,10 @@ export class LmpifyDO {
     });
 
     // Store in KV
-    const pathname = await this.state.storage.get<string>("pathname");
-    const prompt = await this.state.storage.get<string>("prompt");
-    const modelConfig = await this.state.storage.get<ModelConfig>(
-      "modelConfig",
-    );
-    const context = await this.state.storage.get<string>("context");
+    const pathname = this.get<string>("pathname");
+    const prompt = this.get<string>("prompt");
+    const modelConfig = this.get<ModelConfig>("modelConfig");
+    const context = this.get<string>("context");
 
     if (pathname && prompt && modelConfig) {
       const kvData: KVData = {
@@ -626,8 +631,8 @@ const requestHandler = async (
 
     // Handle EventSource GET requests
     if (request.method === "GET" && isEventStream) {
-      const doId = env.LMPIFY_DO.idFromName(pathname);
-      const doStub = env.LMPIFY_DO.get(doId);
+      const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathname);
+      const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
 
       // Connect to the Durable Object SSE stream
       const doRequest = new Request("https://do/stream", {
@@ -651,8 +656,8 @@ const requestHandler = async (
     // Process POST request
 
     // Get or create Durable Object
-    const doId = env.STREAM_PROMPT_DO.idFromName(pathname);
-    const doStub = env.STREAM_PROMPT_DO.get(doId);
+    const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathname);
+    const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
     let model: string | undefined = undefined;
     let prompt: string | undefined = undefined;
     if (request.method === "POST") {
