@@ -36,6 +36,8 @@ Shorter flow:be the product
 - Should calculate og-details based on prompt in the DO.
 - Should pregenerate og:image (https://github.com/janwilmake/github-og-image) and add that into `result.html` (follow path routing of https://github.com/janwilmake/user-agent-router)
 
+💪 TODO: 1) purify prompt/context, 2) make claude & freemium monetisation work 3) make og-data work! It's usable now for myself and to share results easily!
+
 # BUGS
 
 - 🟠 Resultpage loads somewhat slow now due to stripe middleware. It was supposed to be fast, so let's figure out why it is NOT fast. in private window, the DO is super fast. in current safari https://lmpify.com is slow (500+ms). figure out where it's located and how this is possible!? https://x.com/janwilmake/status/1922592298904219859 - potential solution; refresh access token after 24h so the DO doesn't stay slow, but gets refreshed; but need a proper transfer method for this too. It'd also be good to understand the problem better: log DO response time in `stripeflare` package with warning if its over 100ms?
@@ -45,9 +47,9 @@ Shorter flow:be the product
 
 - `?q={EncodedString}` to pre-add context to homepage.
 - **pastebin**: paste large texts should turn into a URL to keep it easy to oversee the prompt.
+- **context cards**: for each link in the prompt, the frontend should have an api to render the context card for it which includes url, title, tokens, og-image, and more. these should be dynamically rendered below your prompt, and must be clear which belongs to which url somehow. when a prompt is pre-loaded, context cards may be pre-loaded from head JSON
 - **self-links**: result page should also render markdown when doing non-browser-based fetch or when adding `.md` similar to chatcompletions, prompt md should also be a link, context md also. Every codeblock should be available using the proper mediatype at `https://{slug}-{hash}.lmpify.com/{path}`. All links should be easy to find and add to the prompt.
 - **edit history**; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.
-- **context cards**: for each link in the prompt, the frontend should have an api to render the context card for it which includes url, title, tokens, og-image, and more. these should be dynamically rendered below your prompt, and must be clear which belongs to which url somehow. when a prompt is pre-loaded, context cards may be pre-loaded from head JSON
 
 # Layers on top of lmpify: `context.json` or code generator:
 
