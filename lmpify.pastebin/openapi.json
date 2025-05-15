@@ -1,0 +1,154 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Pastebin API",
+    "description": "A simple pastebin service for storing and retrieving text content",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "url": "https://pastebin.lmpify.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://pastebin.lmpify.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "post": {
+        "summary": "Create a new paste",
+        "description": "Submit text content to create a new paste. Returns a unique URL immediately while the content is streamed to storage in the background. Maximum content size is 25MB.",
+        "operationId": "createPaste",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "maxLength": 26214400,
+                "description": "The text content to store (maximum 25MB)"
+              },
+              "example": "This is my paste content that I want to store..."
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paste created successfully",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "The URL to access the created paste"
+                },
+                "example": "https://pastebin.lmpify.com/this-is-my-paste-co-abc1234"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - no body provided",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "No body provided"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Error processing request"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{key}": {
+      "get": {
+        "summary": "Retrieve a paste",
+        "description": "Get the content of a previously created paste using its unique key",
+        "operationId": "getPaste",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "description": "The unique key of the paste (format: {slug}-{random})",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+-[a-z0-9]{7}$"
+            },
+            "example": "this-is-my-paste-co-abc1234"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paste content retrieved successfully",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "The stored paste content"
+                },
+                "example": "This is my paste content that I want to store..."
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid key format",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Invalid key format"
+              }
+            }
+          },
+          "404": {
+            "description": "Paste not found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Content not found"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Error retrieving content"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PasteKey": {
+        "type": "string",
+        "pattern": "^[a-z0-9-]+-[a-z0-9]{7}$",
+        "description": "Unique identifier for a paste, consisting of a slugified prefix and 7-character random suffix",
+        "example": "hello-world-example-abc1234"
+      }
+    }
+  }
+}

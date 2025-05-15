@@ -15,8 +15,6 @@ Shorter flow:be the product
 - when loaded again, this is metadata directly visible and clickable
 - og image / title shows gist of prompt
 
-# (need:metadata+context gather api -> reuse og:images already made if available)
-
 # PRIORITY: REPLACE CLAUDE (2025-05-12 until 2025-05-16)
 
 - ✅ use "stripeflare" to serve all pages with user-balance and dynamic payment link.
@@ -27,9 +25,9 @@ Shorter flow:be the product
 - ✅ Integrate with LLMStreamDO or variant thereof to make things instant. pattern is: instant-in-do-stream(-and-back-if-needed-or-later), globally subscribable realtime, eventually-pushed-to-the-edge https://x.com/janwilmake/status/1922437388258726270
 - ✅ 🔥 Added `/from/{promptUrl}` endpoint to integrate with any URL as startingpoint more easily (e.g. from github). Refactored logic to allow for GET request to DO
 - ✅ `Error in DO fetch: RangeError: Values cannot be larger than 131072` - storage of prompt is too large! Also context! This needs solving, potentially use SQLite one row per key.
-- Prune long prompt inputs and prune long fetch text responses from URLs. This is a separate function I already did before.
+- 🟠 Prune long prompt inputs and prune long fetch text responses from URLs. This is a separate function I already did before. `context-extraction-service`
 - Sanetize/DOMPurify JSON before putting it into HTML
-- Ensure claude sonnet 3.7 works too. model must be stored in localstorage and KV.
+- Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
 - Ensure pricing is properly applied. Confirm monetisation works.
 - Handle 402 gracefully. In model selection, show balance, making it bigger/red when low.
 - Count free requests at user-level, give max 10 total free requests.
@@ -40,13 +38,14 @@ Shorter flow:be the product
 
 # BUGS
 
+- 🤔 I thought it worked, but when refreshing while it's generating, it actually doesn't find the same stream now, anymore! Maybe, the migration to SQLite fucked it up? Make this work as desired.
 - 🟠 Resultpage loads somewhat slow now due to stripe middleware. It was supposed to be fast, so let's figure out why it is NOT fast. in private window, the DO is super fast. in current safari https://lmpify.com is slow (500+ms). figure out where it's located and how this is possible!? https://x.com/janwilmake/status/1922592298904219859 - potential solution; refresh access token after 24h so the DO doesn't stay slow, but gets refreshed; but need a proper transfer method for this too. It'd also be good to understand the problem better: log DO response time in `stripeflare` package with warning if its over 100ms?
 - 🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
 
 # High impact features:
 
 - `?q={EncodedString}` to pre-add context to homepage.
-- **pastebin**: paste large texts should turn into a URL to keep it easy to oversee the prompt.
+- **pastebin**: paste large texts should turn into a URL to keep it easy to oversee the prompt. use pastebin from `lmpify.pastebin/README.md`
 - **context cards**: for each link in the prompt, the frontend should have an api to render the context card for it which includes url, title, tokens, og-image, and more. these should be dynamically rendered below your prompt, and must be clear which belongs to which url somehow. when a prompt is pre-loaded, context cards may be pre-loaded from head JSON
 - **self-links**: result page should also render markdown when doing non-browser-based fetch or when adding `.md` similar to chatcompletions, prompt md should also be a link, context md also. Every codeblock should be available using the proper mediatype at `https://{slug}-{hash}.lmpify.com/{path}`. All links should be easy to find and add to the prompt.
 - **edit history**; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.

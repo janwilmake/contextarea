@@ -1,0 +1,8 @@
+{
+  "name": "cloudflare-kv-pastebin",
+  "version": "0.0.1",
+  "files": [
+    "pastebin.ts"
+  ],
+  "main": "pastebin.ts"
+}
