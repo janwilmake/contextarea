@@ -8,16 +8,15 @@ import {
 } from "stripeflare";
 export { DORM } from "stripeflare";
 //@ts-ignore
-import homepageHtml from "./homepage.html";
-//@ts-ignore
 import resultHtml from "./result.html";
+import { DurableObject } from "cloudflare:workers";
 
 /**
  * Extended environment interface including both stripeflare and original env variables
  */
 interface Env extends StripeflareEnv {
   RESULTS: KVNamespace; // KV namespace for storing results
-  SQL_STREAM_PROMPT_DO: DurableObjectNamespace; // Durable Object namespace
+  SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
   ANTHROPIC_SECRET: string;
   FREE_SECRET: string;
   SELF: Fetcher;
@@ -36,10 +35,10 @@ interface User extends StripeUser {
 interface KVData {
   prompt: string;
   model: string;
-  context?: string;
-  result: string;
+  context?: string | null;
+  result?: string;
   error?: string;
-  timestamp: number;
+  timestamp?: number;
 }
 
 /**
@@ -61,32 +60,75 @@ interface ModelConfig {
   premium?: boolean;
 }
 
-/**
- * Persistent state stored in Durable Object storage
- */
-interface StoredState {
-  pathname: string | null;
-  prompt: string | null;
-  modelConfig: ModelConfig | null;
-  context: string | null;
-  accumulatedData: string;
-  streamComplete: boolean;
-  error: string | null;
-  isProcessing: boolean;
-  initialized: boolean;
-}
+const generateContext = async (prompt: string) => {
+  // Extract URLs from prompt
+  const urlRegex =
+    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
+  const urls = prompt.match(urlRegex) || [];
 
+  let context: string | null = null;
+  let updatedPrompt = prompt;
+
+  if (urls.length === 0) {
+    return { updatedPrompt, context };
+  }
+
+  const urlResults = await Promise.all(
+    urls.map(async (url: string) => {
+      try {
+        const response = await fetch(url);
+
+        const isHtml = response.headers
+          .get("content-type")
+          ?.startsWith("text/html");
+        if (isHtml) {
+          return { url, text: "HTML urls are not supported", tokens: 0 };
+        }
+
+        const text = await response.text();
+        const tokens = Math.round(text.length / 5);
+        return { url, text, tokens };
+      } catch (error: any) {
+        return {
+          url,
+          text: `Failed to fetch: ${error.message}`,
+          tokens: 0,
+          failed: true,
+        };
+      }
+    }),
+  );
+
+  // Construct context
+  context = urlResults
+    .map(
+      ({ url, text, tokens }) =>
+        `${url} (${tokens} tokens) \n${text}\n------\n`,
+    )
+    .join("\n");
+
+  // Update prompt with token counts
+  urlResults.forEach(({ url, tokens, failed }) => {
+    if (!failed) {
+      updatedPrompt = updatedPrompt.replace(url, `${url} (${tokens} tokens)`);
+    }
+  });
+
+  return { updatedPrompt, context };
+};
 /**
  * Durable Object for handling streaming LLM responses
  */
-export class SQLStreamPromptDO {
+export class SQLStreamPromptDO extends DurableObject<Env> {
   private state: DurableObjectState;
-  private env: Env;
+  public env: Env;
   private activeControllers: ReadableStreamDefaultController<Uint8Array>[] = [];
   private encoder = new TextEncoder();
   private sql: any;
+  private accumulatedData: string = "";
 
   constructor(state: DurableObjectState, env: Env) {
+    super(state, env);
     this.state = state;
     this.env = env;
     this.sql = state.storage.sql;
@@ -127,130 +169,115 @@ export class SQLStreamPromptDO {
     }
   }
 
+  async setup(data: {
+    pathname: string;
+    prompt: string;
+    model: ModelConfig;
+    user?: User;
+  }) {
+    // Save each field to storage
+    this.set("pathname", data.pathname);
+    this.set("prompt", data.prompt);
+    this.set("modelConfig", data.model);
+    this.set("initialized", true);
+
+    // NB: Magic! already get started as soon as it is submitted
+    this.state.waitUntil(this.stream(data.user));
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  async details() {
+    const modelConfig = this.get<ModelConfig>("modelConfig");
+    const prompt = this.get<string>("prompt");
+    const context = this.get<string>("context");
+    return { prompt, model: modelConfig?.model, context };
+  }
+
+  stream = async (user: User | undefined) => {
+    const initialized = this.get<boolean>("initialized");
+
+    if (!initialized) {
+      console.log("NOT INITIALIZED");
+      return new Response("Not initialized", { status: 400 });
+    }
+
+    // Get stored state
+    const pathname = this.get<string>("pathname");
+    const prompt = this.get<string>("prompt");
+    const modelConfig = this.get<ModelConfig>("modelConfig");
+    const context = this.get<string>("context");
+    // const accumulatedData = this.get<string>("accumulatedData") || "";
+    const streamComplete = this.get<boolean>("streamComplete") || false;
+    const error = this.get<string>("error");
+    const isProcessing = this.get<boolean>("isProcessing") || false;
+
+    console.log(
+      "Starting SSE stream for:",
+      pathname,
+      prompt,
+      modelConfig?.model,
+    );
+
+    // Create SSE stream
+    const stream = new ReadableStream({
+      start: async (controller) => {
+        this.activeControllers.push(controller);
+
+        // Send initial state
+        await this.sendEvent(controller, "init", {
+          prompt,
+          model: modelConfig!.model,
+          context,
+          status: error ? "error" : streamComplete ? "complete" : "pending",
+          result: this.accumulatedData,
+          error,
+        });
+
+        // If already complete or error, close
+        if (streamComplete || error) {
+          controller.close();
+          return;
+        }
+
+        // If not already processing, start the stream
+        if (!isProcessing) {
+          this.set("isProcessing", true);
+          this.processRequest(user);
+        }
+      },
+      cancel: (controller) => {
+        // Remove controller when canceled
+        const index = this.activeControllers.indexOf(controller);
+        if (index > -1) {
+          this.activeControllers.splice(index, 1);
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*",
+      },
+    });
+  };
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
     try {
       // Handle initial setup from POST request
 
-      if (url.pathname === "/details") {
-        const modelConfig = this.get<ModelConfig>("modelConfig");
-        const prompt = this.get<string>("prompt");
-        return new Response(
-          JSON.stringify({ prompt, model: modelConfig?.model }),
-          { headers: { "content-type": "application/json" } },
-        );
-      }
-      if (request.method === "POST" && url.pathname === "/setup") {
-        const data: any = await request.json();
-
-        // Store the data in the Durable Object storage
-        const storedState: StoredState = {
-          pathname: data.pathname,
-          prompt: data.prompt,
-          modelConfig: data.model,
-          initialized: true,
-          accumulatedData: "",
-          streamComplete: false,
-          error: null,
-          isProcessing: false,
-          context: null,
-        };
-
-        // Save each field to storage
-        this.set("pathname", storedState.pathname);
-        this.set("prompt", storedState.prompt);
-        this.set("modelConfig", storedState.modelConfig);
-        this.set("initialized", storedState.initialized);
-        this.set("accumulatedData", storedState.accumulatedData);
-        this.set("streamComplete", storedState.streamComplete);
-        this.set("error", storedState.error);
-        this.set("isProcessing", storedState.isProcessing);
-        this.set("context", storedState.context);
-
-        console.log("Setup complete:", {
-          pathname: storedState.pathname,
-          prompt: storedState.prompt,
-          model: storedState.modelConfig?.model,
-        });
-
-        return new Response(JSON.stringify({ success: true }), {
-          headers: { "Content-Type": "application/json" },
-        });
-      }
-
       // Handle SSE stream requests
       if (request.method === "GET" && url.pathname === "/stream") {
-        const initialized = this.get<boolean>("initialized");
+        const user = await request.json<User>().catch(() => undefined);
 
-        if (!initialized) {
-          console.log("NOT INITIALIZED");
-          return new Response("Not initialized", { status: 400 });
-        }
-
-        // Get stored state
-        const pathname = this.get<string>("pathname");
-        const prompt = this.get<string>("prompt");
-        const modelConfig = this.get<ModelConfig>("modelConfig");
-        const context = this.get<string>("context");
-        const accumulatedData = this.get<string>("accumulatedData") || "";
-        const streamComplete = this.get<boolean>("streamComplete") || false;
-        const error = this.get<string>("error");
-        const isProcessing = this.get<boolean>("isProcessing") || false;
-
-        console.log(
-          "Starting SSE stream for:",
-          pathname,
-          prompt,
-          modelConfig?.model,
-        );
-
-        // Create SSE stream
-        const stream = new ReadableStream({
-          start: async (controller) => {
-            this.activeControllers.push(controller);
-
-            // Send initial state
-            await this.sendEvent(controller, "init", {
-              prompt,
-              model: modelConfig!.model,
-              context,
-              status: error ? "error" : streamComplete ? "complete" : "pending",
-              result: accumulatedData,
-              error,
-            });
-
-            // If already complete or error, close
-            if (streamComplete || error) {
-              controller.close();
-              return;
-            }
-
-            // If not already processing, start the stream
-            if (!isProcessing) {
-              this.set("isProcessing", true);
-              const user = await request.json().catch(() => ({}));
-              this.processRequest(user);
-            }
-          },
-          cancel: (controller) => {
-            // Remove controller when canceled
-            const index = this.activeControllers.indexOf(controller);
-            if (index > -1) {
-              this.activeControllers.splice(index, 1);
-            }
-          },
-        });
-
-        return new Response(stream, {
-          headers: {
-            "Content-Type": "text/event-stream",
-            "Cache-Control": "no-cache",
-            Connection: "keep-alive",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "*",
-          },
-        });
+        return this.stream(user);
       }
 
       return new Response("Not Found", { status: 404 });
@@ -260,68 +287,24 @@ export class SQLStreamPromptDO {
     }
   }
 
-  private async processRequest(user: any) {
+  private async processRequest(user?: User) {
     try {
       // Get stored state
       const prompt = this.get<string>("prompt");
       const modelConfig = this.get<ModelConfig>("modelConfig");
       const pathname = this.get<string>("pathname");
-      let accumulatedData = this.get<string>("accumulatedData") || "";
+      //  let accumulatedData = this.get<string>("accumulatedData") || "";
 
       if (!prompt || !modelConfig) {
         throw new Error("Missing required state");
       }
 
-      // Extract URLs from prompt
-      const urlRegex =
-        /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
-      const urls = prompt.match(urlRegex) || [];
-
-      let context: string | null = null;
-      let updatedPrompt = prompt;
+      const { updatedPrompt, context } = await generateContext(prompt);
 
       // Fetch all URLs in parallel
-      if (urls.length > 0) {
-        const urlResults = await Promise.all(
-          urls.map(async (url) => {
-            try {
-              const response = await fetch(url);
-              const text = await response.text();
-              const tokens = Math.round(text.length / 5);
-              return { url, text, tokens };
-            } catch (error: any) {
-              return {
-                url,
-                text: `Failed to fetch: ${error.message}`,
-                tokens: 0,
-                failed: true,
-              };
-            }
-          }),
-        );
-
-        // Construct context
-        context = urlResults
-          .map(
-            ({ url, text, tokens }) =>
-              `${url} (${tokens} tokens) \n${text}\n------\n`,
-          )
-          .join("\n");
-
+      if (context && updatedPrompt) {
         this.set("context", context);
-        console.log({ context });
-
-        // Update prompt with token counts
-        urlResults.forEach(({ url, tokens, failed }) => {
-          if (!failed) {
-            updatedPrompt = updatedPrompt.replace(
-              url,
-              `${url} (${tokens} tokens)`,
-            );
-          }
-        });
         this.set("prompt", updatedPrompt);
-
         // Send context update
         this.broadcastEvent("update", {
           field: "context",
@@ -408,8 +391,8 @@ export class SQLStreamPromptDO {
               }
 
               if (token) {
-                accumulatedData += token;
-                this.set("accumulatedData", accumulatedData);
+                this.accumulatedData += token;
+                //  this.set("accumulatedData", accumulatedData);
                 this.broadcastEvent("token", {
                   text: token,
                   position: position++,
@@ -466,11 +449,11 @@ export class SQLStreamPromptDO {
   private async handleStreamComplete() {
     this.set("streamComplete", true);
 
-    const accumulatedData = this.get<string>("accumulatedData") || "";
+    //  const accumulatedData = this.get<string>("accumulatedData") || "";
 
     // Send complete event
     this.broadcastEvent("complete", {
-      result: accumulatedData,
+      result: this.accumulatedData,
     });
 
     // Store in KV
@@ -484,7 +467,7 @@ export class SQLStreamPromptDO {
         prompt,
         model: modelConfig.model,
         context: context || undefined,
-        result: accumulatedData,
+        result: this.accumulatedData,
         timestamp: Date.now(),
       };
       await this.env.RESULTS.put(pathname, JSON.stringify(kvData));
@@ -541,6 +524,177 @@ export const migrations = {
   ],
 };
 
+const generateMetadataHtml = (kvData, url) => {
+  const { prompt = "", model = "", context = "" } = kvData;
+
+  // Create a title from the prompt (limit to first 60 chars)
+  const title = prompt.length > 60 ? prompt.substring(0, 57) + "..." : prompt;
+
+  // Create a description - use the prompt, but truncate if needed
+  const description =
+    prompt.length > 160 ? prompt.substring(0, 157) + "..." : prompt;
+
+  // Use the provided imageUrl or generate a default one if not provided
+  const domain = new URL(url).hostname;
+
+  return `
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${title} - ${domain}</title>
+<meta name="description" content="${description}" />
+<meta name="robots" content="index, follow" />
+
+<!-- Facebook/Open Graph Meta Tags -->
+<meta property="og:url" content="${url}" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="${title} - ${domain}" />
+<meta property="og:description" content="${description}" />
+<meta property="og:image" content="${url}" />
+<meta property="og:image:alt" content="${description}"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+
+<!-- Twitter Meta Tags -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:domain" content="${domain}" />
+<meta property="twitter:url" content="${url}" />
+<meta name="twitter:title" content="${title} - ${domain}" />
+<meta name="twitter:description" content="${description}" />
+<meta name="twitter:image" content="${url}" />
+
+`;
+};
+
+/*
+
+This implementation allows the following
+
+1. SEO Crawlers must be served SEO-friendly HTML at all cost
+2. The path may end with a segment with an extension such as .html, .md, or .json, as https://llmstxt.org suggests. This allows easy navigation when testing in browsers.
+3. If accept `*\/*` is provided (such as with some clis) it will default to text/markdown, which is desired for simple implementation with curl and fetch.
+4. If none of the above is true, it will use the accept header and find the first matching format, or return 'null' if no format matches.
+
+By default this function requires also supports yaml and png.
+
+- YAML is a great alternative to JSON since it's more information-dense than JSON.
+- PNG is used for retrieving the og-image, and is added to the default since og-images are an essential way to improve URL shareability.
+
+*/
+const getCrawler = (userAgent: string | null) => {
+  const crawlers = [
+    { name: "Facebook", userAgentRegex: /facebookexternalhit|Facebot/ },
+    { name: "Twitter", userAgentRegex: /Twitterbot/ },
+    { name: "LinkedIn", userAgentRegex: /LinkedInBot/ },
+    { name: "Slack", userAgentRegex: /Slackbot-LinkExpanding/ },
+    { name: "Discord", userAgentRegex: /Discordbot/ },
+    { name: "WhatsApp", userAgentRegex: /WhatsApp/ },
+    { name: "Telegram", userAgentRegex: /TelegramBot/ },
+    { name: "Pinterest", userAgentRegex: /Pinterest/ },
+    { name: "Google", userAgentRegex: /Googlebot/ },
+    { name: "Bing", userAgentRegex: /bingbot/ },
+  ];
+  const crawler = crawlers.find((item) =>
+    item.userAgentRegex.test(userAgent || ""),
+  )?.name;
+
+  return crawler;
+};
+
+const allowedFormats = {
+  md: "text/markdown",
+  html: "text/html",
+  json: "application/json",
+  yaml: "text/yaml",
+  png: "image/png",
+} as const;
+
+type AllowedFormat = (typeof allowedFormats)[keyof typeof allowedFormats];
+
+/** Useful function to determine what to respond with */
+export const getFormat = (request: Request): AllowedFormat | null => {
+  const accept = request.headers.get("accept") || "*/*";
+  const pathname = new URL(request.url).pathname;
+  const segmentChunks = pathname.split("/").pop()!.split(".");
+  const ext =
+    segmentChunks.length > 1
+      ? (segmentChunks.pop()! as AllowedFormat)
+      : undefined;
+
+  if (ext && Object.keys(allowedFormats).includes(ext)) {
+    // allow path to determine format. comes before crawler since this allows easy changing
+    return Object.entries(allowedFormats).find(
+      (entry) => entry[0] === ext,
+    )?.[1]!;
+  }
+
+  const crawler = getCrawler(request.headers.get("user-agent"));
+  if (crawler) {
+    return "text/html";
+  }
+
+  if (accept === "*/*") {
+    return "text/markdown";
+  }
+
+  const acceptedFormats = accept
+    .split(",")
+    .map((f) => f.trim().split(";")[0].trim());
+  const allowedFomat = acceptedFormats.find((format) =>
+    Object.values(allowedFormats).includes(format as AllowedFormat),
+  ) as AllowedFormat | undefined;
+
+  return allowedFomat || null;
+};
+
+const getResult = (
+  request: Request,
+  publicUser: Omit<User, "access_token"> | {},
+  data: KVData,
+  status: string,
+  headers: any,
+) => {
+  const format = getFormat(request);
+
+  if (format === "image/png") {
+    // TODO: respond with cached og-image here that comes from a DO as well as KV key (and prefetch its generation upon POST)
+  }
+
+  if (format === "text/markdown") {
+    // TODO: return markdown here which includes
+  }
+
+  // For API calls, return JSON
+  if (format === "application/json") {
+    headers.set("Content-Type", "application/json");
+    return new Response(JSON.stringify({ ...data, user: publicUser, status }), {
+      headers,
+    });
+  }
+
+  const { context, prompt, result, ...rest } = data;
+
+  // For browser, return HTML
+  let html = resultHtml;
+  const scriptData = {
+    context: context,
+    prompt: prompt,
+    result: result,
+    ...rest,
+    user: publicUser,
+    status,
+    streaming: status !== "complete",
+  };
+  html = html.replace(
+    "</head>",
+    `<script id="server-data" type="application/json">${JSON.stringify(
+      scriptData,
+    )}</script>${generateMetadataHtml(data, request.url)}</head>`,
+  );
+
+  headers.set("Content-Type", "text/html");
+  return new Response(html, { headers });
+};
+
 const requestHandler = async (
   request: Request,
   env: Env,
@@ -548,7 +702,22 @@ const requestHandler = async (
 ): Promise<Response> => {
   const url = new URL(request.url);
   const pathname = url.pathname;
-  const acceptHeader = request.headers.get("Accept");
+  const acceptHeader = request.headers.get("Accept") || "*/*";
+
+  // Get model configuration
+  const models: ModelConfig[] = [
+    {
+      model: "gpt-4.1-mini",
+      basePath: "https://api.openai.com/v1",
+      apiKey: env.FREE_SECRET,
+    },
+    {
+      model: "claude-3.7-sonnet",
+      basePath: "https://api.anthropic.com",
+      apiKey: env.ANTHROPIC_SECRET,
+      premium: true,
+    },
+  ];
 
   const t = Date.now();
   // Apply stripeflare middleware
@@ -566,8 +735,10 @@ const requestHandler = async (
     return result.response;
   }
 
+  const { user } = result;
   // Get user data from stripeflare
-  const { access_token, ...user } = (result.user || {}) as Partial<User>;
+  const { access_token, ...publicUser } = user || {};
+
   const headers = result.headers || new Headers();
 
   // Only accept POST and GET methods
@@ -578,56 +749,23 @@ const requestHandler = async (
   try {
     const t = Date.now();
     // Check if result already exists in KV
-    const existingData =
-      pathname === "/"
-        ? null
-        : ((await env.RESULTS.get(pathname, "json")) as KVData | null);
+    const existingData = (await env.RESULTS.get(
+      pathname,
+      "json",
+    )) as KVData | null;
     console.log({ kvRequestMs: Date.now() - t });
 
     if (existingData) {
-      // For API calls, return JSON
-      if (request.headers.get("Accept")?.includes("application/json")) {
-        headers.set("Content-Type", "application/json");
-        return new Response(
-          JSON.stringify({
-            ...existingData,
-            user,
-            status: "complete",
-          }),
-          { headers },
-        );
-      }
-
-      // For browser, return HTML
-      let html = resultHtml;
-      const scriptData = {
-        ...existingData,
-        user,
-        status: "complete",
-        streaming: false,
-      };
-      html = html.replace(
-        "</head>",
-        `<script>window.data = ${JSON.stringify(scriptData)};</script></head>`,
+      return getResult(
+        request,
+        publicUser,
+        existingData,
+        existingData.error ? "error" : "complete",
+        headers,
       );
-
-      headers.set("Content-Type", "text/html");
-      return new Response(html, { headers });
     }
 
     const isEventStream = acceptHeader?.includes("text/event-stream");
-
-    // If no existing data and it's a GET request, show the form
-    if (url.pathname === "/") {
-      let html = homepageHtml;
-      html = html.replace(
-        "</head>",
-        `<script>window.data = ${JSON.stringify({ user })};</script></head>`,
-      );
-
-      headers.set("Content-Type", "text/html");
-      return new Response(html, { headers });
-    }
 
     // Handle EventSource GET requests
     if (request.method === "GET" && isEventStream) {
@@ -658,9 +796,13 @@ const requestHandler = async (
     // Get or create Durable Object
     const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathname);
     const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+
+    const result = await doStub.details();
+
     let model: string | undefined = undefined;
     let prompt: string | undefined = undefined;
-    if (request.method === "POST") {
+    let context: string | null | undefined = undefined;
+    if (request.method === "POST" && !result.prompt) {
       const formData = await request.formData();
       prompt = formData?.get("prompt")?.toString();
       const modelName = formData?.get("model")?.toString();
@@ -670,71 +812,36 @@ const requestHandler = async (
         return new Response("Missing prompt", { status: 400, headers });
       }
 
-      // Get model configuration
-      const models: ModelConfig[] = [
-        {
-          model: "gpt-4.1-mini",
-          basePath: "https://api.openai.com/v1",
-          apiKey: env.FREE_SECRET,
-        },
-        {
-          model: "claude-3.7-sonnet",
-          basePath: "https://api.anthropic.com",
-          apiKey: env.ANTHROPIC_SECRET,
-          premium: true,
-        },
-      ];
-
       const modelConfig =
         models.find((m) => m.model === modelName) || models[0];
 
       model = modelConfig?.model;
 
       // Check balance for premium models
-      if (modelConfig.premium && (!user.balance || user.balance <= 0)) {
+      if (modelConfig.premium && (!user?.balance || user.balance <= 0)) {
         return new Response("Payment required", { status: 402, headers });
       }
-      // Setup the Durable Object with the request data
-      const setupRequest = new Request("https://do/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pathname,
-          prompt,
-          model: modelConfig,
-          user,
-        }),
+
+      await doStub.setup({
+        pathname,
+        prompt,
+        model: modelConfig,
+        user,
       });
-
-      await doStub.fetch(setupRequest);
     } else {
-      const result: { prompt: string; model: string } = await doStub
-        .fetch(new Request("https://do/details"))
-        .then((res) => res.json());
-
-      prompt = result.prompt;
+      prompt = result.prompt!;
       model = result.model;
+      context = result.context;
       console.log("GET METHOD got details", { prompt, model });
     }
 
-    // Return HTML that will connect via EventSource
-    let html = resultHtml;
-    const scriptData = {
-      pathname,
-      prompt,
-      model,
-      user,
-      status: "pending",
-      streaming: true,
-    };
-
-    html = html.replace(
-      "</head>",
-      `<script>window.data = ${JSON.stringify(scriptData)};</script></head>`,
+    return getResult(
+      request,
+      publicUser,
+      { model: model || models[0].model, prompt, context },
+      "pending",
+      headers,
     );
-
-    headers.set("Content-Type", "text/html");
-    return new Response(html, { headers });
   } catch (error) {
     console.error("Error in fetch handler:", error);
     return new Response("Internal server error", { status: 500, headers });
@@ -786,6 +893,7 @@ export default {
         const formData = new FormData();
         formData.append("prompt", promptText);
 
+        // we do the request internally here
         const postResponse = await requestHandler(
           new Request(new URL(url.origin + path), {
             method: "POST",

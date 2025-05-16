@@ -573,9 +573,12 @@
     createModal(container) {
       container.innerHTML = createModalHTML(MODELS, this.selectedModelId);
 
+      const textContent = document.getElementById("server-data").textContent;
+      const data = textContent ? JSON.parse(textContent) : undefined;
+
       document.getElementById(
         "paymentLink",
-      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${window.data.user?.client_reference_id}`;
+      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${data?.user?.client_reference_id}`;
 
       this.modalElement = document.getElementById("modelModalBackdrop");
     }

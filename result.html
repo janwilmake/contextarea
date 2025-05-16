@@ -2,9 +2,6 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>lmpify.com - Result</title>
     <style>
         * {
             margin: 0;
@@ -404,8 +401,8 @@
 
     <script src="./model-modal.js"></script>
     <script>
-        // Get the initial data from window.data (injected by the worker)
-        let data = window.data || {};
+        const data = JSON.parse(document.getElementById('server-data').textContent);
+        console.log({ data })
         let eventSource = null;
         let currentResult = "";
         let isStreaming = false;
