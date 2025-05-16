@@ -1,6 +1,7 @@
 // @ts-check
 /// <reference types="@cloudflare/workers-types" />
 
+import { ImageResponse } from "workers-og";
 import {
   Env as StripeflareEnv,
   stripeBalanceMiddleware,
@@ -524,18 +525,64 @@ export const migrations = {
   ],
 };
 
-const generateMetadataHtml = (kvData, url) => {
-  const { prompt = "", model = "", context = "" } = kvData;
+/**
+ * Sanitizes strings for use in HTML metadata (title, description)
+ * - Removes HTML tags
+ * - Escapes special characters
+ * - Removes newlines and excess whitespace
+ * - Trims to specified length
+ *
+ * @param {string} str - The string to sanitize
+ * @param {number} maxLength - Maximum length to truncate to
+ * @return {string} - Sanitized string
+ */
+function sanitizeMetadataString(str, maxLength = 160) {
+  if (!str || typeof str !== "string") return "";
 
+  // Remove HTML tags
+  let sanitized = str.replace(/<[^>]*>/g, "");
+
+  // Replace newlines and tabs with spaces
+  sanitized = sanitized.replace(/[\r\n\t]+/g, " ");
+
+  // Replace multiple spaces with single space
+  sanitized = sanitized.replace(/\s+/g, " ");
+
+  // Escape special characters
+  sanitized = sanitized
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+  // Trim and limit length
+  sanitized = sanitized.trim();
+  if (sanitized.length > maxLength) {
+    sanitized = sanitized.substring(0, maxLength - 3) + "...";
+  }
+
+  return sanitized;
+}
+const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
+  const { prompt = "", model = "", context = "" } = kvData;
+  const url = new URL(requestUrl);
+  const tokens = Math.round((context || prompt).length / 5);
   // Create a title from the prompt (limit to first 60 chars)
-  const title = prompt.length > 60 ? prompt.substring(0, 57) + "..." : prompt;
+  const rawTitle =
+    `Prompt with ${tokens} tokens - ` +
+    (prompt.length > 40 ? prompt.substring(0, 37) + "..." : prompt);
 
   // Create a description - use the prompt, but truncate if needed
-  const description =
-    prompt.length > 160 ? prompt.substring(0, 157) + "..." : prompt;
+  const rawDescription = prompt;
+
+  // Sanitize the title and description
+  const title = sanitizeMetadataString(rawTitle, 60);
+  const description = sanitizeMetadataString(rawDescription, 160);
 
   // Use the provided imageUrl or generate a default one if not provided
-  const domain = new URL(url).hostname;
+  const domain = url.hostname;
+  const ogImageUrl = `https://${url.hostname}${url.pathname}.png`;
 
   return `
 <meta charset="UTF-8">
@@ -549,7 +596,7 @@ const generateMetadataHtml = (kvData, url) => {
 <meta property="og:type" content="website" />
 <meta property="og:title" content="${title} - ${domain}" />
 <meta property="og:description" content="${description}" />
-<meta property="og:image" content="${url}" />
+<meta property="og:image" content="${ogImageUrl}" />
 <meta property="og:image:alt" content="${description}"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
@@ -560,7 +607,7 @@ const generateMetadataHtml = (kvData, url) => {
 <meta property="twitter:url" content="${url}" />
 <meta name="twitter:title" content="${title} - ${domain}" />
 <meta name="twitter:description" content="${description}" />
-<meta name="twitter:image" content="${url}" />
+<meta name="twitter:image" content="${ogImageUrl}" />
 
 `;
 };
@@ -646,7 +693,22 @@ export const getFormat = (request: Request): AllowedFormat | null => {
   return allowedFomat || null;
 };
 
-const getResult = (
+/**
+ * Safely embeds data in a script tag for client-side consumption
+ * This approach properly handles JSON stringification first
+ */
+function safelyEmbedDataInScriptTag(data: any): string {
+  // First convert data to a JSON string
+  const jsonString = JSON.stringify(data);
+
+  // Then only escape the specific sequences that would close a script tag
+  // No need to escape <!-- as JSON.stringify already handles quotes and special chars
+  const escapedContent = jsonString.replace(/<\/script/gi, "<\\/script");
+
+  return `<script id="server-data" type="application/json">${escapedContent}</script>`;
+}
+
+const getResult = async (
   request: Request,
   publicUser: Omit<User, "access_token"> | {},
   data: KVData,
@@ -654,13 +716,125 @@ const getResult = (
   headers: any,
 ) => {
   const format = getFormat(request);
+  const url = new URL(request.url);
 
+  // For OG image
   if (format === "image/png") {
-    // TODO: respond with cached og-image here that comes from a DO as well as KV key (and prefetch its generation upon POST)
+    const tokens = Math.round(
+      (data.context?.length || 0 + data.prompt.length) / 5,
+    );
+    const hostname = url.hostname;
+
+    // Extract a preview of the prompt - display first 140 chars
+    const promptPreview =
+      data.prompt.length > 140
+        ? data.prompt.substring(0, 137) + "..."
+        : data.prompt;
+
+    // Ensure all divs have display: flex and only using inline styles
+    const ogHtml = `<div style="display: flex; width: 1200px; height: 630px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
+    <div style="display: flex; flex-direction: column; background-color: #2a2a2a; width: 100%; height: 100%; padding: 40px;">
+      
+      <!-- Header row -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; width: 36px; height: 36px; background-color: #feca57; border-radius: 18px; margin-right: 12px;"></div>
+        <div style="display: flex; font-size: 28px; color: #e5e5e5; opacity: 0.8;">Let me prompt it for you! </div>
+        <div style="display: flex; color: #b5b5b5; font-size: 24px; opacity: 0.8;">${new Date().toLocaleDateString()}</div>
+      </div>
+      
+      <!-- Main content area -->
+      <div style="display: flex; flex-direction: column; justify-content: center; flex: 1;">
+        <!-- Prompt container -->
+        <div style="display: flex; background-color: #3a3a3a; border-radius: 12px; padding: 30px; margin-bottom: 40px; border-left: 6px solid #feca57;">
+          <div style="display: flex; width: 100%;">
+            <p style="display: flex; flex-direction: column; color: #e5e5e5; font-size: 32px; line-height: 1.4; margin: 0; font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; width: 100%;">"${promptPreview}"</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Stats footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <!-- Token count -->
+        <div style="display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; font-size: 80px; font-weight: bold; color: #feca57;">${tokens.toLocaleString()}</div>
+          <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">PROMPT TOKENS</div>
+        </div>
+  
+         <div style="display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; font-size: 80px; font-weight: bold; color: #4a9eff;">${tokens.toLocaleString()}</div>
+          <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">CONTEXT TOKENS</div>
+        </div>
+  
+         <div style="display: flex; flex-direction: column; align-items: flex-start;">
+          <div style="display: flex; font-size: 80px; font-weight: bold; color: #e5e5e5;">${tokens.toLocaleString()}</div>
+          <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">RESULT TOKENS</div>
+        </div>
+        
+      </div>
+    </div>
+  </div>`;
+    // Generate the image using ImageResponse from workers-og
+    try {
+      console.log("Generating OG image");
+
+      const imageResponse = new ImageResponse(ogHtml, {
+        width: 1200,
+        height: 630,
+        format: "png",
+        debug: true,
+      });
+
+      // Ensure proper headers are set
+      const imageHeaders = new Headers(headers);
+      imageHeaders.set("Content-Type", "image/png");
+      imageHeaders.set("Cache-Control", "public, max-age=86400");
+
+      console.log("OG image generated successfully");
+
+      return new Response(imageResponse.body, {
+        headers: imageHeaders,
+        status: 200,
+      });
+    } catch (error) {
+      console.error("Error generating OG image:", error);
+      headers.set("Content-Type", "text/plain");
+      return new Response("Error generating image: " + error.message, {
+        status: 500,
+        headers,
+      });
+    }
   }
 
+  // For Markdown format
   if (format === "text/markdown") {
-    // TODO: return markdown here which includes
+    headers.set("Content-Type", "text/markdown");
+
+    let markdownResponse = `# ${url.pathname}\n\n`;
+
+    // Add prompt section
+    markdownResponse += "## Prompt\n\n```prompt.md\n";
+    markdownResponse += data.prompt;
+    markdownResponse += "\n```\n\n";
+
+    // Add context section if available
+    if (data.context) {
+      markdownResponse += "## Context\n\n```context.md\n";
+      markdownResponse += data.context;
+      markdownResponse += "\n```\n\n";
+    }
+
+    // Add result section if available
+    if (data.result) {
+      markdownResponse += "## Result\n\n```result.md\n";
+      markdownResponse += data.result;
+      markdownResponse += "\n```\n\n";
+    } else {
+      markdownResponse += "## Status\n\n";
+      markdownResponse += `Status: ${status}\n`;
+      markdownResponse += `Model: ${data.model}\n`;
+    }
+
+    return new Response(markdownResponse, { headers });
   }
 
   // For API calls, return JSON
@@ -686,9 +860,10 @@ const getResult = (
   };
   html = html.replace(
     "</head>",
-    `<script id="server-data" type="application/json">${JSON.stringify(
-      scriptData,
-    )}</script>${generateMetadataHtml(data, request.url)}</head>`,
+    `${safelyEmbedDataInScriptTag(scriptData)}${generateMetadataHtml(
+      data,
+      request.url,
+    )}</head>`,
   );
 
   headers.set("Content-Type", "text/html");
@@ -746,11 +921,13 @@ const requestHandler = async (
     return new Response("Method not allowed", { status: 405, headers });
   }
 
+  const pathnameWithoutExt = pathname.split(".")[0];
+
   try {
     const t = Date.now();
     // Check if result already exists in KV
     const existingData = (await env.RESULTS.get(
-      pathname,
+      pathnameWithoutExt,
       "json",
     )) as KVData | null;
     console.log({ kvRequestMs: Date.now() - t });
@@ -769,7 +946,7 @@ const requestHandler = async (
 
     // Handle EventSource GET requests
     if (request.method === "GET" && isEventStream) {
-      const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathname);
+      const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
       const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
 
       // Connect to the Durable Object SSE stream
@@ -794,7 +971,7 @@ const requestHandler = async (
     // Process POST request
 
     // Get or create Durable Object
-    const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathname);
+    const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
     const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
 
     const result = await doStub.details();
@@ -823,7 +1000,7 @@ const requestHandler = async (
       }
 
       await doStub.setup({
-        pathname,
+        pathname: pathnameWithoutExt,
         prompt,
         model: modelConfig,
         user,

@@ -573,8 +573,8 @@
     createModal(container) {
       container.innerHTML = createModalHTML(MODELS, this.selectedModelId);
 
-      const textContent = document.getElementById("server-data").textContent;
-      const data = textContent ? JSON.parse(textContent) : undefined;
+      //const textContent = document.getElementById("server-data").textContent;
+      const data = undefined; // textContent ? JSON.parse(textContent) : undefined;
 
       document.getElementById(
         "paymentLink",
