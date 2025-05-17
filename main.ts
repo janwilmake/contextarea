@@ -183,7 +183,11 @@ const generateContext = async (prompt: string) => {
           ?.startsWith("text/html");
 
         if (isHtml) {
-          return { url, text: "HTML urls are not supported", tokens: 0 };
+          return {
+            url,
+            text: "HTML urls are not supported. To easily turn HTML URL into a markdown URL, please use: https://jina.ai/reader/ (prepend https://r.jina.ai/ to any URL)",
+            tokens: 0,
+          };
         }
 
         const text = await response.text();
