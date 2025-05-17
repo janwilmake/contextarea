@@ -168,6 +168,7 @@ const generateContext = async (prompt: string) => {
     return { context };
   }
 
+  let hasHtml = false;
   const urlResults = await Promise.all(
     urls.map(async (url: string) => {
       try {
@@ -183,9 +184,10 @@ const generateContext = async (prompt: string) => {
           ?.startsWith("text/html");
 
         if (isHtml) {
+          hasHtml = true;
           return {
             url,
-            text: "HTML urls are not supported. To easily turn HTML URL into a markdown URL, please use: https://jina.ai/reader/ (prepend https://r.jina.ai/ to any URL). If you need this context for the prompt, please notify the user.",
+            text: "HTML urls are not supported",
             tokens: 0,
           };
         }
@@ -211,6 +213,12 @@ const generateContext = async (prompt: string) => {
         `${url} (${tokens} tokens) \n${text}\n------\n`,
     )
     .join("\n");
+
+  if (hasHtml) {
+    context =
+      context +
+      "\n\nThere were one of more URLs pasted that returned HTML. If these URLs are needed to answer the user request, please instruct the user to use https://r.jina.ai/{THE-URL-HERE} in the prompt instead.";
+  }
 
   return { context };
 };
