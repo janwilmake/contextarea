@@ -501,7 +501,9 @@
       // Create container
       const container = document.getElementById("model-modal");
       if (!container) {
-        console.error("Model modal container not found");
+        // retry after 100ms
+        setTimeout(() => this.init(), 100);
+        // console.error("Model modal container not found");
         return;
       }
 

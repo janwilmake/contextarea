@@ -37,24 +37,26 @@ Shorter flow:be the product
 - ✅ Ability to copy codeblocks.
 - ✅ Mobile friendly ✅ `result.html` ✅ `index.html`
 - ✅ Ensure geneated title is also based on context, not just prompt
+- ✅ Fix annoying JSON parser bug when having `</script>` https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake
+- ✅ Modularize the code! makes it a bit cleaner and more readable.
 
 # Monetisation
 
+- Create endpoint to run middleware and return userdata and use that in `model-modal.js` to show user information in there. Also show balance, making it bigger/red when low.
+- Return 402 in a way that shows it as
 - Count free requests at user-level, give max 10 total free requests.
 - Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
 - Ensure pricing is properly applied. Confirm monetisation works.
-- Handle 402 gracefully. In model selection, show balance, making it bigger/red when low.
 
 💪 TODO: 1) ✅ purify prompt/context, 2) ❌ make claude & freemium monetisation work 3) ✅ make og-data work! It's usable now for myself and to share results easily!
-
-# JSON Parse
-
-- Fix annoying JSON parser bug when having `</script>`
-- https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake <-- still no good
 
 # Fix uuithub
 
 https://contextbuilding.com/janwilmake/dorm the uuithub links must work! Show result after to Christian Cazzaza.
+
+For this I need to pass API key to uithub
+
+For this I need to allow devs to create an API key for uithub they can use in their apps
 
 # Launch
 

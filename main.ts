@@ -316,7 +316,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     const prompt = this.get<string>("prompt");
     const modelConfig = this.get<ModelConfig>("modelConfig");
     const context = this.get<string>("context");
-    // const accumulatedData = this.get<string>("accumulatedData") || "";
     const streamComplete = this.get<boolean>("streamComplete") || false;
     const error = this.get<string>("error");
     const isProcessing = this.get<boolean>("isProcessing") || false;
@@ -401,7 +400,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const prompt = this.get<string>("prompt");
       const modelConfig = this.get<ModelConfig>("modelConfig");
       const pathname = this.get<string>("pathname");
-      //  let accumulatedData = this.get<string>("accumulatedData") || "";
 
       if (!prompt || !modelConfig || !pathname) {
         throw new Error("Missing required state");
@@ -515,7 +513,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
               if (token) {
                 this.accumulatedData += token;
-                //  this.set("accumulatedData", accumulatedData);
                 this.broadcastEvent("token", {
                   text: token,
                   position: position++,
@@ -571,8 +568,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async handleStreamComplete() {
     this.set("streamComplete", true);
-
-    //  const accumulatedData = this.get<string>("accumulatedData") || "";
 
     // Send complete event
     this.broadcastEvent("complete", {
@@ -635,7 +630,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   }
 }
 
-export const migrations = {
+const migrations = {
   1: [
     `CREATE TABLE users (
       access_token TEXT PRIMARY KEY,
@@ -1105,6 +1100,7 @@ const requestHandler = async (
     let model: string | undefined = undefined;
     let prompt: string | undefined = undefined;
     let context: string | null | undefined = undefined;
+
     if (request.method === "POST" && !result.prompt) {
       const formData = await request.formData();
       prompt = formData?.get("prompt")?.toString();
