@@ -36,6 +36,7 @@ Shorter flow:be the product
 - ✅ Added proper markdown highlighting
 - ✅ Ability to copy codeblocks.
 - ✅ Mobile friendly ✅ `result.html` ✅ `index.html`
+- ✅ Ensure geneated title is also based on context, not just prompt
 
 # Monetisation
 

@@ -1132,7 +1132,7 @@
             const promptText = promptTextarea.value.trim();
             if (promptText) {
                 const currentPath = window.location.pathname;
-                window.location.href = `https://lmpify.com/?q=${encodeURIComponent(window.location.origin + currentPath)}.md`;
+                window.location.href = `https://lmpify.com/?q=${encodeURIComponent(`Previous Prompt:\n\n${window.location.origin + currentPath + ".md"}\n\n------\n\n`)}`;
             }
         });
 
