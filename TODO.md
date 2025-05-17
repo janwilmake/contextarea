@@ -39,6 +39,7 @@ Shorter flow:be the product
 - ✅ Ensure geneated title is also based on context, not just prompt
 - ✅ Fix annoying JSON parser bug when having `</script>` https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake
 - ✅ Modularize the code! makes it a bit cleaner and more readable.
+- ✅ added html viewer and collapsible stored on user level
 
 # Monetisation
 
