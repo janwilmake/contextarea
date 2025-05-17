@@ -58,7 +58,7 @@ If usable, start using it instead of Claude.
 
 Proposed flow:
 
-1. make post on x
+1. make post on X
 2. use xymake url and a prompt
 3. now get resulting files and a cli to paste them into cwd
 

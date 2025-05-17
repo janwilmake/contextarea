@@ -1218,26 +1218,6 @@
             window.open(`${window.location.origin}${currentPath}.md?key=result`, '_blank');
         });
 
-        // Show/hide Open Result button same as Copy button
-        function updateOpenResultButtonVisibility() {
-            if (data.result) {
-                openResultButton.style.display = 'flex';
-            } else {
-                openResultButton.style.display = 'none';
-            }
-        }
-
-        // Update Open Result button when copy button visibility changes
-        const originalDisplaySetter = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'style').set;
-        Object.defineProperty(copyButton.style, 'display', {
-            set: function (value) {
-                originalDisplaySetter.call(this, value);
-                updateOpenResultButtonVisibility();
-            }
-        });
-
-        // Initial visibility
-        updateOpenResultButtonVisibility();
 
         function setupMobileScrolling() {
             // Only apply on mobile screens
