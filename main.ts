@@ -13,6 +13,100 @@ import resultHtml from "./result.html";
 import { DurableObject } from "cloudflare:workers";
 
 /**
+ * Generates a catchy title for an AI interaction using OpenAI's GPT-4.1 Mini
+ * Silently falls back to a default title if any errors occur
+ */
+async function generateTitleWithAI(
+  contextContent,
+  apiKey,
+): Promise<{ title: string; description: string }> {
+  // Default response in case of any errors
+  const defaultResponse = {
+    title: "AI Conversation",
+    description: "Generated conversation summary",
+  };
+
+  // Guard against missing API key
+  if (!apiKey) {
+    console.warn("OpenAI API key is missing");
+    return defaultResponse;
+  }
+
+  try {
+    // Construct the title generation prompt
+    const titlePrompt = `Generate a catchy, concise title (maximum 60 characters) that captures the essence of this complete AI interaction. Consider all components below to create a title that represents the full journey and value provided.
+  
+  Format your response as:
+  
+  \`\`\`json
+  {
+    "title": "Your Compelling Title Here",
+    "description": "A one-sentence explanation of why this title works (for my reference)"
+  }
+  \`\`\`${contextContent}`;
+
+    // Make the API request to OpenAI
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini", // Using GPT-4.1 Mini model
+        messages: [{ role: "user", content: titlePrompt }],
+        temperature: 0.7,
+      }),
+    });
+
+    // If request failed, log warning and return default
+    if (!response.ok) {
+      const errorData: any = await response.json().catch(() => ({}));
+      console.warn(
+        `OpenAI API error: ${errorData.error?.message || response.statusText}`,
+      );
+      return defaultResponse;
+    }
+
+    // Parse the response
+    const data: any = await response.json();
+    const aiResponse = data.choices[0].message.content;
+
+    // Extract JSON from the first code block
+    const jsonMatch = aiResponse.match(/```json\s*([\s\S]*?)\s*```/);
+
+    if (!jsonMatch) {
+      // Try to find any code block if json-specific one isn't found
+      const codeBlockMatch = aiResponse.match(
+        /```(?:\w*\s*)?\s*([\s\S]*?)\s*```/,
+      );
+
+      if (!codeBlockMatch) {
+        console.warn("Could not find JSON data in the AI response");
+        return defaultResponse;
+      }
+
+      try {
+        return JSON.parse(codeBlockMatch[1]);
+      } catch (e) {
+        console.warn(`Invalid JSON in AI response: ${e.message}`);
+        return defaultResponse;
+      }
+    }
+
+    try {
+      return JSON.parse(jsonMatch[1]);
+    } catch (e) {
+      console.warn(`Invalid JSON in AI response: ${e.message}`);
+      return defaultResponse;
+    }
+  } catch (error) {
+    console.warn("Error generating title:", error);
+    return defaultResponse;
+  }
+}
+
+/**
  * Extended environment interface including both stripeflare and original env variables
  */
 interface Env extends StripeflareEnv {
@@ -36,6 +130,7 @@ interface User extends StripeUser {
 interface KVData {
   prompt: string;
   model: string;
+  headline?: string;
   context?: string | null;
   result?: string;
   error?: string;
@@ -70,18 +165,24 @@ const generateContext = async (prompt: string) => {
   let context: string | null = null;
   let updatedPrompt = prompt;
 
-  if (urls.length === 0) {
+  if (urls?.length === 0) {
     return { updatedPrompt, context };
   }
 
   const urlResults = await Promise.all(
     urls.map(async (url: string) => {
       try {
-        const response = await fetch(url);
+        const realUrl = url.startsWith("https://github.com/")
+          ? url.replace("github", "uithub")
+          : url.startsWith("https://x.com")
+          ? url.replace("x.com", "xymake.com")
+          : url;
+        const response = await fetch(realUrl);
 
         const isHtml = response.headers
           .get("content-type")
           ?.startsWith("text/html");
+
         if (isHtml) {
           return { url, text: "HTML urls are not supported", tokens: 0 };
         }
@@ -183,7 +284,21 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.set("initialized", true);
 
     // NB: Magic! already get started as soon as it is submitted
-    this.state.waitUntil(this.stream(data.user));
+    this.state.waitUntil(
+      Promise.all([
+        this.stream(data.user),
+        generateTitleWithAI(
+          getMarkdownResponse(data.pathname, {
+            model: data.model.model,
+            prompt: data.prompt,
+          }),
+          this.env.FREE_SECRET,
+        ).then((data) => {
+          console.log("GOT HEADLINE", data.title);
+          this.set("headline", data.title);
+        }),
+      ]),
+    );
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -193,7 +308,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     const modelConfig = this.get<ModelConfig>("modelConfig");
     const prompt = this.get<string>("prompt");
     const context = this.get<string>("context");
-    return { prompt, model: modelConfig?.model, context };
+    const headline = this.get<string>("headline");
+    return { prompt, model: modelConfig?.model, context, headline };
   }
 
   stream = async (user: User | undefined) => {
@@ -462,6 +578,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     const prompt = this.get<string>("prompt");
     const modelConfig = this.get<ModelConfig>("modelConfig");
     const context = this.get<string>("context");
+    const headline = this.get<string>("headline") || undefined;
 
     if (pathname && prompt && modelConfig) {
       const kvData: KVData = {
@@ -470,6 +587,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         context: context || undefined,
         result: this.accumulatedData,
         timestamp: Date.now(),
+        headline,
       };
       await this.env.RESULTS.put(pathname, JSON.stringify(kvData));
     }
@@ -565,7 +683,7 @@ function sanitizeMetadataString(str, maxLength = 160) {
   return sanitized;
 }
 const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
-  const { prompt = "", model = "", context = "" } = kvData;
+  const { prompt = "", model = "", context = "", headline } = kvData;
   const url = new URL(requestUrl);
   const tokens = Math.round((context || prompt).length / 5);
   // Create a title from the prompt (limit to first 60 chars)
@@ -574,10 +692,11 @@ const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
     (prompt.length > 40 ? prompt.substring(0, 37) + "..." : prompt);
 
   // Create a description - use the prompt, but truncate if needed
-  const rawDescription = prompt;
+  const rawDescription =
+    prompt.substring(0, 140) + (prompt.length > 140 ? "..." : "");
 
   // Sanitize the title and description
-  const title = sanitizeMetadataString(rawTitle, 60);
+  const title = sanitizeMetadataString(headline || rawTitle, 60);
   const description = sanitizeMetadataString(rawDescription, 160);
 
   // Use the provided imageUrl or generate a default one if not provided
@@ -703,11 +822,50 @@ function safelyEmbedDataInScriptTag(data: any): string {
 
   // Then only escape the specific sequences that would close a script tag
   // No need to escape <!-- as JSON.stringify already handles quotes and special chars
-  const escapedContent = jsonString.replace(/<\/script/gi, "<\\/script");
+  const escapedContent = jsonString
+    .replace(/<\/script/gi, "<\\/script")
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
 
   return `<script id="server-data" type="application/json">${escapedContent}</script>`;
 }
 
+const getMarkdownResponse = (
+  pathname: string,
+  data: KVData,
+  key?: string | null,
+) => {
+  if (key) {
+    // allow returning a specific key
+    return data[key];
+  }
+
+  let markdownResponse = `# ${data.headline || pathname}\n\n`;
+
+  // Add prompt section
+  markdownResponse += "## Prompt\n\n```prompt.md\n";
+  markdownResponse += data.prompt;
+  markdownResponse += "\n```\n\n";
+
+  // Add context section if available
+  if (data.context) {
+    markdownResponse += "## Context\n\n```context.md\n";
+    markdownResponse += data.context;
+    markdownResponse += "\n```\n\n";
+  }
+
+  // Add result section if available
+  if (data.result) {
+    markdownResponse += "## Result\n\n```result.md\n";
+    markdownResponse += data.result;
+    markdownResponse += "\n```\n\n";
+  } else {
+    markdownResponse += "## Status\n\n";
+    markdownResponse += `Model: ${data.model}\n`;
+  }
+  return markdownResponse;
+};
 const getResult = async (
   request: Request,
   publicUser: Omit<User, "access_token"> | {},
@@ -720,23 +878,23 @@ const getResult = async (
 
   // For OG image
   if (format === "image/png") {
-    const tokens = Math.round(
-      (data.context?.length || 0 + data.prompt.length) / 5,
-    );
-    const hostname = url.hostname;
+    const promptTokens = Math.round(data.prompt.length / 5);
+    const contextTokens = Math.round((data.context?.length || 0) / 5);
+    const resultTokens = Math.round((data.result?.length || 0) / 5);
 
-    // Extract a preview of the prompt - display first 140 chars
-    const promptPreview =
-      data.prompt.length > 140
-        ? data.prompt.substring(0, 137) + "..."
-        : data.prompt;
+    // Extract a preview of the prompt - display first 40 chars
+    const headline =
+      data.headline ||
+      (data.prompt.length > 40
+        ? data.prompt.substring(0, 40) + "..."
+        : data.prompt);
 
     // Ensure all divs have display: flex and only using inline styles
     const ogHtml = `<div style="display: flex; width: 1200px; height: 630px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
-    <div style="display: flex; flex-direction: column; background-color: #2a2a2a; width: 100%; height: 100%; padding: 40px;">
+    <div style="display: flex; flex-direction: column; background-color: #2a2a2a; width: 100%; height: 100%; padding: 40px; padding-bottom: 90px;">
       
       <!-- Header row -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
         <div style="display: flex; width: 36px; height: 36px; background-color: #feca57; border-radius: 18px; margin-right: 12px;"></div>
         <div style="display: flex; font-size: 28px; color: #e5e5e5; opacity: 0.8;">Let me prompt it for you! </div>
         <div style="display: flex; color: #b5b5b5; font-size: 24px; opacity: 0.8;">${new Date().toLocaleDateString()}</div>
@@ -745,9 +903,9 @@ const getResult = async (
       <!-- Main content area -->
       <div style="display: flex; flex-direction: column; justify-content: center; flex: 1;">
         <!-- Prompt container -->
-        <div style="display: flex; background-color: #3a3a3a; border-radius: 12px; padding: 30px; margin-bottom: 40px; border-left: 6px solid #feca57;">
+        <div style="display: flex; background-color: #3a3a3a; border-radius: 12px; padding: 30px; margin-bottom: 20px; border-left: 6px solid #feca57;">
           <div style="display: flex; width: 100%;">
-            <p style="display: flex; flex-direction: column; color: #e5e5e5; font-size: 32px; line-height: 1.4; margin: 0; font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; width: 100%;">"${promptPreview}"</p>
+            <p style="display: flex; flex-direction: column; color: #e5e5e5; font-size: 64px; margin: 0; font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; width: 100%;">${headline}</p>
           </div>
         </div>
       </div>
@@ -756,17 +914,17 @@ const getResult = async (
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <!-- Token count -->
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
-          <div style="display: flex; font-size: 80px; font-weight: bold; color: #feca57;">${tokens.toLocaleString()}</div>
+          <div style="display: flex; font-size: 80px; font-weight: bold; color: #feca57;">${promptTokens.toLocaleString()}</div>
           <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">PROMPT TOKENS</div>
         </div>
   
          <div style="display: flex; flex-direction: column; align-items: flex-start;">
-          <div style="display: flex; font-size: 80px; font-weight: bold; color: #4a9eff;">${tokens.toLocaleString()}</div>
+          <div style="display: flex; font-size: 80px; font-weight: bold; color: #4a9eff;">${contextTokens.toLocaleString()}</div>
           <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">CONTEXT TOKENS</div>
         </div>
   
          <div style="display: flex; flex-direction: column; align-items: flex-start;">
-          <div style="display: flex; font-size: 80px; font-weight: bold; color: #e5e5e5;">${tokens.toLocaleString()}</div>
+          <div style="display: flex; font-size: 80px; font-weight: bold; color: #e5e5e5;">${resultTokens.toLocaleString()}</div>
           <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">RESULT TOKENS</div>
         </div>
         
@@ -809,32 +967,10 @@ const getResult = async (
   if (format === "text/markdown") {
     headers.set("Content-Type", "text/markdown");
 
-    let markdownResponse = `# ${url.pathname}\n\n`;
-
-    // Add prompt section
-    markdownResponse += "## Prompt\n\n```prompt.md\n";
-    markdownResponse += data.prompt;
-    markdownResponse += "\n```\n\n";
-
-    // Add context section if available
-    if (data.context) {
-      markdownResponse += "## Context\n\n```context.md\n";
-      markdownResponse += data.context;
-      markdownResponse += "\n```\n\n";
-    }
-
-    // Add result section if available
-    if (data.result) {
-      markdownResponse += "## Result\n\n```result.md\n";
-      markdownResponse += data.result;
-      markdownResponse += "\n```\n\n";
-    } else {
-      markdownResponse += "## Status\n\n";
-      markdownResponse += `Status: ${status}\n`;
-      markdownResponse += `Model: ${data.model}\n`;
-    }
-
-    return new Response(markdownResponse, { headers });
+    return new Response(
+      getMarkdownResponse(url.pathname, data, url.searchParams.get("key")),
+      { headers },
+    );
   }
 
   // For API calls, return JSON
@@ -1015,7 +1151,12 @@ const requestHandler = async (
     return getResult(
       request,
       publicUser,
-      { model: model || models[0].model, prompt, context },
+      {
+        model: model || models[0].model,
+        prompt,
+        context,
+        headline: result.headline || undefined,
+      },
       "pending",
       headers,
     );
@@ -1084,7 +1225,7 @@ export default {
           "result from ",
           postResponse.status,
           contextUrl.toString(),
-          result.length,
+          result?.length,
         );
 
         return new Response("Redirect", {
