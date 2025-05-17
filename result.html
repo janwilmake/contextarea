@@ -2,10 +2,12 @@
 <html lang="en">
 
 <head>
-
+    <script type="application/json" id="server-data"></script>
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="/markdown-highlighter.js"></script>
+
     <style>
         /* Enhanced mobile styles with removed padding and borders */
         @media (max-width: 768px) {
@@ -79,33 +81,6 @@
                 overflow: visible;
                 word-break: break-word;
                 font-size: 14px;
-            }
-
-            /* Code blocks should wrap and not cause horizontal scrolling */
-            pre {
-                white-space: pre-wrap;
-                word-break: break-word;
-            }
-
-            /* Fix nested scrollable areas */
-            .code-block-wrapper {
-                max-width: 100%;
-                overflow-x: auto;
-            }
-
-            /* Better handling of long code lines */
-            .hljs {
-                white-space: pre-wrap;
-                word-break: break-word;
-            }
-
-            /* Copy button for code */
-            .code-copy-button {
-                opacity: 0.9;
-                top: 3px;
-                right: 3px;
-                padding: 2px 4px;
-                border-radius: 4px;
             }
 
             /* Make copy button for result smaller */
@@ -200,157 +175,7 @@
             }
         }
 
-        /* Updated CSS to fix spacing issues */
-        .code-block-container {
-            position: relative;
-            margin: 0;
-            font-size: 0;
-            /* This removes whitespace between inline-block elements */
-        }
-
-        .code-block-wrapper {
-            position: relative;
-            margin: 0;
-            padding: 0;
-            font-size: 0;
-            /* This removes whitespace between inline-block elements */
-        }
-
-        /* Restore font-size for the actual content */
-        .code-block-wrapper pre {
-            margin: 0;
-            padding: 0;
-            font-size: 14px;
-            /* Restore font size */
-        }
-
-        .code-block-wrapper pre code {
-            padding: 8px;
-            display: block;
-            font-size: 14px;
-            /* Ensure font size is set */
-        }
-
-        /* Fix the markdown code fence marker styling */
-        .md-codeblock {
-            display: inline-block;
-            padding: 0;
-            margin: 0;
-            line-height: 1;
-            font-size: 12px;
-            /* Restore font size */
-            color: #ff6b6b;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        }
-
-
-        .md-codeblock {
-            color: #ff6b6b;
-            font-size: 10px;
-            /* Same color as inline code */
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        }
-
-        /* Copy button styles */
-        .code-copy-button {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            background-color: rgba(42, 42, 42, 0.6);
-            border: 1px solid #4a4a4a;
-            border-radius: 4px;
-            color: #e5e5e5;
-            padding: 4px 6px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 12px;
-            opacity: 0;
-            z-index: 10;
-        }
-
-        /* Show the copy button on hover over the code block */
-        .code-block-wrapper:hover .code-copy-button {
-            opacity: 1;
-        }
-
-        .code-copy-button:hover {
-            background-color: rgba(74, 74, 74, 0.8);
-        }
-
-        .code-copy-button svg {
-            width: 12px;
-            height: 12px;
-        }
-
-        /* For mobile devices, keep the button visible always */
-        @media (max-width: 768px) {
-            .code-copy-button {
-                opacity: 0.7;
-            }
-        }
-
-
-        /* Style for bold text - make the ** visible but text bold and yellow */
-        .md-bold {
-            color: #feca57;
-            font-weight: bold;
-        }
-
-        /* Style for italic text - make the * visible but text italic and gray */
-        .md-italic {
-            color: #b5b5b5;
-            font-style: italic;
-        }
-
-        /* Style for headings */
-        .md-heading {
-            color: #4a9eff;
-        }
-
-        /* Style for list items */
-        .md-list-item {
-            color: #e5e5e5;
-        }
-
-        /* Style for blockquotes */
-        .md-blockquote {
-            color: #b5b5b5;
-        }
-
-        /* Style for inline code */
-        .hljs-inline {
-            color: #ff6b6b;
-        }
-
-        /* Make sure we don't lose the original markdown formatting */
-        .result-content {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: monospace;
-            line-height: 1.6;
-        }
-
-        /* Code blocks */
-        .result-content pre {
-            margin: 0;
-            padding: 0;
-            background: none;
-            display: block;
-        }
-
-        .result-content code {
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 10px;
-            background: none;
-
-        }
-
-        /* Other styel */
-
-
+        /* Other style */
         * {
             margin: 0;
             padding: 0;
@@ -692,6 +517,7 @@
             }
         }
     </style>
+
 </head>
 
 <body>
@@ -733,7 +559,6 @@
         </div>
 
         <div class="footer">
-
             <div class="footer-actions">
                 <div id="model-modal"></div>
                 <button type="button" class="try-again-button" id="tryAgainButton">
@@ -756,7 +581,6 @@
                 </button>
             </div>
 
-
             <div class="share-container">
                 <span class="share-label">Share:</span>
                 <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
@@ -768,97 +592,14 @@
                     <span>Copy</span>
                 </button>
             </div>
-
-
         </div>
     </div>
 
-    <script src="./model-modal.js"></script>
+    <script src="/model-modal.js"></script>
+
+    <!-- Module definitions -->
     <script>
-
-        // Updated highlightMarkdown function
-        function highlightMarkdown(text) {
-            // Save code blocks first (to protect them from HTML escaping)
-            const codeBlocks = [];
-            let codeBlockIndex = 0;
-
-            // 1. Extract and save code blocks with a placeholder
-            const extractedText = text.replace(/(```[a-zA-Z0-9_]*\n)([\s\S]*?)(```)/g, function (match, opening, code, closing) {
-                const placeholder = `__CODE_BLOCK_${codeBlockIndex}__`;
-                codeBlocks.push({
-                    opening: opening,
-                    code: code,
-                    closing: closing
-                });
-                codeBlockIndex++;
-                return placeholder;
-            });
-
-            // 2. Also handle inline code
-            const inlineCodeBlocks = [];
-            let inlineCodeIndex = 0;
-
-            const extractedTextWithInlineCodes = extractedText.replace(/(`)(.*?)(`)/g, function (match, opening, code, closing) {
-                const placeholder = `__INLINE_CODE_${inlineCodeIndex}__`;
-                inlineCodeBlocks.push({
-                    opening: opening,
-                    code: code,
-                    closing: closing
-                });
-                inlineCodeIndex++;
-                return placeholder;
-            });
-
-            // 3. Now escape HTML in the remaining text (not code blocks)
-            let escapedText = escapeHTML(extractedTextWithInlineCodes);
-
-            // 4. Process Markdown elements on the escaped text
-
-            // Handle bold (double asterisks)
-            escapedText = escapedText.replace(/(\*\*)([^*]+?)(\*\*)/g, '<span class="md-bold">$1$2$3</span>');
-
-            // Handle italic (single asterisk)
-            escapedText = escapedText.replace(/([^*]|^)(\*)([^*]+?)(\*)([^*]|$)/g, function (match, before, open, content, close, after) {
-                return before + '<span class="md-italic">' + open + content + close + '</span>' + after;
-            });
-
-            // Handle headings
-            escapedText = escapedText.replace(/^((#{1,6})\s+)(.+)$/gm, '<span class="md-heading">$1$3</span>');
-
-            // Handle lists
-            escapedText = escapedText.replace(/^(\s*[-*+]\s+)(.+)$/gm, '<span class="md-list-item">$1$2</span>');
-            escapedText = escapedText.replace(/^(\s*\d+\.\s+)(.+)$/gm, '<span class="md-list-item">$1$2</span>');
-
-            // Handle blockquotes
-            escapedText = escapedText.replace(/^(\s*>\s+)(.+)$/gm, '<span class="md-blockquote">$1$2</span>');
-
-            // 5. Replace code block placeholders with properly highlighted code
-            for (let i = 0; i < codeBlocks.length; i++) {
-                const block = codeBlocks[i];
-                const language = block.opening.trim().replace('```', '') || 'plaintext';
-                const blockId = `code-block-${i}-${Date.now()}`;
-
-                // Apply syntax highlighting to the code (without escaping the HTML in the code)
-                const highlightedCode = hljs.highlight(block.code, { language: language }).value;
-
-                // Create the HTML for the code block with a more compact structure
-                // Critical fix: Remove all line breaks and unnecessary whitespace from the HTML structure
-                const html = `<div class="code-block-container"><span class="md-codeblock">${escapeHTML(block.opening)}</span><div class="code-block-wrapper"><button class="code-copy-button" data-block-id="${blockId}" title="Copy code"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span class="copy-text">Copy</span></button><pre id="${blockId}"><code class="hljs language-${language}">${highlightedCode}</code></pre></div><span class="md-codeblock">${escapeHTML(block.closing)}</span></div>`;
-
-                escapedText = escapedText.replace(`__CODE_BLOCK_${i}__`, html);
-            }
-
-            // 6. Replace inline code placeholders
-            for (let i = 0; i < inlineCodeBlocks.length; i++) {
-                const block = inlineCodeBlocks[i];
-                const html = `<span class="hljs-inline">${escapeHTML(block.opening)}${escapeHTML(block.code)}${escapeHTML(block.closing)}</span>`;
-                escapedText = escapedText.replace(`__INLINE_CODE_${i}__`, html);
-            }
-
-            return escapedText;
-        }
-
-        // Helper function to escape HTML
+        // Helper functions
         function escapeHTML(str) {
             return str
                 .replace(/&/g, '&amp;')
@@ -868,461 +609,477 @@
                 .replace(/'/g, '&#39;');
         }
 
-        function setupCopyButtons() {
-            const copyButtons = document.querySelectorAll('.code-copy-button');
+        // 1. SSE Handler Module
+        class SSEHandler {
+            constructor(options) {
+                this.path = options.path;
+                this.onMessage = options.onMessage;
+                this.onError = options.onError;
+                this.onOpen = options.onOpen;
+                this.eventSource = null;
+                this.retryCount = 0;
+                this.maxRetries = options.maxRetries || 3;
+                this.retryDelay = options.retryDelay || 1000;
+            }
 
-            copyButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const blockId = button.getAttribute('data-block-id');
-                    const codeBlock = document.getElementById(blockId);
-                    const code = codeBlock.textContent;
+            initialize() {
+                try {
+                    this.eventSource = new EventSource(this.path);
 
-                    try {
-                        await navigator.clipboard.writeText(code);
-                        const buttonText = button.querySelector('.copy-text');
-                        buttonText.textContent = 'Copied!';
+                    this.eventSource.onopen = () => {
+                        console.log('SSE connection opened');
+                        this.retryCount = 0;
+                        if (this.onOpen) this.onOpen();
+                    };
 
-                        setTimeout(() => {
-                            buttonText.textContent = 'Copy';
-                        }, 1000);
-                    } catch (err) {
-                        console.error('Failed to copy code:', err);
+                    this.eventSource.onmessage = (event) => {
+                        try {
+                            const message = JSON.parse(event.data);
+                            if (this.onMessage) this.onMessage(message);
+                        } catch (e) {
+                            console.error('Error parsing SSE message:', e);
+                        }
+                    };
+
+                    this.eventSource.onerror = (error) => {
+                        console.error('SSE error:', error);
+                        if (this.eventSource.readyState === EventSource.CLOSED) {
+                            console.log('SSE connection closed');
+                            this.eventSource = null;
+                            if (this.onError) this.onError(error);
+                        }
+                    };
+                } catch (error) {
+                    console.error('Error initializing SSE:', error);
+                    this.retry(error);
+                }
+            }
+
+            retry(error) {
+                if (this.retryCount < this.maxRetries) {
+                    this.retryCount++;
+                    setTimeout(() => {
+                        console.log(`Retrying SSE connection (${this.retryCount}/${this.maxRetries})...`);
+                        this.initialize();
+                    }, this.retryDelay * this.retryCount);
+                } else if (this.onError) {
+                    this.onError(error);
+                }
+            }
+
+            close() {
+                if (this.eventSource) {
+                    this.eventSource.close();
+                    this.eventSource = null;
+                }
+            }
+        }
+
+        // 2. UI Manager Module
+        class UIManager {
+            constructor() {
+                this.promptTextarea = document.getElementById('promptTextarea');
+                this.resultContent = document.getElementById('resultContent');
+                this.copyButton = document.getElementById('copyButton');
+                this.currentResult = "";
+                this.isStreaming = false;
+            }
+
+            updateUI(state) {
+                // Update prompt
+                if (state.prompt) {
+                    this.promptTextarea.value = state.prompt;
+                    this.adjustTextareaHeight();
+                }
+
+                // Update result based on status
+                if (state.status === "pending" && data.streaming) {
+                    if (!this.isStreaming) {
+                        this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                    }
+                } else if (state.status === "error" || state.error) {
+                    this.resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
+                    this.copyButton.style.display = 'none';
+                } else if (state.result) {
+                    this.currentResult = state.result;
+                    markdownHighlighter.processContent(this.resultContent, this.currentResult);
+                    this.copyButton.style.display = 'flex';
+                } else if (state.status === "complete") {
+                    this.copyButton.style.display = 'flex';
+                }
+            }
+
+            adjustTextareaHeight() {
+                this.promptTextarea.style.height = 'auto';
+                this.promptTextarea.style.height = this.promptTextarea.scrollHeight + 'px';
+            }
+
+            handleSSEMessage(message) {
+                switch (message.type) {
+                    case 'init':
+                        // Initial state
+                        if (message.data.status === "pending") {
+                            this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                            this.currentResult = message.data.result || "";
+                        } else {
+                            this.updateUI(message.data);
+                        }
+                        break;
+
+                    case 'token':
+                        // Streaming token
+                        if (!this.isStreaming) {
+                            this.isStreaming = true;
+                            this.resultContent.textContent = "";
+                        }
+                        this.currentResult += message.data.text;
+                        markdownHighlighter.processContent(this.resultContent, this.currentResult);
+                        break;
+
+                    case 'update':
+                        // Update field
+                        if (message.data.field === 'context') {
+                            console.log('Context updated');
+                        }
+                        break;
+
+                    case 'complete':
+                        // Stream complete
+                        this.currentResult = message.data.result;
+                        markdownHighlighter.processContent(this.resultContent, this.currentResult);
+                        this.copyButton.style.display = 'flex';
+                        break;
+
+                    case 'error':
+                        // Error occurred
+                        this.resultContent.innerHTML = `<span class="error">Error: ${message.data.message}</span>`;
+                        this.copyButton.style.display = 'none';
+                        break;
+                }
+            }
+        }
+
+        // 3. Copy Functionality Module
+        class CopyManager {
+            constructor() {
+                this.copyButton = document.getElementById('copyButton');
+                this.footerCopyButton = document.getElementById('footerCopyButton');
+                this.shareInput = document.getElementById('shareInput');
+                this.currentUrl = window.location.href;
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Set share URL
+                this.shareInput.value = this.currentUrl;
+
+                // Copy result functionality
+                this.copyButton.addEventListener('click', async () => {
+                    if (!uiManager.currentResult) return;
+                    await this.copyToClipboard(uiManager.currentResult, this.copyButton);
+                });
+
+                // Copy share link functionality
+                this.footerCopyButton.addEventListener('click', async () => {
+                    await this.copyToClipboard(this.currentUrl, this.footerCopyButton);
+                });
+            }
+
+            async copyToClipboard(text, button) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    button.classList.add('copied');
+                    button.querySelector('span').textContent = 'Copied!';
+
+                    setTimeout(() => {
+                        button.classList.remove('copied');
+                        button.querySelector('span').textContent = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                    if (button === this.footerCopyButton) {
+                        this.shareInput.select();
+                        document.execCommand('copy');
+                        alert('Link copied to clipboard!');
+                    }
+                }
+            }
+        }
+
+        // 4. Token Counter Module
+        class TokenCounter {
+            constructor() {
+                this.promptTextarea = document.getElementById('promptTextarea');
+                this.tokenCounter = document.getElementById('tokenCounter');
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.promptTextarea.addEventListener('input', () => this.updateTokenCount());
+                setTimeout(() => this.updateTokenCount(), 0);
+            }
+
+            updateTokenCount() {
+                const promptText = this.promptTextarea.value;
+                const tokenCount = Math.round(promptText.length / 5);
+                const contextCount = data.context ? Math.round(data.context.length / 5) : null;
+
+                if (contextCount) {
+                    this.tokenCounter.textContent = `(${tokenCount} prompt tokens, ${contextCount} context tokens)`;
+                } else {
+                    this.tokenCounter.textContent = `(${tokenCount} prompt tokens)`;
+                }
+            }
+        }
+
+        // 5. Mobile Responsiveness Module
+        class MobileResponsiveness {
+            constructor() {
+                this.promptTextarea = document.getElementById('promptTextarea');
+                this.setupMobileScrolling();
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                window.addEventListener('load', () => this.setupMobileScrolling());
+                window.addEventListener('resize', () => this.setupMobileScrolling());
+                window.addEventListener('orientationchange', () => this.setupMobileScrolling());
+            }
+
+            setupMobileScrolling() {
+                // Only apply on mobile screens
+                const isMobile = window.innerWidth <= 768;
+
+                if (isMobile) {
+                    // Get all relevant elements
+                    const container = document.querySelector('.container');
+                    const columns = document.querySelectorAll('.column');
+                    const footer = document.querySelector('.footer');
+                    const contentContainer = document.querySelector('.content-container');
+
+                    // Function to resize the textarea to fit content
+                    const resizeTextarea = () => {
+                        this.promptTextarea.style.height = 'auto';
+                        this.promptTextarea.style.height = Math.min(this.promptTextarea.scrollHeight, 150) + 'px';
+                    };
+
+                    // Ensure proper layout setup
+                    if (container) {
+                        container.style.height = 'auto';
+                        container.style.minHeight = 'unset';
+                    }
+
+                    // Adjust textarea on load and input
+                    if (this.promptTextarea) {
+                        resizeTextarea();
+
+                        // Remove existing listener if any
+                        this.promptTextarea.removeEventListener('input', resizeTextarea);
+                        // Add the listener again
+                        this.promptTextarea.addEventListener('input', resizeTextarea);
+                    }
+
+                    // Ensure all columns don't scroll independently
+                    columns.forEach(column => {
+                        column.style.overflow = 'visible';
+                        column.style.maxHeight = 'none';
+                        column.style.minHeight = 'unset';
+                    });
+
+                    // Fix content container
+                    if (contentContainer) {
+                        contentContainer.style.display = 'block';
+                        contentContainer.style.height = 'auto';
+                        contentContainer.style.minHeight = 'unset';
+                        contentContainer.style.flex = 'unset';
+                        contentContainer.style.overflow = 'visible';
+                    }
+
+                    // Fix share section visibility and placement
+                    if (footer) {
+                        footer.style.position = 'relative';
+                        footer.style.display = 'block';
+                        footer.style.marginTop = '8px';
+                        footer.style.zIndex = '1';
+                    }
+
+                    // Make sure body has no unnecessary scroll
+                    document.body.style.overflow = 'auto';
+                    document.documentElement.style.overflow = 'auto';
+
+                    // Force reflow to ensure everything renders correctly
+                    document.body.offsetHeight;
+                } else {
+                    // Reset to desktop layout if needed
+                    const container = document.querySelector('.container');
+                    const contentContainer = document.querySelector('.content-container');
+                    const columns = document.querySelectorAll('.column');
+                    const footer = document.querySelector('.footer');
+
+                    // Reset container
+                    if (container) {
+                        container.style.height = '100%';
+                        container.style.display = 'flex';
+                    }
+
+                    // Reset content container
+                    if (contentContainer) {
+                        contentContainer.style.display = 'flex';
+                        contentContainer.style.flex = '1';
+                    }
+
+                    // Reset columns
+                    columns.forEach(column => {
+                        column.style.overflow = 'auto';
+                        column.style.maxHeight = '';
+                    });
+
+                    // Reset footer
+                    if (footer) {
+                        footer.style.display = 'flex';
+                        footer.style.position = '';
+                    }
+                }
+            }
+        }
+
+        // 6. Action Buttons Module
+        class ActionButtons {
+            constructor() {
+                this.tryAgainButton = document.getElementById('tryAgainButton');
+                this.replyInsteadButton = document.getElementById('replyInsteadButton');
+                this.openResultButton = document.getElementById('openResultButton');
+                this.promptTextarea = document.getElementById('promptTextarea');
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Try again functionality
+                this.tryAgainButton.setAttribute('title', 'Click or press Shift+Enter');
+                this.tryAgainButton.addEventListener('click', () => this.handleTryAgain());
+
+                // Reply Instead button functionality
+                this.replyInsteadButton.addEventListener('click', () => this.handleReplyInstead());
+
+                // Open Result button functionality
+                this.openResultButton.addEventListener('click', () => this.handleOpenResult());
+
+                // Keyboard shortcut for try again
+                this.promptTextarea.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' && event.shiftKey) {
+                        event.preventDefault(); // Prevent default behavior (new line)
+                        this.tryAgainButton.click(); // Trigger the try again button
                     }
                 });
+            }
+
+            // Slugify function
+            slugify(text) {
+                return text
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^\w\s-]/g, '')
+                    .replace(/[\s_-]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+
+            // Simple hash function for 7-character SHA-like string
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, '0');
+            }
+
+            handleTryAgain() {
+                const promptText = this.promptTextarea.value.trim();
+                if (!promptText) return;
+
+                // Generate slug from first 20 characters
+                const first20 = promptText.substring(0, 20);
+                const slug = this.slugify(first20);
+                const hash = this.simpleHash(promptText);
+
+                // Create the URL path
+                const path = `/${slug}-${hash}`;
+
+                // Get selected model from the modal
+                const selectedModel = window.getSelectedModel();
+
+                // Create form data
+                const formData = new FormData();
+                formData.append('prompt', promptText);
+                formData.append('model', selectedModel.id);
+
+                // Create a form and submit it
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = path;
+                form.style.display = 'none';
+
+                // Add all form data as hidden inputs
+                for (const [key, value] of formData.entries()) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            handleReplyInstead() {
+                const promptText = this.promptTextarea.value.trim();
+                if (promptText) {
+                    const currentPath = window.location.pathname;
+                    window.location.href = `https://lmpify.com/?q=${encodeURIComponent(`Previous Prompt:\n\n${window.location.origin + currentPath + ".md"}\n\n------\n\n`)}`;
+                }
+            }
+
+            handleOpenResult() {
+                const currentPath = window.location.pathname;
+                window.open(`${window.location.origin}${currentPath}.md?key=result`, '_blank');
+            }
+        }
+
+        // Main application initialization
+        const data = JSON.parse(document.getElementById('server-data').textContent);
+
+        // Initialize modules
+        const uiManager = new UIManager();
+        const copyManager = new CopyManager();
+        const tokenCounter = new TokenCounter();
+        const mobileResponsiveness = new MobileResponsiveness();
+        const actionButtons = new ActionButtons();
+
+        // Initialize SSE if needed
+        if (data.streaming && data.status === "pending") {
+            const sseHandler = new SSEHandler({
+                path: window.location.pathname,
+                onMessage: (message) => uiManager.handleSSEMessage(message),
+                onError: (error) => console.error('SSE connection failed:', error),
+                maxRetries: 3,
+                retryDelay: 1000
+            });
+
+            sseHandler.initialize();
+
+            // Clean up on page unload
+            window.addEventListener('beforeunload', () => {
+                sseHandler.close();
             });
         }
 
-
-
-        const data = JSON.parse(document.getElementById('server-data').textContent);
-        let eventSource = null;
-        let currentResult = "";
-        let isStreaming = false;
-
-        const promptTextarea = document.getElementById('promptTextarea');
-        const resultContent = document.getElementById('resultContent');
-        const copyButton = document.getElementById('copyButton');
-        const shareInput = document.getElementById('shareInput');
-        const footerCopyButton = document.getElementById('footerCopyButton');
-        const tryAgainButton = document.getElementById('tryAgainButton');
-
-        // Set share URL
-        const currentUrl = window.location.href;
-        shareInput.value = currentUrl;
-
-        // Update UI with current state
-        function updateUI(state) {
-            // Update prompt
-            if (state.prompt) {
-                promptTextarea.value = state.prompt;
-                adjustTextareaHeight();
-            }
-
-            // Update result based on status
-            if (state.status === "pending" && data.streaming) {
-                if (!isStreaming) {
-                    resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
-                    // copyButton.style.display = 'none';
-                }
-            } else if (state.status === "error" || state.error) {
-                resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
-                copyButton.style.display = 'none';
-            } else if (state.result) {
-
-                currentResult = state.result;
-                resultContent.innerHTML = highlightMarkdown(currentResult);
-                setupCopyButtons();
-                copyButton.style.display = 'flex';
-            } else if (state.status === "complete") {
-                copyButton.style.display = 'flex';
-            }
-        }
-
-
-        // Initialize SSE connection if needed
-        function initializeSSE() {
-            if (data.streaming && data.status === "pending") {
-                eventSource = new EventSource(window.location.pathname);
-
-                eventSource.onopen = () => {
-                    console.log('SSE connection opened');
-                };
-
-                eventSource.onmessage = (event) => {
-                    try {
-                        const message = JSON.parse(event.data);
-                        handleSSEMessage(message);
-                    } catch (e) {
-                        console.error('Error parsing SSE message:', e);
-                    }
-                };
-
-                eventSource.onerror = (error) => {
-                    console.error('SSE error:', error);
-                    if (eventSource.readyState === EventSource.CLOSED) {
-                        console.log('SSE connection closed');
-                        eventSource = null;
-                    }
-                };
-            }
-        }
-
-        // Handle SSE messages
-        function handleSSEMessage(message) {
-            switch (message.type) {
-                case 'init':
-                    // Initial state
-                    if (message.data.status === "pending") {
-                        resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
-                        currentResult = message.data.result || "";
-                    } else {
-                        updateUI(message.data);
-                    }
-                    break;
-
-                case 'token':
-                    // Streaming token
-                    if (!isStreaming) {
-                        isStreaming = true;
-                        resultContent.textContent = "";
-                    }
-                    currentResult += message.data.text;
-                    resultContent.innerHTML = highlightMarkdown(currentResult);
-                    setupCopyButtons()
-                    break;
-
-                case 'update':
-                    // Update field
-                    if (message.data.field === 'context') {
-                        // Context updated
-                        console.log('Context updated');
-                    }
-                    break;
-
-                case 'complete':
-                    // Stream complete
-
-                    currentResult = message.data.result;
-                    resultContent.innerHTML = highlightMarkdown(currentResult);
-                    setupCopyButtons()
-                    copyButton.style.display = 'flex';
-                    if (eventSource) {
-                        eventSource.close();
-                        eventSource = null;
-                    }
-
-                    break;
-
-                case 'error':
-                    // Error occurred
-                    resultContent.innerHTML = `<span class="error">Error: ${message.data.message}</span>`;
-                    copyButton.style.display = 'none';
-                    if (eventSource) {
-                        eventSource.close();
-                        eventSource = null;
-                    }
-                    break;
-            }
-        }
-
-        // Copy result functionality
-
-        copyButton.addEventListener('click', async () => {
-            if (!currentResult) return;
-
-            try {
-                await navigator.clipboard.writeText(currentResult);
-                copyButton.classList.add('copied');
-                copyButton.querySelector('span').textContent = 'Copied!';
-
-                setTimeout(() => {
-                    copyButton.classList.remove('copied');
-                    copyButton.querySelector('span').textContent = 'Copy';
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy:', err);
-            }
-        });
-
-
-        // Copy share link functionality
-        footerCopyButton.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(currentUrl);
-                footerCopyButton.classList.add('copied');
-                footerCopyButton.querySelector('span').textContent = 'Copied!';
-
-                setTimeout(() => {
-                    footerCopyButton.classList.remove('copied');
-                    footerCopyButton.querySelector('span').textContent = 'Copy';
-                }, 2000);
-            } catch (err) {
-                shareInput.select();
-                document.execCommand('copy');
-                alert('Link copied to clipboard!');
-            }
-        });
-
-        // Slugify function
-        function slugify(text) {
-            return text
-                .toLowerCase()
-                .trim()
-                .replace(/[^\w\s-]/g, '')
-                .replace(/[\s_-]+/g, '-')
-                .replace(/^-+|-+$/g, '');
-        }
-
-        // Simple hash function for 7-character SHA-like string
-        function simpleHash(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, '0');
-        }
-
-        // Try again functionality
-        tryAgainButton.setAttribute('title', 'Click or press Shift+Enter');
-
-        tryAgainButton.addEventListener('click', async () => {
-            const promptText = promptTextarea.value.trim();
-            if (!promptText) return;
-
-            // Generate slug from first 20 characters
-            const first20 = promptText.substring(0, 20);
-            const slug = slugify(first20);
-            const hash = simpleHash(promptText);
-
-            // Create the URL path
-            const path = `/${slug}-${hash}`;
-
-            // Get selected model from the modal
-            const selectedModel = window.getSelectedModel();
-
-            // Create form data
-            const formData = new FormData();
-            formData.append('prompt', promptText);
-            formData.append('model', selectedModel.id);
-
-            // Create a form and submit it
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = path;
-            form.style.display = 'none';
-
-            // Add all form data as hidden inputs
-            for (const [key, value] of formData.entries()) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = value;
-                form.appendChild(input);
-            }
-
-            document.body.appendChild(form);
-            form.submit();
-        });
-
-        // Reply Instead button functionality
-        const replyInsteadButton = document.getElementById('replyInsteadButton');
-        replyInsteadButton.addEventListener('click', () => {
-            const promptText = promptTextarea.value.trim();
-            if (promptText) {
-                const currentPath = window.location.pathname;
-                window.location.href = `https://lmpify.com/?q=${encodeURIComponent(`Previous Prompt:\n\n${window.location.origin + currentPath + ".md"}\n\n------\n\n`)}`;
-            }
-        });
-
-        // Auto-resize textarea
-        function adjustTextareaHeight() {
-            promptTextarea.style.height = 'auto';
-            promptTextarea.style.height = promptTextarea.scrollHeight + 'px';
-        }
-
-        promptTextarea.addEventListener('input', adjustTextareaHeight);
-
-        // Initial setup
-        updateUI(data);
-
-        // Add retry logic for SSE connection
-        let retryCount = 0;
-        const maxRetries = 3;
-        const retryDelay = 1000;
-
-        function initializeWithRetry() {
-            try {
-                initializeSSE();
-                retryCount = 0;
-            } catch (error) {
-                console.error('Error initializing SSE:', error);
-                if (retryCount < maxRetries) {
-                    retryCount++;
-                    setTimeout(() => {
-                        console.log(`Retrying SSE connection (${retryCount}/${maxRetries})...`);
-                        initializeWithRetry();
-                    }, retryDelay * retryCount);
-                }
-            }
-        }
-
-        initializeWithRetry();
-        setTimeout(adjustTextareaHeight, 0);
-
-        promptTextarea.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && event.shiftKey) {
-                event.preventDefault(); // Prevent default behavior (new line)
-                tryAgainButton.click(); // Trigger the try again button
-            }
-        });
-
-        // Clean up on page unload
-        window.addEventListener('beforeunload', () => {
-            if (eventSource) {
-                eventSource.close();
-            }
-        });
-
-
-        // Token counter functionality
-        function updateTokenCounter() {
-            const promptText = promptTextarea.value;
-            const tokenCount = Math.round(promptText.length / 5);
-            const contextCount = data.context ? Math.round(data.context.length / 5) : null;
-
-            const tokenCounter = document.getElementById('tokenCounter');
-            if (contextCount) {
-                tokenCounter.textContent = `(${tokenCount} prompt tokens, ${contextCount} context tokens)`;
-            } else {
-                tokenCounter.textContent = `(${tokenCount} prompt tokens)`;
-            }
-        }
-
-        // Update token count on input
-        promptTextarea.addEventListener('input', updateTokenCounter);
-
-
-        // Initial token count calculation
-        setTimeout(updateTokenCounter, 0);
-
-
-
-
-
-        // Open Result button functionality
-        const openResultButton = document.getElementById('openResultButton');
-        openResultButton.addEventListener('click', () => {
-            const currentPath = window.location.pathname;
-            window.open(`${window.location.origin}${currentPath}.md?key=result`, '_blank');
-        });
-
-
-        function setupMobileScrolling() {
-            // Only apply on mobile screens
-            const isMobile = window.innerWidth <= 768;
-
-            if (isMobile) {
-                // Get all relevant elements
-                const container = document.querySelector('.container');
-                const columns = document.querySelectorAll('.column');
-                const promptColumn = document.querySelector('.column:nth-child(1)');
-                const resultColumn = document.querySelector('.column:nth-child(2)');
-                const footer = document.querySelector('.footer');
-                const contentContainer = document.querySelector('.content-container');
-
-                // Function to resize the textarea to fit content
-                function resizeTextarea() {
-                    promptTextarea.style.height = 'auto';
-                    promptTextarea.style.height = Math.min(promptTextarea.scrollHeight, 150) + 'px';
-                }
-
-                // Ensure proper layout setup
-                if (container) {
-                    container.style.height = 'auto';
-                    container.style.minHeight = 'unset';
-                }
-
-                // Adjust textarea on load and input
-                if (promptTextarea) {
-                    resizeTextarea();
-
-                    // Remove existing listener if any
-                    promptTextarea.removeEventListener('input', resizeTextarea);
-                    // Add the listener again
-                    promptTextarea.addEventListener('input', resizeTextarea);
-                }
-
-                // Ensure all columns don't scroll independently
-                columns.forEach(column => {
-                    column.style.overflow = 'visible';
-                    column.style.maxHeight = 'none';
-                    column.style.minHeight = 'unset';
-                });
-
-                // Fix content container
-                if (contentContainer) {
-                    contentContainer.style.display = 'block';
-                    contentContainer.style.height = 'auto';
-                    contentContainer.style.minHeight = 'unset';
-                    contentContainer.style.flex = 'unset';
-                    contentContainer.style.overflow = 'visible';
-                }
-
-                // Fix share section visibility and placement
-                if (footer) {
-                    footer.style.position = 'relative';
-                    footer.style.display = 'block';
-                    footer.style.marginTop = '8px';
-                    footer.style.zIndex = '1';
-                }
-
-                // Make sure body has no unnecessary scroll
-                document.body.style.overflow = 'auto';
-                document.documentElement.style.overflow = 'auto';
-
-                // Force reflow to ensure everything renders correctly
-                document.body.offsetHeight;
-            } else {
-                // Reset to desktop layout if needed
-                const container = document.querySelector('.container');
-                const contentContainer = document.querySelector('.content-container');
-                const columns = document.querySelectorAll('.column');
-                const footer = document.querySelector('.footer');
-
-                // Reset container
-                if (container) {
-                    container.style.height = '100%';
-                    container.style.display = 'flex';
-                }
-
-                // Reset content container
-                if (contentContainer) {
-                    contentContainer.style.display = 'flex';
-                    contentContainer.style.flex = '1';
-                }
-
-                // Reset columns
-                columns.forEach(column => {
-                    column.style.overflow = 'auto';
-                    column.style.maxHeight = '';
-                });
-
-                // Reset footer
-                if (footer) {
-                    footer.style.display = 'flex';
-                    footer.style.position = '';
-                }
-            }
-        }
-
-        // Call the function immediately and on window events
-        setupMobileScrolling();
-        window.addEventListener('load', setupMobileScrolling);
-        window.addEventListener('resize', setupMobileScrolling);
-        window.addEventListener('orientationchange', setupMobileScrolling);
-
+        // Initial UI update
+        uiManager.updateUI(data);
+        setTimeout(() => uiManager.adjustTextareaHeight(), 0);
     </script>
 </body>
 

@@ -52,6 +52,10 @@ Shorter flow:be the product
 - Fix annoying JSON parser bug when having `</script>`
 - https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake <-- still no good
 
+# Fix uuithub
+
+https://contextbuilding.com/janwilmake/dorm the uuithub links must work! Show result after to Christian Cazzaza.
+
 # Launch
 
 If usable, start using it instead of Claude.

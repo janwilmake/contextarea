@@ -8,8 +8,6 @@ import {
   type StripeUser,
 } from "stripeflare";
 export { DORM } from "stripeflare";
-//@ts-ignore
-import resultHtml from "./result.html";
 import { DurableObject } from "cloudflare:workers";
 
 /**
@@ -114,7 +112,7 @@ interface Env extends StripeflareEnv {
   SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
   ANTHROPIC_SECRET: string;
   FREE_SECRET: string;
-  SELF: Fetcher;
+  ASSETS: Fetcher;
 }
 
 /**
@@ -174,11 +172,9 @@ const generateContext = async (prompt: string) => {
     urls.map(async (url: string) => {
       try {
         const response = await fetch(url);
-
         const isHtml = response.headers
           .get("content-type")
           ?.startsWith("text/html");
-
         if (isHtml) {
           hasHtml = true;
           const appendix = url.startsWith("https://github.com/")
@@ -192,7 +188,6 @@ const generateContext = async (prompt: string) => {
             tokens: 0,
           };
         }
-
         const text = await response.text();
         const tokens = Math.round(text.length / 5);
         return { url, text, tokens };
@@ -209,12 +204,13 @@ const generateContext = async (prompt: string) => {
   );
 
   // Construct context
-  context = urlResults
-    .map(
-      ({ url, text, tokens }) =>
-        `${url} (${tokens} tokens) \n${text}\n------\n`,
-    )
-    .join("\n");
+  context = urlResults.reduce(
+    (previous, { url, text, tokens }) =>
+      `${previous}\n${url} (${tokens} tokens) \n${
+        previous.length > 1024 * 1024 ? "Omitted due to context length." : text
+      }\n------\n`,
+    "",
+  );
 
   if (hasHtml || hasError) {
     context =
@@ -287,7 +283,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   }) {
     // Save each field to storage
     this.set("pathname", data.pathname);
-    this.set("prompt", data.prompt);
+    this.set("prompt", data.prompt.slice(0, 1024 * 1024));
     this.set("modelConfig", data.model);
     this.set("initialized", true);
 
@@ -431,7 +427,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Fetch all URLs in parallel
       if (context) {
         this.set("context", context);
-        this.set("prompt", prompt);
+        this.set("prompt", prompt.slice(0, 1024 * 1024));
         // Send context update
         this.broadcastEvent("update", {
           field: "context",
@@ -822,25 +818,6 @@ export const getFormat = (request: Request): AllowedFormat | null => {
   return allowedFomat || null;
 };
 
-/**
- * Safely embeds data in a script tag for client-side consumption
- * This approach properly handles JSON stringification first
- */
-function safelyEmbedDataInScriptTag(data: any): string {
-  // First convert data to a JSON string
-  const jsonString = JSON.stringify(data);
-
-  // Then only escape the specific sequences that would close a script tag
-  // No need to escape <!-- as JSON.stringify already handles quotes and special chars
-  const escapedContent = jsonString
-    .replace(/<\/script/gi, "<\\/script")
-    .replace(/</g, "\\u003c")
-    .replace(/>/g, "\\u003e")
-    .replace(/&/g, "\\u0026");
-
-  return `<script id="server-data" type="application/json">${escapedContent}</script>`;
-}
-
 const getMarkdownResponse = (
   pathname: string,
   data: KVData,
@@ -878,6 +855,7 @@ const getMarkdownResponse = (
 };
 const getResult = async (
   request: Request,
+  env: Env,
   publicUser: Omit<User, "access_token"> | {},
   data: KVData,
   status: string,
@@ -991,29 +969,30 @@ const getResult = async (
     });
   }
 
-  const { context, prompt, result, ...rest } = data;
-
-  // For browser, return HTML
-  let html = resultHtml;
   const scriptData = {
-    context: context,
-    prompt: prompt,
-    result: result,
-    ...rest,
+    ...data,
     user: publicUser,
     status,
     streaming: status !== "complete",
   };
-  html = html.replace(
-    "</head>",
-    `${safelyEmbedDataInScriptTag(scriptData)}${generateMetadataHtml(
-      data,
-      request.url,
-    )}</head>`,
-  );
 
+  // For browser, return HTML
+  const resultHTML = new HTMLRewriter()
+    .on("#server-data", {
+      element: (e) => {
+        e.setInnerContent(JSON.stringify(scriptData), { html: false });
+      },
+    })
+    .on("head", {
+      element: (e) => {
+        e.append(generateMetadataHtml(data, request.url), { html: true });
+      },
+    })
+    .transform(await env.ASSETS.fetch(url.origin + "/result.html"));
+
+  // need new response due to set-cookie header
   headers.set("Content-Type", "text/html");
-  return new Response(html, { headers });
+  return new Response(resultHTML.body, { headers });
 };
 
 const requestHandler = async (
@@ -1081,6 +1060,7 @@ const requestHandler = async (
     if (existingData) {
       return getResult(
         request,
+        env,
         publicUser,
         existingData,
         existingData.error ? "error" : "complete",
@@ -1160,6 +1140,7 @@ const requestHandler = async (
 
     return getResult(
       request,
+      env,
       publicUser,
       {
         model: model || models[0].model,

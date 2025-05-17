@@ -2,8 +2,8 @@ name = "lmpify3"
 compatibility_date = "2025-04-21"
 dev.port = 3000
 main = "main.ts"
-assets.directory = "./"
-routes = [
+assets = { directory = "./", binding = "ASSETS" }
+routes = [ 
   { pattern = "lmpify.com", custom_domain = true },
   { pattern = "www.lmpify.com", custom_domain = true }
 ]
