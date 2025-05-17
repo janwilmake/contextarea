@@ -922,7 +922,7 @@
             if (state.status === "pending" && data.streaming) {
                 if (!isStreaming) {
                     resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
-                    copyButton.style.display = 'none';
+                    // copyButton.style.display = 'none';
                 }
             } else if (state.status === "error" || state.error) {
                 resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
