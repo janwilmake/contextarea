@@ -169,15 +169,11 @@ const generateContext = async (prompt: string) => {
   }
 
   let hasHtml = false;
+  let hasError = false;
   const urlResults = await Promise.all(
     urls.map(async (url: string) => {
       try {
-        const realUrl = url.startsWith("https://github.com/")
-          ? url.replace("github", "uithub")
-          : url.startsWith("https://x.com")
-          ? url.replace("x.com", "xymake.com")
-          : url;
-        const response = await fetch(realUrl);
+        const response = await fetch(url);
 
         const isHtml = response.headers
           .get("content-type")
@@ -185,9 +181,14 @@ const generateContext = async (prompt: string) => {
 
         if (isHtml) {
           hasHtml = true;
+          const appendix = url.startsWith("https://github.com/")
+            ? "For github code, use https://uithub.com/owner/repo"
+            : url.startsWith("https://x.com")
+            ? "For x threads, use xymake.com/status/..."
+            : "For blogs/docs, use firecrawl or https://jina.ai/reader";
           return {
             url,
-            text: "HTML urls are not supported",
+            text: "HTML urls are not supported. " + appendix,
             tokens: 0,
           };
         }
@@ -196,9 +197,10 @@ const generateContext = async (prompt: string) => {
         const tokens = Math.round(text.length / 5);
         return { url, text, tokens };
       } catch (error: any) {
+        hasError = true;
         return {
           url,
-          text: `Failed to fetch: ${error.message}`,
+          text: `Failed to fetch: ${error.message}. To get context for any url, use jina.ai, firecrawl.dev, uithub.com (for code), or xymake.com (for x threads), or any alternative.`,
           tokens: 0,
           failed: true,
         };
@@ -214,10 +216,12 @@ const generateContext = async (prompt: string) => {
     )
     .join("\n");
 
-  if (hasHtml) {
+  if (hasHtml || hasError) {
     context =
       context +
-      "\n\nThere were one of more URLs pasted that returned HTML. If these URLs are needed to answer the user request, please instruct the user to use https://r.jina.ai/{THE-URL-HERE} in the prompt instead.";
+      `\n\nThere were one of more URLs pasted that returned ${
+        hasHtml ? "HTML" : "an error"
+      }. If these URLs are needed to answer the user request, please instruct the user to use the suggested alternatives.`;
   }
 
   return { context };
