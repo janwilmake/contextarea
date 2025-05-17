@@ -690,7 +690,7 @@
                 this.isStreaming = false;
             }
 
-            updateUI(state) {
+            updateUI(state, isEscaped) {
                 // Update prompt
                 if (state.prompt) {
                     this.promptTextarea.value = state.prompt;
@@ -706,7 +706,27 @@
                     this.resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
                     this.copyButton.style.display = 'none';
                 } else if (state.result) {
-                    this.currentResult = state.result;
+
+
+
+                    if (isEscaped) {
+
+                        // // unescape entire content, we escape it again after.
+                        // const tempElement = document.createElement("div");
+                        // tempElement.innerHTML = state.result;
+                        this.currentResult = state.result?.replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&#39;/g, "'")
+                            .replace(/&amp;/g, '&');
+
+                        console.log({ result1: state.result, currentResultUnescaped: this.currentResult });
+                    } else {
+                        this.currentResult = state.result;
+                    }
+
+
+
                     markdownHighlighter.processContent(this.resultContent, this.currentResult);
                     this.copyButton.style.display = 'flex';
                 } else if (state.status === "complete") {
@@ -738,7 +758,12 @@
                             this.resultContent.textContent = "";
                         }
                         this.currentResult += message.data.text;
-                        markdownHighlighter.processContent(this.resultContent, this.currentResult);
+                        const loading = true;
+                        markdownHighlighter.processContent(
+                            this.resultContent,
+                            this.currentResult,
+                            // loading
+                            loading);
                         break;
 
                     case 'update':
@@ -1083,7 +1108,7 @@
         }
 
         // Initial UI update
-        uiManager.updateUI(data);
+        uiManager.updateUI(data, true);
         setTimeout(() => uiManager.adjustTextareaHeight(), 0);
     </script>
 </body>
