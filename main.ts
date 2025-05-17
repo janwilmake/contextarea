@@ -185,7 +185,7 @@ const generateContext = async (prompt: string) => {
         if (isHtml) {
           return {
             url,
-            text: "HTML urls are not supported. To easily turn HTML URL into a markdown URL, please use: https://jina.ai/reader/ (prepend https://r.jina.ai/ to any URL)",
+            text: "HTML urls are not supported. To easily turn HTML URL into a markdown URL, please use: https://jina.ai/reader/ (prepend https://r.jina.ai/ to any URL). If you need this context for the prompt, please notify the user.",
             tokens: 0,
           };
         }
