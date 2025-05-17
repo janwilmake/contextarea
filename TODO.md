@@ -33,13 +33,16 @@ Shorter flow:be the product
 - ✅ Should calculate 'og-details' based on prompt in the DO
 - ✅ **self-links**: result page should also render markdown when doing non-browser-based fetch or when adding `.md` similar to chatcompletions, prompt md should also be a link, context md also.
 - ✅ `?q={EncodedString}` to pre-add context to homepage.
+- ✅ Added proper markdown highlighting
+- ✅ Ability to copy codeblocks.
+- ✅ Mobile friendly ✅ `result.html` ✅ `index.html`
 
 # Monetisation
 
+- Count free requests at user-level, give max 10 total free requests.
 - Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
 - Ensure pricing is properly applied. Confirm monetisation works.
 - Handle 402 gracefully. In model selection, show balance, making it bigger/red when low.
-- Count free requests at user-level, give max 10 total free requests.
 
 💪 TODO: 1) ✅ purify prompt/context, 2) ❌ make claude & freemium monetisation work 3) ✅ make og-data work! It's usable now for myself and to share results easily!
 
@@ -47,16 +50,6 @@ Shorter flow:be the product
 
 - Fix annoying JSON parser bug when having `</script>`
 - https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake <-- still no good
-
-# ❗️ Mobile friendly
-
-- `index.html`
-- `result.html`
-- og image as square image is cut off
-
-# Actions from generations
-
-At least copy, but ideally
 
 # Launch
 

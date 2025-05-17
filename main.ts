@@ -163,10 +163,9 @@ const generateContext = async (prompt: string) => {
   const urls = prompt.match(urlRegex) || [];
 
   let context: string | null = null;
-  let updatedPrompt = prompt;
 
   if (urls?.length === 0) {
-    return { updatedPrompt, context };
+    return { context };
   }
 
   const urlResults = await Promise.all(
@@ -209,14 +208,7 @@ const generateContext = async (prompt: string) => {
     )
     .join("\n");
 
-  // Update prompt with token counts
-  urlResults.forEach(({ url, tokens, failed }) => {
-    if (!failed) {
-      updatedPrompt = updatedPrompt.replace(url, `${url} (${tokens} tokens)`);
-    }
-  });
-
-  return { updatedPrompt, context };
+  return { context };
 };
 /**
  * Durable Object for handling streaming LLM responses
@@ -284,21 +276,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.set("initialized", true);
 
     // NB: Magic! already get started as soon as it is submitted
-    this.state.waitUntil(
-      Promise.all([
-        this.stream(data.user),
-        generateTitleWithAI(
-          getMarkdownResponse(data.pathname, {
-            model: data.model.model,
-            prompt: data.prompt,
-          }),
-          this.env.FREE_SECRET,
-        ).then((data) => {
-          console.log("GOT HEADLINE", data.title);
-          this.set("headline", data.title);
-        }),
-      ]),
-    );
+    this.state.waitUntil(this.stream(data.user));
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
     });
@@ -412,16 +391,31 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const pathname = this.get<string>("pathname");
       //  let accumulatedData = this.get<string>("accumulatedData") || "";
 
-      if (!prompt || !modelConfig) {
+      if (!prompt || !modelConfig || !pathname) {
         throw new Error("Missing required state");
       }
 
-      const { updatedPrompt, context } = await generateContext(prompt);
+      const { context } = await generateContext(prompt);
+      console.log("GOT CONTEXT", context?.length);
+      // generate title after we have the context
+      this.ctx.waitUntil(
+        generateTitleWithAI(
+          getMarkdownResponse(pathname, {
+            model: modelConfig.model,
+            prompt: prompt,
+            context: context,
+          }),
+          this.env.FREE_SECRET,
+        ).then((data) => {
+          console.log("GOT HEADLINE", data.title);
+          this.set("headline", data.title);
+        }),
+      );
 
       // Fetch all URLs in parallel
-      if (context && updatedPrompt) {
+      if (context) {
         this.set("context", context);
-        this.set("prompt", updatedPrompt);
+        this.set("prompt", prompt);
         // Send context update
         this.broadcastEvent("update", {
           field: "context",
@@ -432,7 +426,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Prepare LLM request
       const messages = [
         ...(context ? [{ role: "system", content: context }] : []),
-        { role: "user", content: updatedPrompt },
+        { role: "user", content: prompt },
       ];
 
       const isAnthropic = modelConfig.model.includes("claude");
