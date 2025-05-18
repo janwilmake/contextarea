@@ -11,7 +11,7 @@
     },
 
     {
-      id: "claude-3.7-sonnet",
+      id: "claude-3-7-sonnet-latest",
       name: "Claude 3.7 Sonnet",
       icon: "🤖",
       description: "",

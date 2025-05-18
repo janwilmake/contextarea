@@ -451,25 +451,17 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         { role: "user", content: prompt },
       ];
 
-      if (isFirstRequest) {
-        const titleTokens = Math.round(markdown.length / 5);
-        const titlePrice = 0.5 / 1000000;
+      let priceAtOutput: number | undefined = undefined;
 
-        const inputTokens =
-          Math.round((context?.length || 0) / 5) +
-          Math.round(prompt.length / 5);
-        const priceAtInput =
-          titleTokens * titlePrice +
-          inputTokens * (modelConfig.pricePerMillionInput / 1000000);
+      const titleTokens = Math.round(markdown.length / 5);
+      const titlePrice = 0.5 / 1000000;
 
-        // const updated = await client
-        //   .exec(
-        //     "UPDATE users SET balance = balance - ? WHERE access_token = ?",
-        //     priceAtInput,
-        //     user?.access_token,
-        //   )
-        //   .toArray();
-      }
+      const inputTokens =
+        Math.round((context?.length || 0) / 5) + Math.round(prompt.length / 5);
+      const priceAtInput =
+        titleTokens * titlePrice +
+        inputTokens * (modelConfig.pricePerMillionInput / 1000000);
+
       const isAnthropic = modelConfig.model.includes("claude");
 
       const llmResponse = await fetch(
@@ -538,16 +530,29 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                   token = parsed.delta.text;
                 }
 
-                if (parsed.usage) {
-                  console.log("token", token, "usage", parsed.usage);
+                if (parsed.usage?.output_tokens) {
+                  console.log(
+                    "anthropic output tokens",
+                    parsed.usage.output_tokens,
+                  );
+                  priceAtOutput =
+                    parsed.usage.output_tokens *
+                    (modelConfig.pricePerMillionOutput / 1000000);
                 }
               } else {
                 if (parsed.choices?.[0]?.delta?.content) {
                   token = parsed.choices[0].delta.content;
                 }
 
-                if (parsed.usage) {
-                  console.log("token", token, "usage", parsed.usage);
+                if (parsed.usage?.completion_tokens) {
+                  console.log(
+                    "chatgpt output tokens",
+                    parsed.usage.completion_tokens,
+                  );
+
+                  priceAtOutput =
+                    parsed.usage.completion_tokens *
+                    (modelConfig.pricePerMillionOutput / 1000000);
                 }
               }
 
@@ -565,7 +570,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         }
       }
 
-      await this.handleStreamComplete();
+      const totalCost = isFirstRequest
+        ? (priceAtInput + (priceAtOutput || 0)) * PRICE_MARKUP_FACTOR
+        : 0;
+
+      await this.handleStreamComplete(user, totalCost);
     } catch (error: any) {
       console.error("Error processing request:", error);
       this.set("error", error.message);
@@ -606,8 +615,13 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     }
   }
 
-  private async handleStreamComplete() {
+  private async handleStreamComplete(user: User, totalCost: number) {
     this.set("streamComplete", true);
+
+    console.log(
+      "Request is done. User should be charged; total cost: ",
+      totalCost,
+    );
 
     // Send complete event
     this.broadcastEvent("complete", {
@@ -1059,7 +1073,7 @@ const requestHandler = async (
       pricePerMillionOutput: 1.6,
     },
     {
-      model: "claude-3.7-sonnet",
+      model: "claude-3-7-sonnet-latest",
       basePath: "https://api.anthropic.com",
       apiKey: env.ANTHROPIC_SECRET,
       premium: true,
