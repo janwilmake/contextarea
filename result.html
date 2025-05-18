@@ -39,12 +39,6 @@
                 margin: 8px 0;
             }
 
-            .icon {
-                width: 20px;
-                height: 20px;
-                margin-right: 6px;
-            }
-
             /* Make content container not flex and auto height */
             .content-container {
                 display: block;
@@ -125,6 +119,7 @@
 
             .footer-actions {
                 justify-content: space-between;
+                flex-wrap: wrap;
             }
 
             /* Button adjustments for better touch targets but less padding */
@@ -213,16 +208,6 @@
             color: #e5e5e5;
             text-align: center;
             margin-bottom: 0;
-        }
-
-        .icon {
-            width: 36px;
-            height: 36px;
-            background: linear-gradient(45deg, #ff6b6b, #feca57);
-            border-radius: 50%;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 12px;
         }
 
         .content-container {
@@ -528,7 +513,8 @@
 <body>
     <div class="container">
         <a href="/">
-            <h1><span class="icon"></span>let me prompt it for you</h1>
+            <h1><img src="/logo.png" width="32" height="32"
+                    style="width:32px;height:32px;margin-right:12px;" /></span>let me prompt it for you</h1>
         </a>
 
         <div class="content-container">
@@ -693,7 +679,15 @@
             updateUI(state, isEscaped) {
                 // Update prompt
                 if (state.prompt) {
-                    this.promptTextarea.value = state.prompt;
+
+                    const unescapedPrompt = state.prompt
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#39;/g, "'")
+                        .replace(/&amp;/g, '&');
+
+                    this.promptTextarea.value = unescapedPrompt;
                     this.adjustTextareaHeight();
                 }
 

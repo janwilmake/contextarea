@@ -13,6 +13,32 @@ export { DORM } from "stripeflare";
 import { createClient } from "dormroom";
 import { DurableObject } from "cloudflare:workers";
 
+const DORM_VERSION = "bare-stripeflare";
+
+const migrations = {
+  // can add any other info here
+  1: [
+    `CREATE TABLE users (
+      access_token TEXT PRIMARY KEY,
+      balance INTEGER DEFAULT 0,
+      name TEXT,
+      email TEXT,
+      verified_email TEXT,
+      verified_user_access_token TEXT,
+      card_fingerprint TEXT,
+      client_reference_id TEXT
+    )`,
+    `CREATE INDEX idx_users_balance ON users(balance)`,
+    `CREATE INDEX idx_users_name ON users(name)`,
+    `CREATE INDEX idx_users_email ON users(email)`,
+    `CREATE INDEX idx_users_verified_email ON users(verified_email)`,
+    `CREATE INDEX idx_users_card_fingerprint ON users(card_fingerprint)`,
+    `CREATE INDEX idx_users_client_reference_id ON users(client_reference_id)`,
+  ],
+  // TODO: let's add other columns here like free_model_uses
+  // 2: []
+};
+
 /**
  * Generates a catchy title for an AI interaction using OpenAI's GPT-4.1 Mini
  * Silently falls back to a default title if any errors occur
@@ -444,25 +470,26 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           value: context,
         });
       }
+      const isAnthropic = modelConfig.model.includes("claude");
 
       // Prepare LLM request
       const messages = [
-        ...(context ? [{ role: "system", content: context }] : []),
+        ...(context && !isAnthropic
+          ? [{ role: "system", content: context }]
+          : []),
         { role: "user", content: prompt },
       ];
 
       let priceAtOutput: number | undefined = undefined;
 
       const titleTokens = Math.round(markdown.length / 5);
-      const titlePrice = 0.5 / 1000000;
+      const titleCostPerToken = 0.5 / 1000000;
+      const titlePrice = titleTokens * titleCostPerToken;
 
       const inputTokens =
         Math.round((context?.length || 0) / 5) + Math.round(prompt.length / 5);
-      const priceAtInput =
-        titleTokens * titlePrice +
+      const inputPrice =
         inputTokens * (modelConfig.pricePerMillionInput / 1000000);
-
-      const isAnthropic = modelConfig.model.includes("claude");
 
       const llmResponse = await fetch(
         isAnthropic
@@ -485,6 +512,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             model: modelConfig.model,
             messages,
             stream: true,
+            ...(isAnthropic && context && { system: context }),
             ...(!isAnthropic && { stream_options: { include_usage: true } }),
             ...(isAnthropic && { max_tokens: 4096 }),
           }),
@@ -571,8 +599,17 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       }
 
       const totalCost = isFirstRequest
-        ? (priceAtInput + (priceAtOutput || 0)) * PRICE_MARKUP_FACTOR
+        ? (inputPrice + titlePrice + (priceAtOutput || 0)) * PRICE_MARKUP_FACTOR
         : 0;
+
+      if (isFirstRequest) {
+        console.log({
+          inputPrice,
+          titlePrice,
+          priceAtOutput,
+          PRICE_MARKUP_FACTOR,
+        });
+      }
 
       await this.handleStreamComplete(user, totalCost);
     } catch (error: any) {
@@ -615,13 +652,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     }
   }
 
-  private async handleStreamComplete(user: User, totalCost: number) {
+  private async handleStreamComplete(
+    user: User | undefined,
+    totalCost: number,
+  ) {
     this.set("streamComplete", true);
-
-    console.log(
-      "Request is done. User should be charged; total cost: ",
-      totalCost,
-    );
 
     // Send complete event
     this.broadcastEvent("complete", {
@@ -634,6 +669,37 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     const modelConfig = this.get<ModelConfig>("modelConfig");
     const context = this.get<string>("context");
     const headline = this.get<string>("headline") || undefined;
+
+    console.log(
+      "Request is done. User should be charged; total cost: ",
+      totalCost,
+      "access_token",
+      user?.access_token,
+      "model config",
+      modelConfig,
+    );
+
+    if (user?.access_token) {
+      const client = createClient({
+        doNamespace: this.env.DORM_NAMESPACE,
+        version: DORM_VERSION,
+        migrations,
+        //@ts-ignore
+        ctx: {
+          // NB: need to wrap because of the this reference
+          waitUntil: (promise: Promise<void>) => this.ctx.waitUntil(promise),
+        },
+        name: user?.access_token,
+        mirrorName: "aggregate",
+      });
+      client.exec(
+        "UPDATE users SET balance = balance - ? WHERE access_token = ?",
+        totalCost * 100,
+        user?.access_token,
+      );
+    } else {
+      console.log("WARN; NO USER ACCESS TOKEN");
+    }
 
     if (pathname && prompt && modelConfig) {
       const kvData: KVData = {
@@ -683,30 +749,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     }
   }
 }
-
-export const migrations = {
-  // can add any other info here
-  1: [
-    `CREATE TABLE users (
-      access_token TEXT PRIMARY KEY,
-      balance INTEGER DEFAULT 0,
-      name TEXT,
-      email TEXT,
-      verified_email TEXT,
-      verified_user_access_token TEXT,
-      card_fingerprint TEXT,
-      client_reference_id TEXT
-    )`,
-    `CREATE INDEX idx_users_balance ON users(balance)`,
-    `CREATE INDEX idx_users_name ON users(name)`,
-    `CREATE INDEX idx_users_email ON users(email)`,
-    `CREATE INDEX idx_users_verified_email ON users(verified_email)`,
-    `CREATE INDEX idx_users_card_fingerprint ON users(card_fingerprint)`,
-    `CREATE INDEX idx_users_client_reference_id ON users(client_reference_id)`,
-  ],
-  // TODO: let's add other columns here like free_model_uses
-  // 2: []
-};
 
 /**
  * Sanitizes strings for use in HTML metadata (title, description)
@@ -784,6 +826,7 @@ const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
 <meta property="og:image:alt" content="${description}"/>
 <meta property="og:image:width" content="1200"/>
 <meta property="og:image:height" content="630"/>
+<meta property="og:logo" content="/logo.png" />
 
 <!-- Twitter Meta Tags -->
 <meta name="twitter:card" content="summary_large_image" />
@@ -937,29 +980,26 @@ const getResult = async (
         : data.prompt);
 
     // Ensure all divs have display: flex and only using inline styles
-    const ogHtml = `<div style="display: flex; width: 1200px; height: 630px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;">
-    <div style="display: flex; flex-direction: column; background-color: #2a2a2a; width: 100%; height: 100%; padding: 40px; padding-bottom: 90px;">
+    const ogHtml = `<div style="display: flex; width: 1200px; height: 630px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif">
+    <div style="display: flex; flex-direction: column; background-color: #2a2a2a; width: 100%; height: 100%; padding-left: 40px; padding-right: 40px; padding-top: 10px; padding-bottom: 100px;">
       
       <!-- Header row -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <div style="display: flex; width: 36px; height: 36px; background-color: #feca57; border-radius: 18px; margin-right: 12px;"></div>
-        <div style="display: flex; font-size: 28px; color: #e5e5e5; opacity: 0.8;">Let me prompt it for you! </div>
-        <div style="display: flex; color: #b5b5b5; font-size: 24px; opacity: 0.8;">${new Date().toLocaleDateString()}</div>
+      <div style="display: flex; width:100%; justify-content: flex-end; margin-bottom: 15px;">
+        <!--<div style="display: flex; width: 36px; height: 36px; background-color: #feca57; border-radius: 18px; margin-right: 12px;"></div>-->
+        <div style="display: flex;"><p style="display: flex; flex-direction: column; margin: 0; font-size: 42px; color: #ffffff; font-weight: 300; letter-spacing: 0.02em; font-family: sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial;">let me prompt it for you</p></div>
       </div>
       
       <!-- Main content area -->
       <div style="display: flex; flex-direction: column; justify-content: center; flex: 1;">
         <!-- Prompt container -->
-        <div style="display: flex; background-color: #3a3a3a; border-radius: 12px; padding: 30px; margin-bottom: 20px; border-left: 6px solid #feca57;">
+        <div style="display: flex; padding: 30px; margin-bottom: 20px; border-left: 6px solid #feca57;">
           <div style="display: flex; width: 100%;">
-            <p style="display: flex; flex-direction: column; color: #e5e5e5; font-size: 64px; margin: 0; font-family: 'SF Mono', 'Consolas', 'Monaco', monospace; width: 100%;">${headline}</p>
+            <p style="display: flex; flex-direction: column; color: #e5e5e5; font-size: 64px; margin: 0; font-family: sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial; width: 100%;">${headline}</p>
           </div>
         </div>
       </div>
       
-      <!-- Stats footer -->
       <div style="display: flex; justify-content: space-between; align-items: center;">
-        <!-- Token count -->
         <div style="display: flex; flex-direction: column; align-items: flex-start;">
           <div style="display: flex; font-size: 80px; font-weight: bold; color: #feca57;">${promptTokens.toLocaleString()}</div>
           <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">PROMPT TOKENS</div>
@@ -1089,6 +1129,7 @@ const requestHandler = async (
     env,
     ctx,
     migrations,
+    DORM_VERSION,
   );
 
   console.log({ stripeMiddlewareMs: Date.now() - t });
@@ -1098,12 +1139,16 @@ const requestHandler = async (
     return result.response;
   }
 
-  const { user } = result;
+  if (!result.session) {
+    return new Response("No session could be estabilished");
+  }
+
+  const { user } = result.session;
   // Get user data from stripeflare
   const { access_token, verified_user_access_token, ...publicUser } =
     user || {};
 
-  const headers = result.headers || new Headers();
+  const headers = result.session.headers || new Headers();
 
   // Only accept POST and GET methods
   if (!["POST", "GET"].includes(request.method)) {

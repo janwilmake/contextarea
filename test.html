@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello World Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        a:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Hello World Example</h1>
+
+    <pre><code>Hello World</code></pre>
+
+    <a target="_blank"
+        href="data:text/html;charset=utf-8,<!DOCTYPE html><html><head><title>Hello World Example</title></head><body><h1>Hello World Example</h1></body></html>">View
+        as Data URL</a>
+
+
+    <a id="blobLink" href="#">View with Blob URL</a>
+    <script>
+        document.getElementById('blobLink').addEventListener('click', function () {
+            const htmlContent = '<!DOCTYPE html><html><head><title>Hello World Example</title></head><body><h1>Hello World Example</h1></body></html>';
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank');
+        });
+    </script>
+</body>
+
+</html>

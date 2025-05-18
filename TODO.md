@@ -20,15 +20,20 @@ Shorter flow: be the product
 - ✅ Create endpoint to run middleware and return userdata and use that in `model-modal.js` to show user information in there.
 - ✅ Confirm adding balance works
 - ✅ premium shows up in the right way
+- ✅ Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
+- ✅ Ensure pricing is properly calculated for both chatgpt and claude with a MARKUP_FACTOR
+- ✅ Make it easy to access the DB from the other DO, ensure to document how to do this in stripeflare template and show that in the demo as well. Maybe export `createClient` and `DEFAULT_VERSION` from stripeflare?
+- Charge the user the determined price
+- To prevent abuse, limit max input-tokens for free users to 10k and show a proper 402 warning for it
 - Count free requests at user-level, give max 10 total free requests.
 - Return 402 as data property, if that happens, auto-open the modal and show an error that guides to adding more balance
 - Ensure model from result is always selected. If that isn't possible since you aren't premium, open modal when clicking try-again or upon submission, with error that this model is premium.
-- Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
-- Ensure pricing is properly applied. Confirm monetisation works.
 
 💪 TODO: 1) ✅ purify prompt/context, 2) ❌ make claude & freemium monetisation work 3) ✅ make og-data work! It's usable now for myself and to share results easily!
 
 # Launch
+
+Input tokens should be unescaped
 
 If usable, start using it instead of Claude.
 

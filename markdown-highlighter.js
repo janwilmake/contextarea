@@ -35,6 +35,37 @@ class MarkdownHighlighter {
           padding: 0;
           font-size: 0;
         }
+
+        /* Common button styles */
+        .code-button {
+          background-color: rgba(42, 42, 42, 0.6);
+          border: 1px solid #4a4a4a;
+          border-radius: 4px;
+          color: #e5e5e5;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          height: 24px;
+          padding: 0;
+          min-width: 24px;
+        }
+
+        .code-button:hover {
+          background-color: rgba(74, 74, 74, 0.8);
+        }
+
+        .code-button svg {
+          width: 12px;
+          height: 12px;
+        }
+
+        .code-button-with-text {
+          padding: 0 6px;
+          gap: 4px;
+        }
   
         /* Restore font-size for the actual content */
         .code-block-wrapper pre {
@@ -58,63 +89,6 @@ class MarkdownHighlighter {
           font-size: 12px;
           color: #ff6b6b;
           font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        }
-  
-        .md-codeblock {
-          color: #ff6b6b;
-          font-size: 10px;
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-        }
-  
-        /* Copy button styles */
-        .code-copy-button {
-          background-color: rgba(42, 42, 42, 0.6);
-          border: 1px solid #4a4a4a;
-          border-radius: 4px;
-          color: #e5e5e5;
-          padding: 0px 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 12px;
-          opacity: 1;
-        }
-  
-        /* Show the copy button on hover over the code block */
-        .code-block-wrapper:hover .code-copy-button {
-          opacity: 1;
-        }
-  
-        .code-copy-button:hover {
-          opacity: 1
-          background-color: rgba(74, 74, 74, 0.8);
-        }
-  
-        .code-copy-button svg {
-          width: 12px;
-          height: 12px;
-        }
-  
-        /* View toggle button */
-        .code-view-toggle {
-          background-color: rgba(42, 42, 42, 0.6);
-          border: 1px solid #4a4a4a;
-          border-radius: 4px;
-          color: #e5e5e5;
-          padding: 0px 6px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 12px;
-          margin-right: 8px;
-        }
-  
-        .code-view-toggle:hover {
-          background-color: rgba(74, 74, 74, 0.8);
         }
   
         /* Code block header */
@@ -167,7 +141,7 @@ class MarkdownHighlighter {
   
         /* For mobile devices, keep the button visible always */
         @media (max-width: 768px) {
-          .code-copy-button {
+          .code-button {
             opacity: 0.7;
           }
         }
@@ -226,13 +200,14 @@ class MarkdownHighlighter {
           background: none;
         }
   
-        /* Mobile responsive adjustments */
-        @media (max-width: 768px) {
-          pre {
+        pre {
             white-space: pre-wrap;
             word-break: break-word;
-          }
-  
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+          
           .code-block-wrapper {
             max-width: 100%;
             overflow-x: auto;
@@ -241,14 +216,6 @@ class MarkdownHighlighter {
           .hljs {
             white-space: pre-wrap;
             word-break: break-word;
-          }
-  
-          .code-copy-button {
-            opacity: 0.9;
-            top: 3px;
-            right: 3px;
-            padding: 2px 4px;
-            border-radius: 4px;
           }
         }
       `;
@@ -426,33 +393,48 @@ class MarkdownHighlighter {
                 ? ""
                 : `
             <div class="code-block-actions">
-              ${
-                language === "html"
-                  ? `
-                <button class="code-view-toggle code-render-toggle" data-block-id="${blockId}" title="Toggle Render">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                  </svg>
-                  ${defaultView === "render" ? "Show Code" : "Render"}
-                </button>
-              `
-                  : ""
-              }
-              <button class="code-view-toggle code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
+              
+              <button class="code-button code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-                ${defaultView === "collapsed" ? "Expand" : "Collapse"}
               </button>
-              <button class="code-copy-button" data-block-id="${blockId}" title="Copy code">
+
+              <button class="code-button code-copy-button" data-block-id="${blockId}" title="Copy code">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
-                <span class="copy-text">Copy</span>
+                <span class="copy-text"></span>
               </button>
+
+              ${
+                language === "html"
+                  ? `
+                <button class="code-button code-open-new-tab" data-block-id="${blockId}" title="Open in New Tab">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </button>
+                <button class="code-button code-button-with-text code-render-toggle" data-block-id="${blockId}" title="Toggle Render">
+                  ${
+                    defaultView === "code"
+                      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
+                </svg>`
+                      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>`
+                  }
+                  ${defaultView === "code" ? "Render" : "Code"}
+                </button>
+              `
+                  : ""
+              }
             </div>`
             }
           </div>`;
@@ -509,6 +491,30 @@ class MarkdownHighlighter {
       .replace(/'/g, "&#39;");
   }
 
+  setupOpenInNewTabButtons() {
+    const openButtons = document.querySelectorAll(".code-open-new-tab");
+
+    openButtons.forEach((button) => {
+      // Remove existing event listeners to prevent duplicates
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+
+      newButton.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent event bubbling
+        const blockId = newButton.getAttribute("data-block-id");
+        const codeElement = document.getElementById(blockId);
+        const htmlContent = codeElement ? codeElement.textContent : "";
+
+        if (htmlContent) {
+          // Create a data URL from the HTML content
+          const blob = new Blob([htmlContent], { type: "text/html" });
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, "_blank");
+        }
+      });
+    });
+  }
+
   // Setup all interactive elements for code blocks
   setupInteractiveElements() {
     // Setup copy buttons
@@ -519,6 +525,8 @@ class MarkdownHighlighter {
 
     // Setup render toggles (for HTML code blocks)
     this.setupRenderToggles();
+
+    this.setupOpenInNewTabButtons();
 
     // Initialize HTML renders if any are set to render view by default
     this.initializeHtmlRenders();
@@ -545,7 +553,7 @@ class MarkdownHighlighter {
           buttonText.textContent = "Copied!";
 
           setTimeout(() => {
-            buttonText.textContent = "Copy";
+            buttonText.textContent = "";
           }, 1000);
         } catch (err) {
           console.error("Failed to copy code:", err);
@@ -585,7 +593,6 @@ class MarkdownHighlighter {
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="18 15 12 9 6 15"></polyline>
                   </svg>
-                  Collapse
                 `;
             }
 
@@ -634,7 +641,6 @@ class MarkdownHighlighter {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="18 15 12 9 6 15"></polyline>
                 </svg>
-                Collapse
               `;
 
             container.setAttribute("data-view", "code");
@@ -649,7 +655,6 @@ class MarkdownHighlighter {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
-                Expand
               `;
 
             container.setAttribute("data-view", "collapsed");
@@ -696,9 +701,7 @@ class MarkdownHighlighter {
 
             newButton.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="2" y1="12" x2="22" y2="12"></line>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
                 </svg>
                 Render
               `;
@@ -723,9 +726,11 @@ class MarkdownHighlighter {
 
             newButton.innerHTML = `
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                 </svg>
-                Show Code
+                Code
               `;
 
             container.setAttribute("data-view", "render");

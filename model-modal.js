@@ -405,9 +405,9 @@
                           ${
                             me && me.balance > 0
                               ? `<div class="model-modal-upgrade">
-                              <div class="model-modal-upgrade-title">Your balance is $${
+                              <div class="model-modal-upgrade-title">Your balance is $${(
                                 me.balance / 100
-                              }.</div>
+                              ).toFixed(2)}.</div>
                               <div class="model-modal-upgrade-price"></div>
                               <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Add more</a>
                           </div>`
