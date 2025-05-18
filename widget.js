@@ -20,43 +20,11 @@
       this.injectStyles();
 
       // Load the model-modal.js script
-      this.loadModelModalScript().then(() => {
-        // Render the widget after model modal script is loaded
-        this.render();
+      // Render the widget after model modal script is loaded
+      this.render();
 
-        // Initialize event listeners
-        this.setupEventListeners();
-
-        // Set default model if specified
-        if (this.options.defaultModel && window.setSelectedModel) {
-          window.setSelectedModel(this.options.defaultModel);
-        }
-      });
-    }
-
-    loadModelModalScript() {
-      return new Promise((resolve, reject) => {
-        // Check if script is already loaded
-        if (window.modelModal) {
-          resolve();
-          return;
-        }
-
-        const script = document.createElement("script");
-        script.src = "https://lmpify.com/model-modal.js";
-        script.async = true;
-
-        script.onload = () => {
-          resolve();
-        };
-
-        script.onerror = () => {
-          console.error("Failed to load model-modal.js");
-          reject();
-        };
-
-        document.head.appendChild(script);
-      });
+      // Initialize event listeners
+      this.setupEventListeners();
     }
 
     injectStyles() {
@@ -490,9 +458,7 @@
       const path = `/${slug}-${hash}`;
 
       // Get selected model from the modal
-      const modelId = window.getSelectedModel
-        ? window.getSelectedModel().id
-        : this.options.defaultModel;
+      const modelId = this.options.defaultModel;
 
       // Create form data
       const formData = new FormData();

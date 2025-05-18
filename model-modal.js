@@ -376,7 +376,7 @@
   }
 
   // Create modal HTML
-  function createModalHTML(models, selectedModelId = null) {
+  function createModalHTML(models, selectedModelId = null, me) {
     const modalHTML = `
               <div class="model-modal-backdrop" id="modelModalBackdrop">
                   <div class="model-modal">
@@ -402,16 +402,26 @@
                       </div>
   
                       <div class="model-modal-content">
-                          <div class="model-modal-upgrade">
+                          ${
+                            me && me.balance > 0
+                              ? `<div class="model-modal-upgrade">
+                              <div class="model-modal-upgrade-title">Your balance is $${
+                                me.balance / 100
+                              }.</div>
+                              <div class="model-modal-upgrade-price"></div>
+                              <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Add more</a>
+                          </div>`
+                              : `<div class="model-modal-upgrade">
                               <div class="model-modal-upgrade-title">Unlock premium models, pay as you go.</div>
                               <div class="model-modal-upgrade-price">$20</div>
                               <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Upgrade now</a>
-                          </div>
+                          </div>`
+                          }
   
                           <ul class="model-modal-list" id="modelModalList">
                               ${models
                                 .map((model) =>
-                                  createModelItem(model, selectedModelId),
+                                  createModelItem(model, selectedModelId, me),
                                 )
                                 .join("")}
                           </ul>
@@ -446,16 +456,17 @@
   }
 
   // Create individual model item
-  function createModelItem(model, selectedModelId) {
+  function createModelItem(model, selectedModelId, me) {
     const isSelected = model.id === selectedModelId;
     const isPremium = model.premium === true;
+    const isDisabled = (!me || me.balance <= 0) && isPremium;
     const features = model.features
       .map((feature) => ICONS[feature] || "")
       .join("");
 
     return `
               <li class="model-modal-item ${isSelected ? "selected" : ""} ${
-      isPremium ? "disabled" : ""
+      isDisabled ? "disabled" : ""
     }" data-model-id="${model.id}">
                   <div class="model-modal-item-icon">${model.icon}</div>
                   <div class="model-modal-item-info">
@@ -478,7 +489,7 @@
                   }
                   <div class="model-modal-item-actions">
                       ${features}
-                      ${isPremium ? ICONS.lock : ""}
+                      ${isDisabled ? ICONS.lock : ""}
                   </div>
               </li>
           `;
@@ -487,10 +498,14 @@
   // Modal functionality
   class ModelModal {
     constructor() {
-      this.selectedModelId = MODELS[0].id; // Default selection
+      this.selectedModelId =
+        typeof window.localStorage.getItem("model") === "string"
+          ? window.localStorage.getItem("model")
+          : MODELS[0].id; // Default selection
       this.modalElement = null;
       this.onSelectCallback = null;
       this.showingAll = false;
+      this.me = null;
       this.init();
     }
 
@@ -507,10 +522,24 @@
         return;
       }
 
+      fetch("/me")
+        .then(async (res) => {
+          if (!res.ok) {
+            console.log("Not ok", res.status);
+            console.log(await res.text());
+          }
+          const json = await res.json();
+          return json;
+        })
+        .then((me) => {
+          console.log("set me", me);
+          this.me = me;
+          this.createModal(container);
+          this.createTriggerButton(container);
+          this.attachEventListeners();
+        });
+
       // Create trigger button and modal
-      this.createTriggerButton(container);
-      this.createModal(container);
-      this.attachEventListeners();
     }
 
     createTriggerButton(container) {
@@ -560,6 +589,8 @@
       const selectedModel = MODELS.find((m) => m.id === this.selectedModelId);
       const button = document.createElement("button");
       button.className = "model-modal-trigger";
+      //needed to not submit forms it appears in
+      button.setAttribute("type", "button");
       button.innerHTML = `
                   <span class="model-modal-trigger-icon">${selectedModel.icon}</span>
                   <span class="model-modal-trigger-text">${selectedModel.name}</span>
@@ -573,14 +604,17 @@
     }
 
     createModal(container) {
-      container.innerHTML = createModalHTML(MODELS, this.selectedModelId);
+      container.innerHTML = createModalHTML(
+        MODELS,
+        this.selectedModelId,
+        this.me,
+      );
 
       //const textContent = document.getElementById("server-data").textContent;
-      const data = undefined; // textContent ? JSON.parse(textContent) : undefined;
 
       document.getElementById(
         "paymentLink",
-      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${data?.user?.client_reference_id}`;
+      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${this.me?.client_reference_id}`;
 
       this.modalElement = document.getElementById("modelModalBackdrop");
     }
@@ -635,11 +669,13 @@
       const model = MODELS.find((m) => m.id === modelId);
 
       // Don't select if it's a premium model
-      if (model.premium) {
+      if (model.premium && (!this.me || this.me.balance <= 0)) {
         return;
       }
 
       this.selectedModelId = modelId;
+
+      window.localStorage.setItem("model", modelId);
 
       // Update UI
       document.querySelectorAll(".model-modal-item").forEach((item) => {
@@ -651,20 +687,24 @@
       const selectedItem = document.querySelector(
         `[data-model-id="${modelId}"]`,
       );
-      selectedItem.classList.add("selected");
-
-      // Add check icon
-      const checkDiv = document.createElement("div");
-      checkDiv.className = "model-modal-item-check";
-      checkDiv.innerHTML = ICONS.check;
-      selectedItem.insertBefore(
-        checkDiv,
-        selectedItem.querySelector(".model-modal-item-actions"),
-      );
+      if (selectedItem) {
+        selectedItem.classList.add("selected");
+        // Add check icon
+        const checkDiv = document.createElement("div");
+        checkDiv.className = "model-modal-item-check";
+        checkDiv.innerHTML = ICONS.check;
+        selectedItem.insertBefore(
+          checkDiv,
+          selectedItem.querySelector(".model-modal-item-actions"),
+        );
+      }
 
       // Update footer text
-      document.getElementById("modelModalSelectedName").textContent =
-        model.name;
+      const selectedName = document.getElementById("modelModalSelectedName");
+
+      if (selectedName) {
+        selectedName.textContent = model.name;
+      }
 
       // Update trigger button
       if (this.triggerButton) {
@@ -738,7 +778,10 @@
 
   window.setSelectedModel = function (modelId) {
     const model = MODELS.find((m) => m.id === modelId);
-    if (!model.premium) {
+    if (
+      !model.premium ||
+      (window.modelModal.me && window.modelModal.me.balance > 0)
+    ) {
       window.modelModal.selectModel(modelId);
     }
   };

@@ -42,3 +42,30 @@ the result is added to kv under key of pathname
 # New specification
 
 > Tomorrow: make new spec that streams prompt. Think first if chatcompletions.stream is the right abstraction..? or do I need this whole thing custom?
+
+# PRIORITY: REPLACE CLAUDE (2025-05-12 until 2025-05-17)
+
+- ✅ use "stripeflare" to serve all pages with user-balance and dynamic payment link.
+- ✅ also add `model-modal.js` to resultpage, making it possible to repost it with a different model
+- ✅ remove byok (for now) and focus on 1 cheap model and 1 high-quality model
+- 🤔 Figure out why it's so slow. It's due to 2 things. 1: kv is not being consistent, and 2: due to queue not handling things directly. A better approach might be a `LLMStreamDO`. make that!
+- ✅ make stream.chatcompletions.com cache proxy
+- ✅ Integrate with LLMStreamDO or variant thereof to make things instant. pattern is: instant-in-do-stream(-and-back-if-needed-or-later), globally subscribable realtime, eventually-pushed-to-the-edge https://x.com/janwilmake/status/1922437388258726270
+- ✅ 🔥 Added `/from/{promptUrl}` endpoint to integrate with any URL as startingpoint more easily (e.g. from github). Refactored logic to allow for GET request to DO
+- ✅ `Error in DO fetch: RangeError: Values cannot be larger than 131072` - storage of prompt is too large! Also context! This needs solving, potentially use SQLite one row per key.
+- ✅ Prune long prompt inputs and prune long fetch text responses from URLs. This is a separate function I already did before. work in `lmpify.context`
+- ✅ Sanetize/DOMPurify JSON before putting it into HTML
+- ✅ 🤔 I thought it worked, but when refreshing while it's generating, it actually doesn't find the same stream now, anymore! Maybe, the migration to SQLite fucked it up? Make this work as desired. **Improved setup, state handling and fixed bug**
+- ✅ properly renders og-image meta tags etc
+- ✅ renders a preliminary og image
+- ✅ Should calculate 'og-details' based on prompt in the DO
+- ✅ **self-links**: result page should also render markdown when doing non-browser-based fetch or when adding `.md` similar to chatcompletions, prompt md should also be a link, context md also.
+- ✅ `?q={EncodedString}` to pre-add context to homepage.
+- ✅ Added proper markdown highlighting
+- ✅ Ability to copy codeblocks.
+- ✅ Mobile friendly ✅ `result.html` ✅ `index.html`
+- ✅ Ensure geneated title is also based on context, not just prompt
+- ✅ Fix annoying JSON parser bug when having `</script>` https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake
+- ✅ Modularize the code! makes it a bit cleaner and more readable.
+- ✅ added html viewer and collapsible stored on user level
+- ✅ added 'credentialless' to iframe so i don't think we need to worry about it ever executing functionality in lmpify draining someones balance. furthermore, the access-token itself was already not accessible as it's http only

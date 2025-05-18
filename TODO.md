@@ -2,7 +2,7 @@ Long flow:
 
 gh -> uithub -> your lists repos + starred + repos -> contexts -> try it button -> lmpify -> claude? pay.
 
-Shorter flow:be the product
+Shorter flow: be the product
 
 - collect some ctx links
 - make spec in lmpify with links
@@ -11,41 +11,18 @@ Shorter flow:be the product
 
 ^ shows the power of uithub contexts already. IF:
 
-- when typing urls already get extrapolated into cards and cached
+- when typing, urls already get extrapolated into cards and cached
 - when loaded again, this is metadata directly visible and clickable
 - og image / title shows gist of prompt
 
-# PRIORITY: REPLACE CLAUDE (2025-05-12 until 2025-05-16)
-
-- ✅ use "stripeflare" to serve all pages with user-balance and dynamic payment link.
-- ✅ also add `model-modal.js` to resultpage, making it possible to repost it with a different model
-- ✅ remove byok (for now) and focus on 1 cheap model and 1 high-quality model
-- 🤔 Figure out why it's so slow. It's due to 2 things. 1: kv is not being consistent, and 2: due to queue not handling things directly. A better approach might be a `LLMStreamDO`. make that!
-- ✅ make stream.chatcompletions.com cache proxy
-- ✅ Integrate with LLMStreamDO or variant thereof to make things instant. pattern is: instant-in-do-stream(-and-back-if-needed-or-later), globally subscribable realtime, eventually-pushed-to-the-edge https://x.com/janwilmake/status/1922437388258726270
-- ✅ 🔥 Added `/from/{promptUrl}` endpoint to integrate with any URL as startingpoint more easily (e.g. from github). Refactored logic to allow for GET request to DO
-- ✅ `Error in DO fetch: RangeError: Values cannot be larger than 131072` - storage of prompt is too large! Also context! This needs solving, potentially use SQLite one row per key.
-- ✅ Prune long prompt inputs and prune long fetch text responses from URLs. This is a separate function I already did before. work in `lmpify.context`
-- ✅ Sanetize/DOMPurify JSON before putting it into HTML
-- ✅ 🤔 I thought it worked, but when refreshing while it's generating, it actually doesn't find the same stream now, anymore! Maybe, the migration to SQLite fucked it up? Make this work as desired. **Improved setup, state handling and fixed bug**
-- ✅ properly renders og-image meta tags etc
-- ✅ renders a preliminary og image
-- ✅ Should calculate 'og-details' based on prompt in the DO
-- ✅ **self-links**: result page should also render markdown when doing non-browser-based fetch or when adding `.md` similar to chatcompletions, prompt md should also be a link, context md also.
-- ✅ `?q={EncodedString}` to pre-add context to homepage.
-- ✅ Added proper markdown highlighting
-- ✅ Ability to copy codeblocks.
-- ✅ Mobile friendly ✅ `result.html` ✅ `index.html`
-- ✅ Ensure geneated title is also based on context, not just prompt
-- ✅ Fix annoying JSON parser bug when having `</script>` https://www.lmpify.com/from/https://uithub.com/janwilmake/xymake
-- ✅ Modularize the code! makes it a bit cleaner and more readable.
-- ✅ added html viewer and collapsible stored on user level
-
 # Monetisation
 
-- Create endpoint to run middleware and return userdata and use that in `model-modal.js` to show user information in there. Also show balance, making it bigger/red when low.
-- Return 402 in a way that shows it as
+- ✅ Create endpoint to run middleware and return userdata and use that in `model-modal.js` to show user information in there.
+- ✅ Confirm adding balance works
+- ✅ premium shows up in the right way
 - Count free requests at user-level, give max 10 total free requests.
+- Return 402 as data property, if that happens, auto-open the modal and show an error that guides to adding more balance
+- Ensure model from result is always selected. If that isn't possible since you aren't premium, open modal when clicking try-again or upon submission, with error that this model is premium.
 - Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
 - Ensure pricing is properly applied. Confirm monetisation works.
 
@@ -106,6 +83,7 @@ It should then simply write these files into the cwd, which allows testing and s
 
 # QOL:
 
+- Add 💡 logo to og-image
 - Problem: re-rendering entire text for every output token makes it slow, especially when doing so many calculations. Idea: seal markdown output after every section. Before beginning a codeblock, and after ending acodeblock, these are moments which we would be able to seal it up to there and create a new 'block'. This way only the latest block is being re-rendered, making it a lot faster. This would allow making complete codeblocks interactive already. Incomplete codeblocks can now also made interactive, especially if can figure out how to skip updating the UI for 95% of tokens, just update it everh 20th token. Besides, if I can do this, it'd be possible to render the unfinished html incrementally as it gets created, creating a magical experience.
 - add toggle button to view context in right panel rather than result (sets `secondPanelView` localstorage) or maybe not localStorage; just once
 - Every codeblock should be available using the proper mediatype at `https://{slug}-{hash}.lmpify.com/{path}`. All links should be easy to find and add to the prompt.
@@ -114,3 +92,4 @@ It should then simply write these files into the cwd, which allows testing and s
 - super idea: if at least one URL returns a `multipart/form-data` stream or file object, take the biggest of those, and use it with `uithub.filetransformers` with the rest of the prompt. we now apply the prompt on every file. Critical component: detecting streamable url response early + proxy traffic.
 - Idea: "hooks" - plugins users can install that allow performing additional analysis on the prompt, context, and result. This could become a marketplace in itself.
 - IDEA: `/from/{url}` could be what shows up in address bar, may make it easier to learn that convention, or at least show it in the interface, if it was the source.
+- IDEA: User-based DO that collects all history and keeps a live connection with any active browser session of that user, such that it is broadcastable from https://lmpify.com/{userslug} and a history is also collected there. A good MVP would be to first make websocket-markdown editor DO like bruna almost did

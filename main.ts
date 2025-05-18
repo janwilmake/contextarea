@@ -1,6 +1,8 @@
 // @ts-check
 /// <reference types="@cloudflare/workers-types" />
 
+const PRICE_MARKUP_FACTOR = 1.2;
+
 import { ImageResponse } from "workers-og";
 import {
   Env as StripeflareEnv,
@@ -8,6 +10,7 @@ import {
   type StripeUser,
 } from "stripeflare";
 export { DORM } from "stripeflare";
+import { createClient } from "dormroom";
 import { DurableObject } from "cloudflare:workers";
 
 /**
@@ -119,6 +122,7 @@ interface Env extends StripeflareEnv {
  * Extended user interface that includes stripeflare user properties
  */
 interface User extends StripeUser {
+  free_model_uses: number;
   // Add any additional user properties here
 }
 
@@ -148,6 +152,8 @@ interface SSEEvent {
  * Model configuration
  */
 interface ModelConfig {
+  pricePerMillionInput: number;
+  pricePerMillionOutput: number;
   model: string;
   basePath: string;
   apiKey: string;
@@ -283,12 +289,14 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   }) {
     // Save each field to storage
     this.set("pathname", data.pathname);
+
+    // cut prompt at 1mb = 200k tokens
     this.set("prompt", data.prompt.slice(0, 1024 * 1024));
     this.set("modelConfig", data.model);
     this.set("initialized", true);
 
     // NB: Magic! already get started as soon as it is submitted
-    this.state.waitUntil(this.stream(data.user));
+    this.state.waitUntil(this.stream(data.user, true));
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
@@ -303,7 +311,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     return { prompt, model: modelConfig?.model, context, headline };
   }
 
-  stream = async (user: User | undefined) => {
+  stream = async (user: User | undefined, isFirstRequest?: boolean) => {
     const initialized = this.get<boolean>("initialized");
 
     if (!initialized) {
@@ -351,7 +359,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         // If not already processing, start the stream
         if (!isProcessing) {
           this.set("isProcessing", true);
-          this.processRequest(user);
+          this.processRequest(user, isFirstRequest);
         }
       },
       cancel: (controller) => {
@@ -384,7 +392,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       if (request.method === "GET" && url.pathname === "/stream") {
         const user = await request.json<User>().catch(() => undefined);
 
-        return this.stream(user);
+        const TEMPORARY_TEST_STREAM_WITH_PAYMENT = true;
+        return this.stream(user, TEMPORARY_TEST_STREAM_WITH_PAYMENT);
       }
 
       return new Response("Not Found", { status: 404 });
@@ -394,7 +403,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     }
   }
 
-  private async processRequest(user?: User) {
+  private async processRequest(
+    user: User | undefined,
+    isFirstRequest: boolean | undefined,
+  ) {
     try {
       // Get stored state
       const prompt = this.get<string>("prompt");
@@ -408,15 +420,15 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const { context } = await generateContext(prompt);
       console.log("GOT CONTEXT", context?.length);
       // generate title after we have the context
+
+      const markdown = getMarkdownResponse(pathname, {
+        model: modelConfig.model,
+        prompt: prompt,
+        context: context,
+      });
+
       this.ctx.waitUntil(
-        generateTitleWithAI(
-          getMarkdownResponse(pathname, {
-            model: modelConfig.model,
-            prompt: prompt,
-            context: context,
-          }),
-          this.env.FREE_SECRET,
-        ).then((data) => {
+        generateTitleWithAI(markdown, this.env.FREE_SECRET).then((data) => {
           console.log("GOT HEADLINE", data.title);
           this.set("headline", data.title);
         }),
@@ -439,6 +451,25 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         { role: "user", content: prompt },
       ];
 
+      if (isFirstRequest) {
+        const titleTokens = Math.round(markdown.length / 5);
+        const titlePrice = 0.5 / 1000000;
+
+        const inputTokens =
+          Math.round((context?.length || 0) / 5) +
+          Math.round(prompt.length / 5);
+        const priceAtInput =
+          titleTokens * titlePrice +
+          inputTokens * (modelConfig.pricePerMillionInput / 1000000);
+
+        // const updated = await client
+        //   .exec(
+        //     "UPDATE users SET balance = balance - ? WHERE access_token = ?",
+        //     priceAtInput,
+        //     user?.access_token,
+        //   )
+        //   .toArray();
+      }
       const isAnthropic = modelConfig.model.includes("claude");
 
       const llmResponse = await fetch(
@@ -462,6 +493,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             model: modelConfig.model,
             messages,
             stream: true,
+            ...(!isAnthropic && { stream_options: { include_usage: true } }),
             ...(isAnthropic && { max_tokens: 4096 }),
           }),
         },
@@ -505,9 +537,17 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                 ) {
                   token = parsed.delta.text;
                 }
+
+                if (parsed.usage) {
+                  console.log("token", token, "usage", parsed.usage);
+                }
               } else {
                 if (parsed.choices?.[0]?.delta?.content) {
                   token = parsed.choices[0].delta.content;
+                }
+
+                if (parsed.usage) {
+                  console.log("token", token, "usage", parsed.usage);
                 }
               }
 
@@ -630,18 +670,28 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   }
 }
 
-const migrations = {
+export const migrations = {
+  // can add any other info here
   1: [
     `CREATE TABLE users (
       access_token TEXT PRIMARY KEY,
       balance INTEGER DEFAULT 0,
+      name TEXT,
       email TEXT,
+      verified_email TEXT,
+      verified_user_access_token TEXT,
+      card_fingerprint TEXT,
       client_reference_id TEXT
     )`,
     `CREATE INDEX idx_users_balance ON users(balance)`,
+    `CREATE INDEX idx_users_name ON users(name)`,
     `CREATE INDEX idx_users_email ON users(email)`,
+    `CREATE INDEX idx_users_verified_email ON users(verified_email)`,
+    `CREATE INDEX idx_users_card_fingerprint ON users(card_fingerprint)`,
     `CREATE INDEX idx_users_client_reference_id ON users(client_reference_id)`,
   ],
+  // TODO: let's add other columns here like free_model_uses
+  // 2: []
 };
 
 /**
@@ -851,7 +901,7 @@ const getMarkdownResponse = (
 const getResult = async (
   request: Request,
   env: Env,
-  publicUser: Omit<User, "access_token"> | {},
+  publicUser: Omit<User, "access_token" | "verified_user_access_token"> | {},
   data: KVData,
   status: string,
   headers: any,
@@ -1005,12 +1055,16 @@ const requestHandler = async (
       model: "gpt-4.1-mini",
       basePath: "https://api.openai.com/v1",
       apiKey: env.FREE_SECRET,
+      pricePerMillionInput: 0.4,
+      pricePerMillionOutput: 1.6,
     },
     {
       model: "claude-3.7-sonnet",
       basePath: "https://api.anthropic.com",
       apiKey: env.ANTHROPIC_SECRET,
       premium: true,
+      pricePerMillionInput: 3,
+      pricePerMillionOutput: 15,
     },
   ];
 
@@ -1032,13 +1086,19 @@ const requestHandler = async (
 
   const { user } = result;
   // Get user data from stripeflare
-  const { access_token, ...publicUser } = user || {};
+  const { access_token, verified_user_access_token, ...publicUser } =
+    user || {};
 
   const headers = result.headers || new Headers();
 
   // Only accept POST and GET methods
   if (!["POST", "GET"].includes(request.method)) {
     return new Response("Method not allowed", { status: 405, headers });
+  }
+
+  if (pathname === "/me") {
+    headers.append("content-type", "application/json");
+    return new Response(JSON.stringify(publicUser, undefined, 2), { headers });
   }
 
   const pathnameWithoutExt = pathname.split(".")[0];
@@ -1116,8 +1176,14 @@ const requestHandler = async (
 
       model = modelConfig?.model;
 
+      const useBalance = modelConfig.premium || (user && user.balance > 0);
+
       // Check balance for premium models
-      if (modelConfig.premium && (!user?.balance || user.balance <= 0)) {
+      if (
+        useBalance
+          ? !user?.balance || user.balance <= 0
+          : !user || user.free_model_uses >= 10
+      ) {
         return new Response("Payment required", { status: 402, headers });
       }
 

@@ -1076,6 +1076,11 @@
         // Main application initialization
         const data = JSON.parse(document.getElementById('server-data').textContent);
 
+        if (data?.model) {
+            // set for model-modal
+            window.setSelectedModel(data.model);
+        }
+
         // Initialize modules
         const uiManager = new UIManager();
         const copyManager = new CopyManager();
