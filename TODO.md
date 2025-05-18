@@ -51,19 +51,19 @@ Shorter flow:be the product
 
 💪 TODO: 1) ✅ purify prompt/context, 2) ❌ make claude & freemium monetisation work 3) ✅ make og-data work! It's usable now for myself and to share results easily!
 
-# Fix uuithub
+# Launch
+
+If usable, start using it instead of Claude.
+
+Do a short X post announcing it.
+
+# Fix uuithub ❗️
 
 https://contextbuilding.com/janwilmake/dorm the uuithub links must work! Show result after to Christian Cazzaza.
 
 For this I need to pass API key to uithub
 
 For this I need to allow devs to create an API key for uithub they can use in their apps
-
-# Launch
-
-If usable, start using it instead of Claude.
-
-Do a short X post announcing it.
 
 # mdapply
 
@@ -100,12 +100,14 @@ It should then simply write these files into the cwd, which allows testing and s
 ## CONNECTION WITH MCP
 
 - Create OpenAPI for the DO and for the worker, making it super clear how its used. Could it become a monetised MCP?
-- maybe stripeflare with MCP is a better connection than this. this, however, could be refined into something that generates an mcp. All i need is todo, is create a landingpage where the textarea text is prefixed with context on how to build an MCP and instructions to actually build an MCP.
-- then, on the result page, we wanna allow actions with the codeblocks like i had with chat.forgithub.com. chatcompletions is a good building block here. ideally, you wanna allow turning it into a repo
+- Maybe stripeflare with MCP is a better connection than this. this, however, could be refined into something that generates an mcp. All i need is todo, is create a landingpage where the textarea text is prefixed with context on how to build an MCP and instructions to actually build an MCP.
+- Then, on the result page, we wanna allow actions with the codeblocks like i had with chat.forgithub.com. chatcompletions is a good building block here. ideally, you wanna allow turning it into a repo
 - Keep the mcp boilerplate private!
 
 # QOL:
 
+- Problem: re-rendering entire text for every output token makes it slow, especially when doing so many calculations. Idea: seal markdown output after every section. Before beginning a codeblock, and after ending acodeblock, these are moments which we would be able to seal it up to there and create a new 'block'. This way only the latest block is being re-rendered, making it a lot faster. This would allow making complete codeblocks interactive already. Incomplete codeblocks can now also made interactive, especially if can figure out how to skip updating the UI for 95% of tokens, just update it everh 20th token. Besides, if I can do this, it'd be possible to render the unfinished html incrementally as it gets created, creating a magical experience.
+- add toggle button to view context in right panel rather than result (sets `secondPanelView` localstorage) or maybe not localStorage; just once
 - Every codeblock should be available using the proper mediatype at `https://{slug}-{hash}.lmpify.com/{path}`. All links should be easy to find and add to the prompt.
 - 'claim prompt' and 'link balance' buttons: login with X
 - Improve funnyness when entering the page??? be creative. how can i make this super viral

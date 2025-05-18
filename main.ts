@@ -172,9 +172,8 @@ const generateContext = async (prompt: string) => {
     urls.map(async (url: string) => {
       try {
         const response = await fetch(url);
-        const isHtml = response.headers
-          .get("content-type")
-          ?.startsWith("text/html");
+        const contentType = response.headers.get("content-type");
+        const isHtml = contentType?.startsWith("text/html");
         if (isHtml) {
           hasHtml = true;
           const appendix = url.startsWith("https://github.com/")
@@ -189,8 +188,9 @@ const generateContext = async (prompt: string) => {
           };
         }
         const text = await response.text();
+        const mime = contentType?.split(";")[0].split("/")[1];
         const tokens = Math.round(text.length / 5);
-        return { url, text, tokens };
+        return { url, text: `\`\`\`${mime}\n${text}\n\n\`\`\`\n`, tokens };
       } catch (error: any) {
         hasError = true;
         return {
@@ -208,7 +208,7 @@ const generateContext = async (prompt: string) => {
     (previous, { url, text, tokens }) =>
       `${previous}\n${url} (${tokens} tokens) \n${
         previous.length > 1024 * 1024 ? "Omitted due to context length." : text
-      }\n------\n`,
+      }\n`,
     "",
   );
 

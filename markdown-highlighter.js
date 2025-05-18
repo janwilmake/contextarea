@@ -68,13 +68,11 @@ class MarkdownHighlighter {
   
         /* Copy button styles */
         .code-copy-button {
-          top: 48px;
-          right: 8px;
           background-color: rgba(42, 42, 42, 0.6);
           border: 1px solid #4a4a4a;
           border-radius: 4px;
           color: #e5e5e5;
-          padding: 4px 6px;
+          padding: 0px 6px;
           cursor: pointer;
           transition: all 0.2s ease;
           display: flex;
@@ -82,7 +80,6 @@ class MarkdownHighlighter {
           gap: 4px;
           font-size: 12px;
           opacity: 1;
-          z-index: 10;
         }
   
         /* Show the copy button on hover over the code block */
@@ -106,7 +103,7 @@ class MarkdownHighlighter {
           border: 1px solid #4a4a4a;
           border-radius: 4px;
           color: #e5e5e5;
-          padding: 4px 6px;
+          padding: 0px 6px;
           cursor: pointer;
           transition: all 0.2s ease;
           display: flex;
@@ -283,7 +280,7 @@ class MarkdownHighlighter {
     const iframe = document.createElement("iframe");
     iframe.id = iframeId;
     iframe.className = "code-render-container";
-
+    iframe.setAttribute("credentialless", "");
     // Set initial height based on content length (can be adjusted)
     iframe.style.height = `${Math.max(
       200,
