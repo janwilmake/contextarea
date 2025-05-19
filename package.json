@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "stripeflare": "^0.0.12",
+    "stripeflare": "^0.0.15",
     "workers-og": "^0.0.25"
   }
 }

@@ -1176,7 +1176,7 @@ const requestHandler = async (
   const { access_token, verified_user_access_token, ...publicUser } =
     user || {};
 
-  const headers = result.session.headers || new Headers();
+  const headers = new Headers(result.session.headers || {});
 
   // Only accept POST and GET methods
   if (!["POST", "GET"].includes(request.method)) {
