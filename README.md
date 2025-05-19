@@ -1,3 +1,5 @@
+https://x.com/janwilmake/status/1924471476305932741
+
 I'd say if you wanna make this a real product, you gotta nail the answer to the question how is it better than going to claude.com very nice
 
 I like this idea. my personal reason was i want to replace claude because it's annoying
@@ -9,4 +11,11 @@ I like this idea. my personal reason was i want to replace claude because it's a
 - It's hard to share something with someone else in claude, requires several clicks. LMPIFY is optimised for sharing
 - LMPIFY incentivizes people to edit the prompt rather than reply, which usually gives better and less lengthy results as token windows become shorter from it. It also incentivizes people to reduce tokens. Claude does NOT do this
 
-I think this is my main list
+I think this is my main list.
+
+Follow up posts (type them into markdown here, then just quote https://x.com/janwilmake/status/1924471476305932741) compare with claude on every aspect (6 posts).
+
+- how can it be so fast?
+- how does the monetisation and authentication work?
+- how do I build my workers?
+- why is edit workflow better than conversational?

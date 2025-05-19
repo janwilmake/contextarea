@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt It Buttons - lmpify</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #2a2a2a;
+            color: #e5e5e5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 300;
+            color: #e5e5e5;
+            text-align: center;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        h3 {
+            font-size: 22px;
+            font-weight: 400;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #b5b5b5;
+            text-align: center;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background-color: #3a3a3a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background-color: #3a3a3a;
+            padding: 16px;
+            border-radius: 8px;
+            width: 100%;
+            overflow-x: auto;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .code-block code {
+            display: block;
+            white-space: pre;
+            color: #e5e5e5;
+            background: none;
+            padding: 0;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #4a4a4a;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: #5a5a5a;
+        }
+
+        .copy-btn.copied {
+            background-color: #4ade80;
+            color: #1a1a1a;
+        }
+
+        .demo-section {
+            background-color: #333333;
+            padding: 20px;
+            border-radius: 8px;
+            width: 100%;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .demo-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .demo-title {
+            width: 100%;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .back-link {
+            margin-top: 30px;
+            color: #b5b5b5;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #ffffff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #4a4a4a;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3a3a3a;
+            font-weight: 500;
+        }
+
+        td {
+            background-color: #333333;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>
+            <svg width="40" height="40" viewBox="0 0 24 24" style="margin-right:20px;" fill="none" stroke="currentColor"
+                stroke-width="2">
+                <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" />
+                <path d="M12 7V17M7 9.5L17 14.5" />
+            </svg>
+            Prompt It Buttons
+        </h1>
+        <p class="subtitle">Easy to implement buttons for your website to send content to lmpify</p>
+
+        <h2>Getting Started</h2>
+        <p>
+            Add beautiful "Prompt It" buttons to your website to help users send content directly to lmpify.
+            These buttons allow you to pre-fill prompts and URLs, making it simple for users to analyze your content.
+        </p>
+
+        <h3>1. Add the Script</h3>
+        <p>First, include the button-widget.js script in your HTML:</p>
+        <div class="code-block">
+            <button class="copy-btn">Copy</button>
+            <code>&lt;script src="https://lmpify.com/js/button-widget.js"&gt;&lt;/script&gt;</code>
+        </div>
+
+        <h3>2. Add a Button</h3>
+        <p>Add a button element with the data-lmpify-button attribute:</p>
+        <div class="code-block">
+            <button class="copy-btn">Copy</button>
+            <code>&lt;button data-lmpify-button data-size="md" data-style="basic-3d"&gt;&lt;/button&gt;</code>
+        </div>
+
+        <h3>Available Options</h3>
+        <p>Customize your buttons with these data attributes:</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Options</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>data-size</code></td>
+                    <td>"small", "medium", "large", "xl"</td>
+                    <td>Button size (default: "medium")</td>
+                </tr>
+                <tr>
+                    <td><code>data-style</code></td>
+                    <td>"style1", "style2", "style3", "style5"</td>
+                    <td>Visual style (default: "style1")</td>
+                </tr>
+                <tr>
+                    <td><code>data-text</code></td>
+                    <td>"true", "false"</td>
+                    <td>Show "prompt it" text (default: "true")</td>
+                </tr>
+                <tr>
+                    <td><code>data-url</code></td>
+                    <td>URL string</td>
+                    <td>URL to be analyzed (optional)</td>
+                </tr>
+                <tr>
+                    <td><code>data-prompt</code></td>
+                    <td>Text string</td>
+                    <td>Pre-filled prompt text (optional)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Style Reference</h3>
+        <p>
+            "style1": Basic 3D button<br>
+            "style2": Gradient button<br>
+            "style3": Button with border<br>
+            "style5": 3D button with shadow
+        </p>
+
+        <h2>Button Examples</h2>
+
+        <div class="demo-section">
+            <div class="demo-title">Basic 3D (Style 1)</div>
+            <div class="demo-row">
+                <button data-lmpify-button data-size="small" data-style="style1"></button>
+                <button data-lmpify-button data-size="medium" data-style="style1"></button>
+                <button data-lmpify-button data-size="large" data-style="style1"></button>
+                <button data-lmpify-button data-size="xl" data-style="style1"></button>
+            </div>
+            <div class="code-block">
+                <button class="copy-btn">Copy</button>
+                <code>&lt;button data-lmpify-button data-size="small" data-style="style1"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="medium" data-style="style1"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="large" data-style="style1"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="xl" data-style="style1"&gt;&lt;/button&gt;</code>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">Gradient (Style 2)</div>
+            <div class="demo-row">
+                <button data-lmpify-button data-size="small" data-style="style2"></button>
+                <button data-lmpify-button data-size="medium" data-style="style2"></button>
+                <button data-lmpify-button data-size="large" data-style="style2"></button>
+                <button data-lmpify-button data-size="xl" data-style="style2"></button>
+            </div>
+            <div class="code-block">
+                <button class="copy-btn">Copy</button>
+                <code>&lt;button data-lmpify-button data-size="small" data-style="style2"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="medium" data-style="style2"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="large" data-style="style2"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="xl" data-style="style2"&gt;&lt;/button&gt;</code>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">With Border (Style 3)</div>
+            <div class="demo-row">
+                <button data-lmpify-button data-size="small" data-style="style3"></button>
+                <button data-lmpify-button data-size="medium" data-style="style3"></button>
+                <button data-lmpify-button data-size="large" data-style="style3"></button>
+                <button data-lmpify-button data-size="xl" data-style="style3"></button>
+            </div>
+            <div class="code-block">
+                <button class="copy-btn">Copy</button>
+                <code>&lt;button data-lmpify-button data-size="small" data-style="style3"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="medium" data-style="style3"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="large" data-style="style3"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="xl" data-style="style3"&gt;&lt;/button&gt;</code>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <div class="demo-title">3D with Shadow (Style 5)</div>
+            <div class="demo-row">
+                <button data-lmpify-button data-size="small" data-style="style5"></button>
+                <button data-lmpify-button data-size="medium" data-style="style5"></button>
+                <button data-lmpify-button data-size="large" data-style="style5"></button>
+                <button data-lmpify-button data-size="xl" data-style="style5"></button>
+            </div>
+            <div class="code-block">
+                <button class="copy-btn">Copy</button>
+                <code>&lt;button data-lmpify-button data-size="small" data-style="style5"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="medium" data-style="style5"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="large" data-style="style5"&gt;&lt;/button&gt;
+&lt;button data-lmpify-button data-size="xl" data-style="style5"&gt;&lt;/button&gt;</code>
+            </div>
+        </div>
+
+        <h2>Advanced Examples</h2>
+
+        <h3>Pre-filled Prompt</h3>
+        <p>Create a button that opens lmpify with a specific prompt already filled in:</p>
+        <div class="demo-row">
+            <button data-lmpify-button data-size="large" data-style="style5"
+                data-prompt="Summarize this content and identify the key points"></button>
+        </div>
+        <div class="code-block">
+            <button class="copy-btn">Copy</button>
+            <code>&lt;button 
+  data-lmpify-button 
+  data-size="large" 
+  data-style="style5" 
+  data-prompt="Summarize this content and identify the key points"
+&gt;&lt;/button&gt;</code>
+        </div>
+
+        <h3>Analyzing a Specific URL</h3>
+        <p>Create a button that sends a specific URL to be analyzed:</p>
+        <div class="demo-row">
+            <button data-lmpify-button data-size="large" data-style="style2"
+                data-url="https://example.com/content-to-analyze"></button>
+        </div>
+        <div class="code-block">
+            <button class="copy-btn">Copy</button>
+            <code>&lt;button 
+  data-lmpify-button 
+  data-size="large" 
+  data-style="style2" 
+  data-url="https://example.com/content-to-analyze"
+&gt;&lt;/button&gt;</code>
+        </div>
+
+        <h3>URL + Specific Prompt</h3>
+        <p>Combine both URL and prompt for a complete experience:</p>
+        <div class="demo-row">
+            <button data-lmpify-button data-size="xl" data-style="style1" data-url="https://example.com/article"
+                data-prompt="Summarize this article in 3 bullet points"></button>
+        </div>
+        <div class="code-block">
+            <button class="copy-btn">Copy</button>
+            <code>&lt;button 
+  data-lmpify-button 
+  data-size="xl" 
+  data-style="style1" 
+  data-url="https://example.com/article" 
+  data-prompt="Summarize this article in 3 bullet points"
+&gt;&lt;/button&gt;</code>
+        </div>
+
+        <a href="/" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"></path>
+            </svg>
+            Back to lmpify
+        </a>
+    </div>
+
+    <script src="/button-widget.js"></script>
+</body>
+
+</html>

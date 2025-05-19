@@ -2,13 +2,11 @@
 
 ✅ Fix bug with `__CODEBLOCK__` stuff. Encountered it when trying to use it with stripeflare: https://www.lmpify.com/doctype-html-htm-v3vyt70
 
-Finish `login-by-payment`!!!! Otherwise, old payments get lost
+✅ Finish `login-by-payment`!!!! Otherwise, old payments get lost
 
-Do a short X post announcing it, and now always use this when starting a new project.
+✅ Do a short X post announcing it, and now always use this when starting a new project.
 
-Make `?prompt&query&model` work from homepage (prompt insta-submits)
-
-Improve the widget making it very well documented and turn that into a README.
+Make `?prompt&query&model` work from homepage (prompt insta-submits). Improve the widget making it very well documented and turn that into a README.
 
 # Fix uuithub ❗️
 

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt It Buttons</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            max-width: 800px;
+        }
+
+        .prompt-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #FF7D1F;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: normal;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            position: relative;
+            top: 0;
+        }
+
+        .prompt-button img {
+            /* Forces the logo to be white */
+            margin-right: 8px;
+        }
+
+        .prompt-button .arrow {
+            margin-left: 6px;
+        }
+
+
+        /* Small round button */
+        .size-small {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            font-size: 12px;
+            padding: 10px;
+        }
+
+        .size-small img {
+            width: 40px;
+            /* Increased from 20px to 40px */
+            height: 40px;
+            /* Increased from 20px to 40px */
+            margin-right: 0;
+        }
+
+
+
+        .size-small .text {
+            display: none;
+        }
+
+        .size-small .arrow {
+            display: none;
+        }
+
+        /* Medium button */
+        .size-medium {
+            width: 150px;
+            height: 48px;
+            border-radius: 24px;
+            font-size: 14px;
+            padding: 0 15px;
+        }
+
+        .size-medium img {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Large button */
+        .size-large {
+            width: 200px;
+            height: 60px;
+            border-radius: 30px;
+            font-size: 18px;
+            padding: 0 20px;
+        }
+
+        .size-large img {
+            width: 30px;
+            height: 30px;
+        }
+
+        /* Extra large button */
+        .size-xl {
+            width: 250px;
+            height: 70px;
+            border-radius: 35px;
+            font-size: 22px;
+            padding: 0 25px;
+        }
+
+        .size-xl img {
+            width: 36px;
+            height: 36px;
+        }
+
+        /* Style 1 - Basic 3D */
+        .style-1 {
+            box-shadow: 0 6px 0 #D45A00;
+        }
+
+        .style-1:hover {
+            top: 2px;
+            box-shadow: 0 4px 0 #D45A00;
+        }
+
+        .style-1:active {
+            top: 6px;
+            box-shadow: 0 0 0 #D45A00;
+        }
+
+        /* Style 2 - Gradient */
+        .style-2 {
+            background: linear-gradient(145deg, #FF7D1F, #FF5500);
+            box-shadow: 0 6px 0 #D45A00;
+        }
+
+        .style-2:hover {
+            top: 2px;
+            box-shadow: 0 4px 0 #D45A00;
+        }
+
+        .style-2:active {
+            top: 6px;
+            box-shadow: 0 0 0 #D45A00;
+        }
+
+        /* Style 3 - With border */
+        .style-3 {
+            border: 2px solid white;
+            box-shadow: 0 6px 0 #D45A00;
+        }
+
+        .style-3:hover {
+            top: 2px;
+            box-shadow: 0 4px 0 #D45A00;
+        }
+
+        .style-3:active {
+            top: 6px;
+            box-shadow: 0 0 0 #D45A00;
+        }
+
+        /* Style 4 - Pill shaped */
+        .style-4 {
+            box-shadow: 0 6px 0 #D45A00;
+        }
+
+        .style-4:hover {
+            top: 2px;
+            box-shadow: 0 4px 0 #D45A00;
+        }
+
+        .style-4:active {
+            top: 6px;
+            box-shadow: 0 0 0 #D45A00;
+        }
+
+        /* Style 5 - 3D Button with shadow */
+        .style-5 {
+            box-shadow: 0 6px 0 #D45A00, 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .style-5:hover {
+            top: 2px;
+            box-shadow: 0 4px 0 #D45A00, 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .style-5:active {
+            top: 6px;
+            box-shadow: 0 0 0 #D45A00, 0 5px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            margin-top: 30px;
+            color: #333;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Prompt It Button Designs</h1>
+
+    <div class="section">
+        <h2>Style 1 - Basic 3D</h2>
+        <div class="button-container">
+            <button class="prompt-button size-small style-1">
+                <img src="logo.png" alt="Logo">
+            </button>
+
+            <button class="prompt-button size-medium style-1">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-large style-1">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-xl style-1">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Style 2 - Gradient</h2>
+        <div class="button-container">
+            <button class="prompt-button size-small style-2">
+                <img src="logo.png" alt="Logo">
+            </button>
+
+            <button class="prompt-button size-medium style-2">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-large style-2">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-xl style-2">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Style 3 - With Border</h2>
+        <div class="button-container">
+            <button class="prompt-button size-small style-3">
+                <img src="logo.png" alt="Logo">
+            </button>
+
+            <button class="prompt-button size-medium style-3">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-large style-3">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-xl style-3">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Style 5 - 3D Button with Shadow</h2>
+        <div class="button-container">
+            <button class="prompt-button size-small style-5">
+                <img src="logo.png" alt="Logo">
+            </button>
+
+            <button class="prompt-button size-medium style-5">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-large style-5">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+
+            <button class="prompt-button size-xl style-5">
+                <img src="logo.png" alt="Logo">
+                <span class="text">prompt it</span>
+                <span class="arrow">→</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Add click effect for demonstration
+        document.querySelectorAll('.prompt-button').forEach(button => {
+            button.addEventListener('click', function () {
+                console.log('Button clicked!');
+            });
+        });
+    </script>
+</body>
+
+</html>

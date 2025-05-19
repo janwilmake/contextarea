@@ -6,6 +6,8 @@ class MarkdownHighlighter {
     this.setupComplete = false;
     this.injectStyles();
     this.codeBlockView = localStorage.getItem("codeblockView") || "code"; // Default to 'code' if not set
+    this.htmlCodeBlockView =
+      localStorage.getItem("htmlCodeblockView") || "render"; // Default to 'render' for HTML
   }
 
   // Inject required CSS styles into the document
@@ -371,7 +373,11 @@ class MarkdownHighlighter {
       const language = block.opening.trim().replace("```", "") || "plaintext";
       const blockId = `code-block-${i}-${Date.now()}`;
       const tokenCount = this.calculateTokens(block.code);
-      const defaultView = loading ? "code" : this.getCodeBlockView();
+      const defaultView = loading
+        ? "code"
+        : language === "html"
+        ? this.htmlCodeBlockView
+        : this.getCodeBlockView();
 
       // Apply syntax highlighting to the code
       const highlightedCode = hljs.highlight(block.code, {
