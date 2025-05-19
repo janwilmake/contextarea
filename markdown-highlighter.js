@@ -383,99 +383,109 @@ class MarkdownHighlighter {
 
       // Header with language and actions
       html += `
-          <div class="code-block-header">
-            <div class="code-block-title">
-              <span>${language}</span>
-              <span>${tokenCount} tokens</span>
-            </div>
-            ${
-              loading
-                ? ""
-                : `
-            <div class="code-block-actions">
-              
-              <button class="code-button code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
+      <div class="code-block-header">
+        <div class="code-block-title">
+          <span>${language}</span>
+          <span>${tokenCount} tokens</span>
+        </div>
+        ${
+          loading
+            ? ""
+            : `
+        <div class="code-block-actions">
+          
+          <button class="code-button code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
 
-              <button class="code-button code-copy-button" data-block-id="${blockId}" title="Copy code">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <span class="copy-text"></span>
-              </button>
+          <button class="code-button code-copy-button" data-block-id="${blockId}" title="Copy code">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span class="copy-text"></span>
+          </button>
 
+          ${
+            language === "html"
+              ? `
+            <button class="code-button code-open-new-tab" data-block-id="${blockId}" title="Open in New Tab">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+            <button class="code-button code-button-with-text code-render-toggle" data-block-id="${blockId}" title="Toggle Render">
               ${
-                language === "html"
-                  ? `
-                <button class="code-button code-open-new-tab" data-block-id="${blockId}" title="Open in New Tab">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                    <polyline points="15 3 21 3 21 9"></polyline>
-                    <line x1="10" y1="14" x2="21" y2="3"></line>
-                  </svg>
-                </button>
-                <button class="code-button code-button-with-text code-render-toggle" data-block-id="${blockId}" title="Toggle Render">
-                  ${
-                    defaultView === "code"
-                      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
-                </svg>`
-                      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                  </svg>`
-                  }
-                  ${defaultView === "code" ? "Render" : "Code"}
-                </button>
-              `
-                  : ""
+                defaultView === "code"
+                  ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
+            </svg>`
+                  : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>`
               }
-            </div>`
-            }
-          </div>`;
+              ${defaultView === "code" ? "Render" : "Code"}
+            </button>
+          `
+              : ""
+          }
+        </div>`
+        }
+      </div>`;
 
       // Collapsed view (hidden by default if not in collapsed mode)
       html += `
-          <div class="code-block-collapsed" style="${
-            defaultView === "collapsed" ? "" : "display: none;"
-          }" data-block-id="${blockId}">
-            <div><strong>${language}</strong> code block (${tokenCount} tokens)</div>
-            <div>Click to expand</div>
-          </div>`;
+      <div class="code-block-collapsed" style="${
+        defaultView === "collapsed" ? "" : "display: none;"
+      }" data-block-id="${blockId}">
+        <div><strong>${language}</strong> code block (${tokenCount} tokens)</div>
+        <div>Click to expand</div>
+      </div>`;
 
       // Code view
       html += `
-          <div class="code-block-wrapper" style="${
-            defaultView === "code" ? "" : "display: none;"
-          }" data-block-id="${blockId}-code">
-            <pre id="${blockId}"><code class="hljs language-${language}">${highlightedCode}</code></pre>
-          </div>`;
+      <div class="code-block-wrapper" style="${
+        defaultView === "code" ? "" : "display: none;"
+      }" data-block-id="${blockId}-code">
+        <pre id="${blockId}"><code class="hljs language-${language}">${highlightedCode}</code></pre>
+      </div>`;
 
       // Render view (only for HTML)
       if (language === "html") {
         html += `
-            <div class="code-render-wrapper" style="${
-              defaultView === "render" ? "" : "display: none;"
-            }" data-block-id="${blockId}-render"></div>`;
+        <div class="code-render-wrapper" style="${
+          defaultView === "render" ? "" : "display: none;"
+        }" data-block-id="${blockId}-render"></div>`;
       }
 
       html += `</div>`;
 
-      escapedText = escapedText.replace(`__CODE_BLOCK_${i}__`, html);
+      // Use a regex-based replacement with a function instead of a direct string replacement
+      // This prevents issues with special characters like $ in the replacement string
+      const placeholderRegex = new RegExp(`__CODE_BLOCK_${i}__`, "g");
+      escapedText = escapedText.replace(placeholderRegex, function () {
+        return html;
+      });
     }
 
-    // 6. Replace inline code placeholders
+    // 6. Replace inline code placeholders with similar safe approach
     for (let i = 0; i < inlineCodeBlocks.length; i++) {
       const block = inlineCodeBlocks[i];
       const html = `<span class="hljs-inline">${this.escapeHTML(
         block.opening,
       )}${this.escapeHTML(block.code)}${this.escapeHTML(block.closing)}</span>`;
-      escapedText = escapedText.replace(`__INLINE_CODE_${i}__`, html);
+
+      // Use a regex-based replacement with a function
+      const placeholderRegex = new RegExp(`__INLINE_CODE_${i}__`, "g");
+      escapedText = escapedText.replace(placeholderRegex, function () {
+        return html;
+      });
     }
 
     return escapedText;

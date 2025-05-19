@@ -69,3 +69,17 @@ the result is added to kv under key of pathname
 - ✅ Modularize the code! makes it a bit cleaner and more readable.
 - ✅ added html viewer and collapsible stored on user level
 - ✅ added 'credentialless' to iframe so i don't think we need to worry about it ever executing functionality in lmpify draining someones balance. furthermore, the access-token itself was already not accessible as it's http only
+
+# Monetisation & bugfixes (2025-05-18)
+
+- ✅ Create endpoint to run middleware and return userdata and use that in `model-modal.js` to show user information in there.
+- ✅ Confirm adding balance works
+- ✅ premium shows up in the right way
+- ✅ Ensure claude sonnet 3.7 works too. Model must be stored in localstorage and KV.
+- ✅ Ensure pricing is properly calculated for both chatgpt and claude with a MARKUP_FACTOR
+- ✅ Make it easy to access the DB from the other DO, ensure to document how to do this in stripeflare template and show that in the demo as well. Maybe export `createClient` and `DEFAULT_VERSION` from stripeflare?
+- ✅ Charge the user the determined price
+- ✅ Added blob url for HTML pages to view in full-screen
+- ✅ prompt tokens should be unescaped
+- ✅ Return 402 as data property, if that happens, auto-open the modal and show an error that guides to adding more balance
+- ✅ Add ratelimiter to 5 free requests per hour

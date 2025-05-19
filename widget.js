@@ -19,8 +19,7 @@
       // Create and inject styles
       this.injectStyles();
 
-      // Load the model-modal.js script
-      // Render the widget after model modal script is loaded
+      // Render the widget
       this.render();
 
       // Initialize event listeners
@@ -446,48 +445,15 @@
     handleSubmit() {
       const { textarea } = this.elements;
       const promptText = textarea.value.trim();
-
       if (!promptText) return;
-
-      // Generate slug from first 20 characters
-      const first20 = promptText.substring(0, 20);
-      const slug = this.slugify(first20);
-      const hash = this.simpleHash(promptText);
-
-      // Create the URL path
-      const path = `/${slug}-${hash}`;
-
-      // Get selected model from the modal
       const modelId = this.options.defaultModel;
+      // Create the URL with query parameters
+      const url = `https://lmpify.com/?prompt=${encodeURIComponent(
+        promptText,
+      )}&model=${encodeURIComponent(modelId)}`;
 
-      // Create form data
-      const formData = new FormData();
-      formData.append("prompt", promptText);
-      formData.append("model", modelId);
-
-      // Create a form and submit it
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = `https://lmpify.com${path}`;
-      form.target = "_blank";
-      form.style.display = "none";
-
-      // Add all form data as hidden inputs
-      for (const [key, value] of formData.entries()) {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = value;
-        form.appendChild(input);
-      }
-
-      document.body.appendChild(form);
-      form.submit();
-
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(form);
-      }, 100);
+      // Open the URL in a new tab
+      window.open(url, "_blank");
     }
   }
 

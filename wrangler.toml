@@ -21,6 +21,11 @@ class_name = "DORM"
 name = "SQL_STREAM_PROMPT_DO"
 class_name = "SQLStreamPromptDO"
 
+[[durable_objects.bindings]]
+name = "RATELIMIT_DO"
+class_name = "RatelimitDO"
+
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["DORM", "StreamPromptDO"]
@@ -29,3 +34,7 @@ new_sqlite_classes = ["DORM", "StreamPromptDO"]
 tag = "v3"
 deleted_classes = ["StreamPromptDO"]
 new_sqlite_classes = ["SQLStreamPromptDO"]
+
+[[migrations]]
+tag = "v4"
+new_sqlite_classes = ["RatelimitDO"]

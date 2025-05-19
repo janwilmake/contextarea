@@ -78,6 +78,7 @@
               box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
               transform: scale(0.9);
               opacity: 0;
+              z-index:10;
               transition: all 0.3s ease;
           }
   
@@ -377,6 +378,12 @@
 
   // Create modal HTML
   function createModalHTML(models, selectedModelId = null, me) {
+    const serverDataElement = document.getElementById("server-data");
+
+    const data = serverDataElement
+      ? JSON.parse(serverDataElement.textContent)
+      : {};
+
     const modalHTML = `
               <div class="model-modal-backdrop" id="modelModalBackdrop">
                   <div class="model-modal">
@@ -407,11 +414,22 @@
                               ? `<div class="model-modal-upgrade">
                               <div class="model-modal-upgrade-title">Your balance is $${(
                                 me.balance / 100
-                              ).toFixed(2)}.</div>
+                              ).toFixed(2)}.${
+                                  me.balance < 100
+                                    ? `<p style="color:orange;">Your balance is getting low. To avoid hitting limits, please add more.</p>`
+                                    : ""
+                                }</div>
                               <div class="model-modal-upgrade-price"></div>
                               <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Add more</a>
                           </div>`
                               : `<div class="model-modal-upgrade">
+                              ${
+                                data.ratelimited
+                                  ? me && me.balance < 0
+                                    ? `<p style="color:red;">You don't have any balance left. Please purchase tokens to continue.</p>`
+                                    : `<p style="color:red;">You have been ratelimited! Try again in a bit, or please purchase tokens to continue</p>`
+                                  : ""
+                              }
                               <div class="model-modal-upgrade-title">Unlock premium models, pay as you go.</div>
                               <div class="model-modal-upgrade-price">$20</div>
                               <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Upgrade now</a>
@@ -535,9 +553,9 @@
           console.log("set me", me);
           this.me = me;
           this.createModal(container);
-          this.createTriggerButton(container);
           this.attachEventListeners();
         });
+      this.createTriggerButton(container);
 
       // Create trigger button and modal
     }
@@ -597,7 +615,6 @@
                   <span class="model-modal-trigger-tag">AI</span>
               `;
       button.addEventListener("click", () => this.open());
-
       // Insert button before the modal container
       container.parentNode.insertBefore(button, container);
       this.triggerButton = button;
@@ -658,6 +675,7 @@
       document.addEventListener("keydown", (e) => {
         if (
           e.key === "Escape" &&
+          this.modalElement &&
           this.modalElement.classList.contains("active")
         ) {
           this.close();

@@ -12,6 +12,8 @@ import {
 export { DORM } from "stripeflare";
 import { createClient } from "dormroom";
 import { DurableObject } from "cloudflare:workers";
+import { RatelimitDO } from "./ratelimiter.js";
+export { RatelimitDO };
 
 const DORM_VERSION = "bare-stripeflare";
 
@@ -142,6 +144,7 @@ interface Env extends StripeflareEnv {
   ANTHROPIC_SECRET: string;
   FREE_SECRET: string;
   ASSETS: Fetcher;
+  RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
 }
 
 /**
@@ -514,7 +517,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             stream: true,
             ...(isAnthropic && context && { system: context }),
             ...(!isAnthropic && { stream_options: { include_usage: true } }),
-            ...(isAnthropic && { max_tokens: 4096 }),
+            ...(isAnthropic && { max_tokens: 64000 }),
           }),
         },
       );
@@ -789,18 +792,33 @@ function sanitizeMetadataString(str, maxLength = 160) {
 
   return sanitized;
 }
+const removeUrlsFromText = (text: string): string => {
+  // This pattern matches URLs with or without protocol
+  // It handles http, https, ftp, and protocol-less URLs (www.example.com)
+  const urlPattern =
+    /(https?:\/\/|www\.)[^\s<>"]+|[^\s<>"]+\.(com|net|org|io|gov|edu|co|ai|app|dev)([^\s<>"]*)/gi;
+
+  // Replace all URLs with empty strings
+  return text.replace(urlPattern, "").replace(/\s+/g, " ").trim();
+};
 const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
   const { prompt = "", model = "", context = "", headline } = kvData;
   const url = new URL(requestUrl);
   const tokens = Math.round((context || prompt).length / 5);
   // Create a title from the prompt (limit to first 60 chars)
+
+  const promptWithoutUrls = removeUrlsFromText(prompt);
+
   const rawTitle =
     `Prompt with ${tokens} tokens - ` +
-    (prompt.length > 40 ? prompt.substring(0, 37) + "..." : prompt);
+    (promptWithoutUrls.length > 40
+      ? promptWithoutUrls.substring(0, 37) + "..."
+      : promptWithoutUrls);
 
   // Create a description - use the prompt, but truncate if needed
   const rawDescription =
-    prompt.substring(0, 140) + (prompt.length > 140 ? "..." : "");
+    promptWithoutUrls.substring(0, 140) +
+    (promptWithoutUrls.length > 140 ? "..." : "");
 
   // Sanitize the title and description
   const title = sanitizeMetadataString(headline || rawTitle, 60);
@@ -1075,16 +1093,27 @@ const getResult = async (
     streaming: status !== "complete",
   };
 
+  return getResultHTML(env, scriptData, headers, request.url);
+};
+
+const getResultHTML = async (
+  env: Env,
+  data: any,
+  headers: Headers,
+  requestUrl: string,
+) => {
+  const url = new URL(requestUrl);
+
   // For browser, return HTML
   const resultHTML = new HTMLRewriter()
     .on("#server-data", {
       element: (e) => {
-        e.setInnerContent(JSON.stringify(scriptData), { html: false });
+        e.setInnerContent(JSON.stringify(data), { html: false });
       },
     })
     .on("head", {
       element: (e) => {
-        e.append(generateMetadataHtml(data, request.url), { html: true });
+        e.append(generateMetadataHtml(data, requestUrl), { html: true });
       },
     })
     .transform(await env.ASSETS.fetch(url.origin + "/result.html"));
@@ -1093,7 +1122,6 @@ const getResult = async (
   headers.set("Content-Type", "text/html");
   return new Response(resultHTML.body, { headers });
 };
-
 const requestHandler = async (
   request: Request,
   env: Env,
@@ -1220,6 +1248,12 @@ const requestHandler = async (
     let prompt: string | undefined = undefined;
     let context: string | null | undefined = undefined;
 
+    const requestLimit =
+      !user?.access_token || (user?.balance || 0) <= 0
+        ? // Logged out should get 5 requests per hour, then login first.
+          5
+        : 1000;
+
     if (request.method === "POST" && !result.prompt) {
       const formData = await request.formData();
       prompt = formData?.get("prompt")?.toString();
@@ -1235,15 +1269,74 @@ const requestHandler = async (
 
       model = modelConfig?.model;
 
-      const useBalance = modelConfig.premium || (user && user.balance > 0);
+      const userNeedsPayment =
+        (modelConfig.premium || (user && user.balance > 0)) &&
+        (!user?.balance || user.balance <= 0);
 
-      // Check balance for premium models
-      if (
-        useBalance
-          ? !user?.balance || user.balance <= 0
-          : !user || user.free_model_uses >= 10
-      ) {
-        return new Response("Payment required", { status: 402, headers });
+      const clientIp =
+        request.headers.get("CF-Connecting-IP") ||
+        request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
+        "127.0.0.1";
+
+      const ratelimited = await env.RATELIMIT_DO.get(
+        env.RATELIMIT_DO.idFromName("v2." + clientIp),
+      ).checkRateLimit({
+        requestLimit,
+        resetIntervalMs: 3600 * 1000,
+      });
+
+      // console.log("middleware 2:", Date.now() - t + "ms", {
+      //   requestLimit,
+      //   ratelimited,
+      // });
+
+      const acceptHtml = request.headers.get("accept")?.includes("text/html");
+      const TEST_RATELIMIT_PAGE = false;
+      const hasWaitTime = (ratelimited?.waitTime || 0) > 0;
+      // console.log({ requestLimit, ratelimited, hasWaitTime, hasNegativeBalance });
+      if (hasWaitTime || TEST_RATELIMIT_PAGE || userNeedsPayment) {
+        if (acceptHtml) {
+          const scriptData = {
+            model,
+            prompt,
+            user: publicUser,
+            status: "error",
+            ratelimited: true,
+            error: hasWaitTime
+              ? "You have reached the ratelimit. Please purchase tokens to continue."
+              : "You have spent all your tokens. Please purchase tokens to continue.",
+            streaming: false,
+          };
+
+          const newHeaders = {};
+          headers.forEach((value, key) => {
+            newHeaders[key] = value;
+          });
+
+          return getResultHTML(
+            env,
+            scriptData,
+            new Headers({ ...newHeaders, ...ratelimited.headers }),
+            request.url,
+          );
+        }
+
+        // can only exceed ratelimit if balance is negative
+        return new Response(
+          "Ratelimit exceeded\n\n" + ratelimited?.headers
+            ? JSON.stringify(ratelimited?.headers, undefined, 2)
+            : undefined,
+          {
+            status: 429,
+            headers: {
+              ...ratelimited?.headers,
+              "WWW-Authenticate":
+                'Bearer realm="uithub service",' +
+                'error="rate_limit_exceeded",' +
+                'error_description="Rate limit exceeded. Please purchase credit at https://lmpify.com for higher limits"',
+            },
+          },
+        );
       }
 
       await doStub.setup({
