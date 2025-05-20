@@ -83,3 +83,11 @@ the result is added to kv under key of pathname
 - ✅ prompt tokens should be unescaped
 - ✅ Return 402 as data property, if that happens, auto-open the modal and show an error that guides to adding more balance
 - ✅ Add ratelimiter to 5 free requests per hour
+
+# Launch (2025-05-19)
+
+✅ Fix bug with `__CODEBLOCK__` stuff. Encountered it when trying to use it with stripeflare: https://www.lmpify.com/doctype-html-htm-v3vyt70
+
+✅ Finish `login-by-payment`!!!! Otherwise, old payments get lost
+
+✅ Do a short X post announcing it, and now always use this when starting a new project.
