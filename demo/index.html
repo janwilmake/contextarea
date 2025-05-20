@@ -167,7 +167,7 @@
         // Check if text is a URL
         function isURL(text) {
             const trimmed = text.trim();
-            return urlRegex.test(trimmed);
+            return urlRegex.test(trimmed) && !trimmed.includes("\n");
         }
 
         // Extract URLs from text
@@ -258,7 +258,7 @@
             const clipboardText = e.clipboardData.getData('text');
 
             // Check if it's just a URL
-            if (clipboardText && isURL(clipboardText.trim())) {
+            if (clipboardText && isURL(clipboardText)) {
                 return; // Regular paste for URLs
             }
 
