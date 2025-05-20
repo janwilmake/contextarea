@@ -1,4 +1,11 @@
+Launch:
 https://x.com/janwilmake/status/1924471476305932741
+https://news.ycombinator.com/item?id=44030556
+https://www.producthunt.com/posts/let-me-prompt-it-for-you-lmpify-com
+
+Examples:
+
+https://x.com/janwilmake/status/1924762246074314974
 
 I'd say if you wanna make this a real product, you gotta nail the answer to the question how is it better than going to claude.com very nice
 
