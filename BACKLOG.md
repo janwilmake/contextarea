@@ -25,11 +25,3 @@
 - IDEA: `/from/{url}` could be what shows up in address bar, may make it easier to learn that convention, or at least show it in the interface, if it was the source.
 
 - IDEA: User-based DO that collects all history and keeps a live connection with any active browser session of that user, such that it is broadcastable from https://lmpify.com/{userslug} and a history is also collected there. A good MVP would be to first make websocket-markdown editor DO like bruna almost did
-
-# Virality
-
-There are many things to do with output
-
-- **md/html prompt-it buttons**: buttons that can be added to a website or markdown file that link to a resultpage.
-
-- **mdapply**: Proposed flow: 1. make post on X, 2. use xymake url and a prompt, 3. now get resulting files and a cli to paste them into cwd: `npx mdapply {url}`. All I need is a nice function to fetch the url, parse the codeblocks and belonging filenames (either in codeblock variable or use the above backtick-code as filename). It should then simply write these files into the cwd, which allows testing and seeing what was made. If this works, a button to find this command would be useful!

@@ -91,3 +91,9 @@ the result is added to kv under key of pathname
 ✅ Finish `login-by-payment`!!!! Otherwise, old payments get lost
 
 ✅ Do a short X post announcing it, and now always use this when starting a new project.
+
+# Virality (2025-05-21)
+
+made the markdown 'prompt it' button
+
+made `mdapply` cli (https://github.com/janwilmake/mdapply)

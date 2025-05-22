@@ -1,3 +1,59 @@
+# API for Paid Users
+
+Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily.
+
+https://x.com/EastlondonDev/status/1925191566362030380
+
+Generally its a good idea to allow for programmatic access and give people an API for this!!!!!!!! Imagine if people could earn money by easily creating new stripeflare workers that allow access to this API? You could set any price and it'd be super easy to setup via a lmpify.
+
+TODO:
+
+1. Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now. Can still use all other values.
+
+2. In the UI, show 'Use Context' in footer which shows how to use the API.
+
+After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
+
+# IDEA: Analytics to enable Rev-sharing with repo owners, X users, and knowledge-base builders
+
+https://github.com/iannuttall/mcp-boilerplate/pull/8 <-- boilerplate owners should be able to earn money with it
+
+I need to make them easily understand they can with this! One step to still do though, is to track the original location from where the payment was initiated, and which contexts were used for this... We can group these contexts on a per-owner basis, then get an overview on how much was added for each.
+
+If this works out, it becomes easy way for viral github users to make money. Besides, it'd be a great idea anyway to track visitors on a per-github-owner-level.
+
+Every day, let's go over these: https://www.lmpify.com/httpspopularforg-7mck8v0 and see if there are tweets I can mirror.
+
+What about idea-guys? Can i search X with filter on this? Should make a monetised socialdata.tools search monitor cronjob and have these things made public.
+
+Another one is the people that create the contexts and share them. It doesn't always need to be their context. What if the original creator of the prompt gets made public too? We can simply use the `client_reference_id` for this and expose it (also makes it possible to pay others).
+
+Measure actions:
+
+- Pageview
+- Prompt or other action from page (spending money)
+- New balance upgrade
+
+Measure them with owners:
+
+- `?ref`
+- the prompt-page itself
+- the creator of the prompt
+- the creator of previous version(s) of the prompt
+- the creators of the context (github accounts, x accounts)
+
+Revshare with the creators is super epic. Can be done directly to client_reference_ids for users and to claimable accounts (x/github) in another table. can't believe this worked: https://github.com/janwilmake/stripeflare-p2p-demo
+
+# IDEA: Help the idea guys with making their content more actionable
+
+I basically created a 'mirror thread' and this could possibly be automated if lmpify had an MCP: https://x.com/janwilmake/status/1925218363774570938. But even if it's not automated it could be a great way to make ideas more actionable right away.
+
+To truly optimise for actionability, it'd make a ton of sense to add 'patch for github' as a button, which would send the repo + result to the patch-api, which would basically be an independent glue. I can even charge a dollar for this instead since a lot of people don't know git, nor MCP.
+
+The button should lead to this, and this should request permission to github oauth, then fork and patch, then redirect there! https://patch.forgithub.com/prepare?markdown={URL}&sourceOwner={OWNER}&sourceRepo={REPO}&sourceBranch={BRANCH}
+
+This patch could also add the original lmpify that lead to the fork into the README, creating another viral loop! Besides, based on which boilerplate it is, it should add buttons to deploy (deploy to vercel, deploy to cloudflare, etc) so it's just one more click away from deployment.
+
 # Fix uuithub ❗️
 
 https://contextbuilding.com/janwilmake/dorm the uuithub links must work and be fast! Show result after to Christian Cazzaza.
