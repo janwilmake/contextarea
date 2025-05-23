@@ -1,8 +1,40 @@
-# API for Paid Users
+# High Impact Improvements
+
+New footer. Footer Real Estate:
+
+- ✔️ copy link
+- ✔️ change model
+- ✔️ try again or reply
+- [use context] --> link to `usage.html?url=`
+- if output has codeblocks: patch button
+
+Pricing: markup 50% rather than just 20% to reserve money for contextcreators. Also charge for patch if possible.
+
+Also add `usage` in home link. Potentially it's better to just make a readme in `lmpify-docs` and add a github logo.
+
+Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
+
+Add toggle button to view context in right panel rather than result. Could be live connected with context-cards, rather than from data.
+
+Add easily embeddable link that links to to result. It's now just clickable but not insertable.
+
+# Context Area
+
+- paste large texts should turn into a URL to keep it easy to oversee the prompt. use pastebin as imported code `from "./lmpify.pastebin/pastebin"` (`/lmpify.pastebin/README.md`) https://github.com/janwilmake/contextarea
+
+- for each link in the prompt, the frontend should have an api to render the context card for it which includes url, title, tokens, og-image, and more. these should be dynamically rendered below your prompt, and must be clear which belongs to which url somehow. when a prompt is pre-loaded, context cards may be pre-loaded from head JSON
+
+- the contextarea.context api returns mediatype, so we can embed images as images into chat/completions. same for videos, which should force models.
+
+Leverage `meta name="author"` as well as `twitter:creator` but also simply the URL itself for github and x to identify the owner of the URL context.
+
+🔥 Basically for any xymake person link I want their face appear with a title/description. Need to improve the HTML result metadata for this, but is definitely possible!
+
+# `/chat/completions`
 
 Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily.
 
-https://x.com/EastlondonDev/status/1925191566362030380
+Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
 
 Generally its a good idea to allow for programmatic access and give people an API for this!!!!!!!! Imagine if people could earn money by easily creating new stripeflare workers that allow access to this API? You could set any price and it'd be super easy to setup via a lmpify.
 
@@ -14,7 +46,23 @@ TODO:
 
 After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
 
-# IDEA: Analytics to enable Rev-sharing with repo owners, X users, and knowledge-base builders
+Ultimately, also get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
+
+# Patchlink
+
+IDEA: Help the idea guys with making their content more actionable
+
+I basically created a 'mirror thread' and this could possibly be automated if lmpify had an MCP: https://x.com/janwilmake/status/1925218363774570938. But even if it's not automated it could be a great way to make ideas more actionable right away.
+
+To truly optimise for actionability, it'd make a ton of sense to add 'patch for github' as a button, which would send the repo + result to the patch-api, which would basically be an independent glue. I can even charge a dollar for this instead since a lot of people don't know git, nor MCP.
+
+The button should lead to this, and this should request permission to github oauth, then fork and patch, then redirect there! https://patch.forgithub.com/prepare?markdown={URL}&sourceOwner={OWNER}&sourceRepo={REPO}&sourceBranch={BRANCH}
+
+This patch could also add the original lmpify that lead to the fork into the README, creating another viral loop! Besides, based on which boilerplate it is, it should add buttons to deploy (deploy to vercel, deploy to cloudflare, etc) so it's just one more click away from deployment.
+
+# Analytics & revshare
+
+IDEA: to enable Rev-sharing with repo owners, X users, and knowledge-base builders
 
 https://github.com/iannuttall/mcp-boilerplate/pull/8 <-- boilerplate owners should be able to earn money with it
 
@@ -43,40 +91,6 @@ Measure them with owners:
 - the creators of the context (github accounts, x accounts)
 
 Revshare with the creators is super epic. Can be done directly to client_reference_ids for users and to claimable accounts (x/github) in another table. can't believe this worked: https://github.com/janwilmake/stripeflare-p2p-demo
-
-# IDEA: Help the idea guys with making their content more actionable
-
-I basically created a 'mirror thread' and this could possibly be automated if lmpify had an MCP: https://x.com/janwilmake/status/1925218363774570938. But even if it's not automated it could be a great way to make ideas more actionable right away.
-
-To truly optimise for actionability, it'd make a ton of sense to add 'patch for github' as a button, which would send the repo + result to the patch-api, which would basically be an independent glue. I can even charge a dollar for this instead since a lot of people don't know git, nor MCP.
-
-The button should lead to this, and this should request permission to github oauth, then fork and patch, then redirect there! https://patch.forgithub.com/prepare?markdown={URL}&sourceOwner={OWNER}&sourceRepo={REPO}&sourceBranch={BRANCH}
-
-This patch could also add the original lmpify that lead to the fork into the README, creating another viral loop! Besides, based on which boilerplate it is, it should add buttons to deploy (deploy to vercel, deploy to cloudflare, etc) so it's just one more click away from deployment.
-
-# Fix uuithub ❗️
-
-https://contextbuilding.com/janwilmake/dorm the uuithub links must work and be fast! Show result after to Christian Cazzaza.
-
-For this I need to pass API key to uithub
-
-For this I need to allow devs to create an API key for uithub they can use in their apps
-
-For this I need to first fix all uithub stuff
-
-# High Impact Features
-
-Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
-
-Add toggle button to view context in right panel rather than result.
-
-Add easily embeddable link that links to to result. Could be live connected with context-cards, rather than from data.
-
-- **Pastebin**: paste large texts should turn into a URL to keep it easy to oversee the prompt. use pastebin as imported code `from "./lmpify.pastebin/pastebin"` (`/lmpify.pastebin/README.md`) https://github.com/janwilmake/contextarea
-
-- **Context Cards**: for each link in the prompt, the frontend should have an api to render the context card for it which includes url, title, tokens, og-image, and more. these should be dynamically rendered below your prompt, and must be clear which belongs to which url somehow. when a prompt is pre-loaded, context cards may be pre-loaded from head JSON
-
-- **Mediatype url analysis support** the contextarea.context api returns mediatype, so we can embed images as images into chat/completions.
 
 - **Edit history**; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.
 

@@ -92,8 +92,10 @@ the result is added to kv under key of pathname
 
 ✅ Do a short X post announcing it, and now always use this when starting a new project.
 
-# Virality (2025-05-21)
+# Virality (2025-05-21 and 2025-05-22)
 
-made the markdown 'prompt it' button
+Made the markdown 'prompt it' button
 
-made `mdapply` cli (https://github.com/janwilmake/mdapply)
+Made `mdapply` cli (https://github.com/janwilmake/mdapply)
+
+Made `usage.html/md`
