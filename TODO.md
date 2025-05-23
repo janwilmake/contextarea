@@ -5,18 +5,15 @@ New footer. Footer Real Estate:
 - ✔️ copy link
 - ✔️ change model
 - ✔️ try again or reply
-- [use context] --> link to `usage.html?url=`
 - if output has codeblocks: patch button
 
 Pricing: markup 50% rather than just 20% to reserve money for contextcreators. Also charge for patch if possible.
-
-Also add `usage` in home link. Potentially it's better to just make a readme in `lmpify-docs` and add a github logo.
 
 Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
 
 Add toggle button to view context in right panel rather than result. Could be live connected with context-cards, rather than from data.
 
-Add easily embeddable link that links to to result. It's now just clickable but not insertable.
+Add easily embeddable link that links to result. It's now just clickable but not insertable.
 
 # Context Area
 

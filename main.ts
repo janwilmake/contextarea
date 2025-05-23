@@ -1,7 +1,7 @@
 // @ts-check
 /// <reference types="@cloudflare/workers-types" />
 
-const PRICE_MARKUP_FACTOR = 1.2;
+const PRICE_MARKUP_FACTOR = 1.5;
 
 import { ImageResponse } from "workers-og";
 import {

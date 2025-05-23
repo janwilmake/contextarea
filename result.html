@@ -511,6 +511,32 @@
 </head>
 
 <body>
+    <style>
+        #link {
+            position: fixed;
+            background-color: #3a3a3a;
+            color: #e5e5e5;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: background-color 0.2s ease;
+            z-index: 1000;
+        }
+
+        #link:hover {
+            background-color: #4a4a4a;
+            color: #fff;
+        }
+    </style>
+
+    <a href="https://github.com/janwilmake/lmpify-docs/blob/main/README.md" target="_blank" id="link"
+        style="top:20px;right:100px;" title="Docs">Docs</a>
+    <a href="https://github.com/janwilmake/lmpify-docs/blob/main/privacy-policy.md" target="_blank" id="link"
+        style="top:20px;right:20px;" title="Privacy">Privacy</a>
+
     <div class="container">
         <a href="/">
             <h1><img src="/logo.png" width="32" height="32"
