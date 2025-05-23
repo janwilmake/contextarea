@@ -92,10 +92,14 @@ the result is added to kv under key of pathname
 
 ✅ Do a short X post announcing it, and now always use this when starting a new project.
 
-# Virality (2025-05-21 and 2025-05-22)
+# Virality (2025-05-21)
 
 Made the markdown 'prompt it' button
 
 Made `mdapply` cli (https://github.com/janwilmake/mdapply)
 
+# Better docs (2025-05-23)
+
 Made `usage.html/md`
+
+✅ Turn usage, why and privacy-policy into https://github.com/janwilmake/lmpify-docs and link from homepage

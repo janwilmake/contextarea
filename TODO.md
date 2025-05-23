@@ -7,8 +7,6 @@ New footer. Footer Real Estate:
 - ✔️ try again or reply
 - if output has codeblocks: patch button
 
-Pricing: markup 50% rather than just 20% to reserve money for contextcreators. Also charge for patch if possible.
-
 Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
 
 Add toggle button to view context in right panel rather than result. Could be live connected with context-cards, rather than from data.
