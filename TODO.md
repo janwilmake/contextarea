@@ -1,4 +1,17 @@
+# IDEA: Make prompt button more appealing
+
+- Add links alternative clients in the model modal
+- Add copy button for prompt textarea contents
+
+It's interesting ways to make the 'prompt it' button more appealing
+
 # High Impact Improvements
+
+Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
+
+Add toggle button to view context in right panel rather than result. Later, this could be live connected with context-cards, rather than from data.
+
+Add easily embeddable link that links to result. It's now just clickable but not insertable.
 
 New footer. Footer Real Estate:
 
@@ -6,24 +19,6 @@ New footer. Footer Real Estate:
 - ✔️ change model
 - ✔️ try again or reply
 - if output has codeblocks: patch button
-
-Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
-
-Add toggle button to view context in right panel rather than result. Could be live connected with context-cards, rather than from data.
-
-Add easily embeddable link that links to result. It's now just clickable but not insertable.
-
-# Context Area
-
-- paste large texts should turn into a URL to keep it easy to oversee the prompt. use pastebin as imported code `from "./lmpify.pastebin/pastebin"` (`/lmpify.pastebin/README.md`) https://github.com/janwilmake/contextarea
-
-- for each link in the prompt, the frontend should have an api to render the context card for it which includes url, title, tokens, og-image, and more. these should be dynamically rendered below your prompt, and must be clear which belongs to which url somehow. when a prompt is pre-loaded, context cards may be pre-loaded from head JSON
-
-- the contextarea.context api returns mediatype, so we can embed images as images into chat/completions. same for videos, which should force models.
-
-Leverage `meta name="author"` as well as `twitter:creator` but also simply the URL itself for github and x to identify the owner of the URL context.
-
-🔥 Basically for any xymake person link I want their face appear with a title/description. Need to improve the HTML result metadata for this, but is definitely possible!
 
 # `/chat/completions`
 
