@@ -6,7 +6,7 @@ How to gather context:
 
 - try kv and ctx.waitUntil the actual fetch
 - if no kv, do the actual fetch and store in kv afterwards
-- it should do 2 fetches:
+- it should do 2 fetches in parallel:
   - one preferring text/html
   - one preferring text/markdown
   - both have fallback to `*/*` to also get things like images
