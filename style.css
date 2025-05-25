@@ -1,293 +1,229 @@
-/* style.css - ContextArea Styles with .contextarea-* namespace */
+/**
+ * ContextArea Styles
+ * Modern styling for the ContextArea component with proper namespace
+ * to avoid collisions with other stylesheets.
+ */
 
-/* Container for the entire demo area */
+/* Container styling */
 .contextarea-container {
-  max-width: 900px;
-  margin: 2rem auto 4rem auto;
-  padding: 1rem 1.25rem 3rem 1.25rem;
-  background-color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-  color: #2c3e50;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-  user-select: text;
-  position: relative;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
 }
 
-/* Headings and paragraphs styling */
-.contextarea-container h1 {
-  margin-top: 0;
-  margin-bottom: 0.3rem;
-  font-weight: 700;
-  font-size: 2rem;
-  color: #34495e;
-  letter-spacing: 0.02em;
-}
-
-.contextarea-container p {
-  font-size: 1rem;
+/* Description area */
+.contextarea-description {
+  margin-bottom: 20px;
+  color: #555;
   line-height: 1.5;
-  margin-top: 0.25rem;
-  margin-bottom: 1rem;
 }
 
-.contextarea-container p a {
-  color: #3498db;
-  text-decoration: none;
-  font-weight: 600;
+.contextarea-description ul {
+  margin-left: 20px;
 }
 
-.contextarea-container p a:hover,
-.contextarea-container p a:focus {
-  text-decoration: underline;
-}
-
-/* Textarea styling */
-.contextarea-container textarea#contextarea {
-  width: 100%;
-  min-height: 220px;
-  padding: 1rem 1.25rem;
-  font-size: 1.1rem;
-  line-height: 1.5;
-  border: 2.5px dashed #ccc;
-  border-radius: 10px;
-  box-sizing: border-box;
-  resize: vertical;
-  color: #2c3e50;
-  transition: border-color 0.3s ease, background-color 0.25s ease;
-  outline-offset: 2px;
-  font-family: Consolas, "Courier New", monospace;
-  caret-color: #3498db;
-  background-color: #fefefe;
-  user-select: text;
-}
-
-/* Textarea focus state */
-.contextarea-container textarea#contextarea:focus {
-  border-color: #3498db;
-  background-color: #fcfdff;
-  box-shadow: 0 0 8px rgba(52, 152, 219, 0.25);
-  outline: none;
-}
-
-/* Textarea dragover highlight */
-.contextarea-container textarea#contextarea.contextarea-dragover {
-  border-color: #2980b9;
-  background-color: #f0f8ff;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
-}
-
-/* Upload button at bottom right of container */
-.contextarea-upload-button {
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  width: 48px;
-  height: 48px;
-  background-color: #3498db;
-  border: none;
-  border-radius: 50%;
-  color: white;
-  font-size: 1.55rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.5);
-  display: flex;
+/* GitHub link styling */
+.contextarea-github-link {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  user-select: none;
-  z-index: 10;
+  text-decoration: none;
+  color: #0366d6;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+  transition: background-color 0.2s;
 }
 
-.contextarea-upload-button:hover {
-  background-color: #2980b9;
-  transform: scale(1.1);
-}
-
-.contextarea-upload-button:focus-visible {
-  outline: 3px solid #2980b9;
-  outline-offset: 3px;
-}
-
-/* Hidden file input */
-.contextarea-file-input {
-  display: none;
-  visibility: hidden;
-  position: absolute;
-  z-index: -1;
-}
-
-/* Container for all context cards */
-.contextarea-cards {
-  margin-top: 2rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.4rem;
-}
-
-/* Individual context card styling */
-.contextarea-card {
-  background-color: #fff;
-  border-radius: 12px;
-  border: 1.8px solid #e1e4e8;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  transition: box-shadow 0.25s ease, transform 0.2s ease;
-  user-select: text;
-}
-
-/* Card hover effect */
-.contextarea-card:hover {
-  box-shadow: 0 8px 20px rgba(52, 152, 219, 0.25);
-  transform: translateY(-4px);
-  border-color: #3498db;
-}
-
-/* Card active (highlighted) state */
-.contextarea-card.contextarea-card-active {
-  box-shadow: 0 0 0 2.5px rgba(52, 152, 219, 0.6);
-  border-color: #3498db;
-  transform: none;
-}
-
-/* Card preview image (Open Graph) */
-.contextarea-card-image {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  user-select: none;
-  pointer-events: none;
+.contextarea-github-link:hover {
   background-color: #f6f8fa;
 }
 
-/* Card content wrapper */
-.contextarea-card-content {
-  padding: 16px 20px 18px 20px;
-  flex-grow: 1;
+.contextarea-github-link svg {
+  margin-right: 8px;
+  fill: currentColor;
+}
+
+.contextarea-github-stars {
+  margin-left: 10px;
+  padding: 2px 5px;
+  background-color: #f6f8fa;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+/* Editor container with relative positioning for the upload button */
+.contextarea-editor-container {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+/* Textarea styling */
+#contextarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  resize: vertical;
+  outline: none;
+}
+
+#contextarea:focus {
+  border-color: #4f9cf9;
+  box-shadow: 0 0 0 3px rgba(79, 156, 249, 0.15);
+}
+
+/* Drag and drop styling */
+#contextarea.contextarea-dragover {
+  border: 2px dashed #4f9cf9;
+  background-color: rgba(79, 156, 249, 0.05);
+}
+
+/* Upload button styling */
+.contextarea-upload-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #4f9cf9;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s, transform 0.2s;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.contextarea-upload-btn:hover {
+  background-color: #3d8aeb;
+  transform: scale(1.05);
+}
+
+.contextarea-upload-btn:active {
+  transform: scale(0.95);
+}
+
+.contextarea-upload-btn svg {
+  fill: white;
+  width: 20px;
+  height: 20px;
+}
+
+/* Context cards container */
+.contextarea-cards-container {
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Individual context card */
+.contextarea-card {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s;
+  overflow: hidden;
+}
+
+.contextarea-card:hover {
+  background-color: #f0f2f5;
+}
+
+/* Card image/icon container */
+.contextarea-card-image {
+  width: 40px;
+  height: 30px;
+  margin-right: 10px;
+  border-radius: 4px;
+  background-color: #e9ecef;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.contextarea-card-image svg {
+  width: 20px;
+  height: 20px;
+  fill: #6c757d;
+}
+
+/* Card content container */
+.contextarea-card-content {
+  flex: 1;
+  min-width: 0; /* Allows text truncation to work */
+}
+
+/* Card URL line */
+.contextarea-card-url {
+  font-size: 12px;
+  color: #495057;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+/* Card info line */
+.contextarea-card-info {
+  font-size: 13px;
+  color: #343a40;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Card title */
 .contextarea-card-title {
-  font-size: 1.2rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin: 0 0 0.5rem 0;
-  color: #2c3e50;
-  overflow-wrap: break-word;
+  font-weight: 500;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Card description */
-.contextarea-card-description {
-  font-size: 0.9rem;
-  line-height: 1.3;
-  margin-bottom: 1rem;
-  color: #666;
-  white-space: pre-line;
-  overflow-wrap: break-word;
+/* Card type badge */
+.contextarea-card-type {
+  background-color: #e9ecef;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #495057;
 }
 
-/* Card meta data container (like type, tokens, twitter, github) */
-.contextarea-card-meta {
-  font-size: 0.75rem;
-  color: #8a8f98;
-  margin-bottom: 1rem;
-  display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: 8px 16px;
-}
-
-/* Card meta single item */
-.contextarea-card-meta-item {
-  user-select: text;
-  white-space: nowrap;
-}
-
-/* Card buttons container */
-.contextarea-card-actions {
-  margin-top: auto;
-  display: flex;
-  gap: 10px;
-}
-
-/* Card buttons common style */
-.contextarea-card-button {
-  flex: 1 1 auto;
-  padding: 8px 0;
-  font-size: 0.85rem;
-  text-align: center;
-  border-radius: 6px;
-  border: 1.5px solid #3498db;
-  background-color: #3498db;
-  color: white;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.25s ease, border-color 0.25s ease,
-    color 0.25s ease;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-.contextarea-card-button:hover,
-.contextarea-card-button:focus-visible {
-  background-color: #2978bd;
-  border-color: #2978bd;
-  outline: none;
-}
-
-/* Loading card content - spinner and text */
-.contextarea-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 30px 20px;
-  color: #7f8c8d;
-  font-weight: 600;
-  font-size: 0.9rem;
-  user-select: none;
-  gap: 14px;
-}
-
-/* Spinner element */
-.contextarea-spinner {
-  width: 22px;
-  height: 22px;
-  border: 3.5px solid #ecf0f1;
-  border-top: 3.5px solid #3498db;
-  border-radius: 50%;
-  animation: contextarea-spin 1s linear infinite;
-}
-
-/* Spinner animation */
-@keyframes contextarea-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+/* Card tokens count */
+.contextarea-card-tokens {
+  font-size: 11px;
+  color: #6c757d;
+  margin-left: auto;
 }
 
 /* Responsive adjustments */
-
-/* Tablet and medium screens */
-@media (max-width: 768px) {
-  .contextarea-cards {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+@media (max-width: 600px) {
+  #contextarea {
+    min-height: 150px;
   }
-}
 
-/* Mobile - stack cards */
-@media (max-width: 480px) {
-  .contextarea-cards {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  .contextarea-card-meta {
-    grid-template-columns: 1fr;
+  .contextarea-card-title {
+    max-width: 50%;
   }
 }

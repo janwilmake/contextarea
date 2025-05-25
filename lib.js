@@ -1,497 +1,475 @@
-// lib.js - ContextArea Demo library
-// Implements paste, drag-drop, upload, URL extraction and Context API metadata cards.
+/**
+ * ContextArea - Enhanced textarea with URL context cards and file upload capabilities
+ * @author Jan Wilmake
+ * @version 1.0.0
+ */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const textarea = document.getElementById("contextarea");
-  const uploadButton = document.querySelector(".contextarea-upload-button");
-  const fileInput = document.querySelector(".contextarea-file-input");
-  const cardsContainer = document.querySelector(".contextarea-cards");
+(function () {
+  // Core DOM elements
+  let textarea;
+  let cardsContainer;
+  let uploadButton;
+  let fileInput;
 
-  // Constants
-  const CONTEXT_API_URL = "https://context.contextarea.com/";
-  const PASTEBIN_API_URL = "https://pastebin.contextarea.com/";
-  const URL_REGEX =
-    /(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b(?:[-a-zA-Z0-9@:%_\+.~#()?&\/=]*))/gi;
-  const MAX_REGULAR_PASTE_LENGTH = 1000;
+  // Cache for context data
+  const contextCache = new Map();
 
-  if (!textarea) return;
+  // URL regex pattern
+  const urlPattern =
+    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
 
-  // Map url -> card element for caching displayed cards and for update sync
-  const processedUrls = new Map();
+  // Initialize when DOM is ready
+  document.addEventListener("DOMContentLoaded", initialize);
 
-  // Setup event listeners
-  textarea.addEventListener("paste", handlePaste);
-  textarea.addEventListener("dragover", handleDragOver);
-  textarea.addEventListener("dragleave", handleDragLeave);
-  textarea.addEventListener("drop", handleDrop);
-  textarea.addEventListener("input", debounce(processUrls, 1000));
-  textarea.addEventListener("keyup", handleCursorMove);
-  textarea.addEventListener("click", handleCursorMove);
-  uploadButton.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", handleFileSelect);
+  /**
+   * Initialize the ContextArea functionality
+   */
+  function initialize() {
+    textarea = document.getElementById("contextarea");
+    if (!textarea) return;
 
-  // Initial processing on load
-  processUrls();
+    // Create file input for upload button
+    fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.multiple = true;
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
 
-  // Shift key held: regular paste.
-  async function handlePaste(event) {
-    if (event.shiftKey) return; // allow regular paste when shift held
+    // Find or create cards container
+    cardsContainer = document.getElementById("contextarea-cards");
+    if (!cardsContainer) {
+      cardsContainer = document.createElement("div");
+      cardsContainer.id = "contextarea-cards";
+      cardsContainer.className = "contextarea-cards-container";
+      textarea.parentNode.insertBefore(cardsContainer, textarea.nextSibling);
+    }
 
-    const clipboard = event.clipboardData || window.clipboardData;
-    if (!clipboard) return;
+    // Find upload button
+    uploadButton = document.querySelector(".contextarea-upload-btn");
 
-    // Check if clipboardData has files; handle files separately
-    if (clipboard.files && clipboard.files.length > 0) {
-      event.preventDefault();
-      await handleFiles(clipboard.files);
+    // Setup event listeners
+    setupEventListeners();
+  }
+
+  /**
+   * Setup all required event listeners
+   */
+  function setupEventListeners() {
+    // Paste handling
+    textarea.addEventListener("paste", handlePaste);
+
+    // Drag and drop handling
+    textarea.addEventListener("dragover", handleDragOver);
+    textarea.addEventListener("dragenter", handleDragEnter);
+    textarea.addEventListener("dragleave", handleDragLeave);
+    textarea.addEventListener("drop", handleDrop);
+
+    // Text input handling with debounce for URL detection
+    let debounceTimer;
+    textarea.addEventListener("input", () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        processUrlsInTextarea();
+      }, 1000);
+    });
+
+    // Upload button click
+    if (uploadButton) {
+      uploadButton.addEventListener("click", () => fileInput.click());
+    }
+
+    // File input change
+    fileInput.addEventListener("change", handleFileSelect);
+  }
+
+  /**
+   * Handle paste events in the textarea
+   * @param {Event} e - Paste event
+   */
+  async function handlePaste(e) {
+    // Regular paste if Shift key is pressed
+    if (e.shiftKey) return;
+
+    const clipboardData = e.clipboardData || window.clipboardData;
+
+    // Check if pasted content is text
+    if (clipboardData.types.includes("text/plain")) {
+      const text = clipboardData.getData("text/plain").trim();
+
+      // If text is a URL or short text, allow regular paste
+      if (isUrl(text) || text.length <= 1000) return;
+
+      // Otherwise, upload the text content
+      e.preventDefault();
+      await uploadContent(text, "text/plain");
       return;
     }
 
-    const pastedText = clipboard.getData("text");
-    if (!pastedText) return; // no text to process
-
-    const trimmedText = pastedText.trim();
-
-    // If pasted text is a url itself (or trimmed is) OR length <= max regular length => regular paste allowed
-    if (isUrl(trimmedText) || pastedText.length <= MAX_REGULAR_PASTE_LENGTH) {
-      return; // allow regular paste
-    }
-
-    // Else: prevent default paste and send text to pastebin, then paste pastebin URL instead
-    event.preventDefault();
-    try {
-      const pasteUrl = await sendToPastebin(pastedText);
-      insertTextAtCursor(textarea, pasteUrl);
-      processUrls();
-    } catch (err) {
-      // fallback to regular paste if pastebin fails
-      console.error("Pastebin upload failed", err);
-      insertTextAtCursor(textarea, pastedText);
-      processUrls();
+    // Check if pasted content contains files
+    if (clipboardData.files && clipboardData.files.length > 0) {
+      e.preventDefault();
+      await handleFiles(Array.from(clipboardData.files));
+      return;
     }
   }
 
-  // Drag over handler: highlight border and prevent default
-  function handleDragOver(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
+  /**
+   * Handle dragover event
+   * @param {Event} e - Dragover event
+   */
+  function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
     textarea.classList.add("contextarea-dragover");
   }
 
-  // Drag leave handler: remove highlight
-  function handleDragLeave(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    // Only remove if leaving textarea
-    if (evt.target === textarea) {
-      textarea.classList.remove("contextarea-dragover");
-    }
+  /**
+   * Handle dragenter event
+   * @param {Event} e - Dragenter event
+   */
+  function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    textarea.classList.add("contextarea-dragover");
   }
 
-  // Drop handler - files or text
-  async function handleDrop(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
+  /**
+   * Handle dragleave event
+   * @param {Event} e - Dragleave event
+   */
+  function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    textarea.classList.remove("contextarea-dragover");
+  }
+
+  /**
+   * Handle drop event
+   * @param {Event} e - Drop event
+   */
+  async function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
     textarea.classList.remove("contextarea-dragover");
 
-    const dt = evt.dataTransfer;
-    if (!dt) return;
+    // Regular drop if Shift key is pressed
+    if (e.shiftKey) return;
 
-    // If files present in dataTransfer use upload flow
-    if (dt.files && dt.files.length > 0) {
-      await handleFiles(dt.files);
-      return;
-    }
+    const items = e.dataTransfer.items;
+    const files = e.dataTransfer.files;
 
-    // Else handle dropped text
-    const droppedText = dt.getData("text");
-    if (!droppedText) return;
-
-    const trimmedText = droppedText.trim();
-
-    // If dropped text is very long and not a single url, upload to pastebin
-    if (trimmedText.length > MAX_REGULAR_PASTE_LENGTH && !isUrl(trimmedText)) {
-      try {
-        const pasteUrl = await sendToPastebin(trimmedText);
-        insertTextAtCursor(textarea, pasteUrl);
-        processUrls();
-      } catch (err) {
-        console.error("Pastebin upload failed for dropped text", err);
-        insertTextAtCursor(textarea, droppedText);
-        processUrls();
-      }
-      return;
-    }
-
-    // Otherwise insert dropped text normally
-    insertTextAtCursor(textarea, droppedText);
-    processUrls();
-  }
-
-  // File input change event handler
-  async function handleFileSelect(evt) {
-    if (evt.target.files && evt.target.files.length > 0) {
-      await handleFiles(evt.target.files);
+    if (files.length > 0) {
+      await handleFiles(Array.from(files));
     }
   }
 
-  // Handle uploading multiple files to pastebin and inserting URLs
-  async function handleFiles(fileList) {
-    for (const file of fileList) {
-      try {
-        const contentBuffer = await readFileAsArrayBuffer(file);
-        const pasteUrl = await sendToPastebin(contentBuffer, file.type);
-        // Insert URL plus trailing space for better UX
-        insertTextAtCursor(textarea, pasteUrl + " ");
-      } catch (error) {
-        console.error(`Upload failed for file ${file.name}`, error);
-        // Skip file on failure, no insert
-      }
+  /**
+   * Handle file selection from file input
+   * @param {Event} e - Change event from file input
+   */
+  async function handleFileSelect(e) {
+    if (e.target.files.length > 0) {
+      await handleFiles(Array.from(e.target.files));
+      // Reset file input to allow selecting the same file again
+      e.target.value = "";
     }
-    processUrls();
   }
 
-  // Debounce helper
-  function debounce(fn, ms) {
-    let timeoutId;
-    return (...args) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => fn(...args), ms);
-    };
-  }
+  /**
+   * Process multiple files for upload
+   * @param {File[]} files - Array of files to process
+   */
+  async function handleFiles(files) {
+    const cursorPosition = textarea.selectionStart;
+    let insertedText = "";
 
-  // Process all URLs found in textarea content.
-  // Update cards: remove cards no longer present,
-  // add cards for new urls, update old cards only if changed.
-  async function processUrls() {
-    const text = textarea.value;
-    if (!text) {
-      // Clear all cards
-      cardsContainer.innerHTML = "";
-      processedUrls.clear();
-      return;
-    }
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const url = await uploadFile(file);
 
-    const foundUrls = [...text.matchAll(URL_REGEX)].map((m) => m[0]);
-    const uniqueUrls = Array.from(new Set(foundUrls));
-
-    // Remove cards for URLs no longer present
-    for (const [url, cardElem] of processedUrls.entries()) {
-      if (!uniqueUrls.includes(url)) {
-        cardElem.remove();
-        processedUrls.delete(url);
+      if (url) {
+        // Add a newline between URLs if there are multiple
+        if (i > 0) insertedText += "\n";
+        insertedText += url;
       }
     }
 
-    // Add cards for new URLs or update existing cards
-    for (const url of uniqueUrls) {
-      if (!processedUrls.has(url)) {
-        // Add loading placeholder card
-        const loadingCard = createLoadingCard(url);
-        cardsContainer.appendChild(loadingCard);
-        processedUrls.set(url, loadingCard);
+    if (insertedText) {
+      // Insert at cursor position
+      const beforeText = textarea.value.substring(0, cursorPosition);
+      const afterText = textarea.value.substring(cursorPosition);
 
-        // Fetch context data async
-        fetchContextData(url)
-          .then((data) => {
-            // Create card from data
-            const newCard = createContextCard(data, url);
-            // Replace loading placeholder
-            if (processedUrls.has(url)) {
-              const oldElem = processedUrls.get(url);
-              if (oldElem === loadingCard) {
-                cardsContainer.replaceChild(newCard, loadingCard);
-                processedUrls.set(url, newCard);
-              } else {
-                // If changed by user? Just append new card
-                cardsContainer.appendChild(newCard);
-                processedUrls.set(url, newCard);
-              }
-            }
-          })
-          .catch((error) => {
-            // Replace loading card with error card
-            const errorCard = createErrorCard(url, error.message);
-            if (processedUrls.has(url)) {
-              const oldElem = processedUrls.get(url);
-              if (oldElem === loadingCard) {
-                cardsContainer.replaceChild(errorCard, loadingCard);
-                processedUrls.set(url, errorCard);
-              } else {
-                cardsContainer.appendChild(errorCard);
-                processedUrls.set(url, errorCard);
-              }
-            }
-          });
-      }
+      textarea.value = beforeText + insertedText + afterText;
+
+      // Set cursor position after inserted text
+      const newPosition = cursorPosition + insertedText.length;
+      textarea.setSelectionRange(newPosition, newPosition);
+
+      // Trigger input event to process URLs
+      textarea.dispatchEvent(new Event("input"));
     }
-
-    // After delay, update highlight based on cursor position
-    handleCursorMove();
   }
 
-  // Highlight the card whose URL is under the cursor in the textarea
-  function handleCursorMove() {
-    const cursorPos = textarea.selectionStart;
-    const text = textarea.value;
-    const urls = [...text.matchAll(URL_REGEX)];
-
-    // Remove active highlights from all cards
-    cardsContainer
-      .querySelectorAll(".contextarea-card-active")
-      .forEach((el) => {
-        el.classList.remove("contextarea-card-active");
+  /**
+   * Upload a file to the pastebin service
+   * @param {File} file - File to upload
+   * @returns {Promise<string>} URL of the uploaded content
+   */
+  async function uploadFile(file) {
+    try {
+      const response = await fetch("https://pastebin.contextarea.com/", {
+        method: "POST",
+        body: file,
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
       });
 
-    // Find if cursor is inside any URL
-    for (const match of urls) {
-      const start = match.index;
-      const end = start + match[0].length;
-      if (cursorPos >= start && cursorPos <= end) {
-        const url = match[0];
-        const card = processedUrls.get(url);
-        if (card) card.classList.add("contextarea-card-active");
-        card?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        break;
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
       }
+
+      return await response.text();
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      return null;
     }
   }
 
-  // Create a loading card for a URL
-  function createLoadingCard(url) {
-    const card = document.createElement("article");
-    card.className = "contextarea-card";
-    card.dataset.url = url;
-    const hostname = safeHostname(url);
+  /**
+   * Upload text content to the pastebin service
+   * @param {string} content - Text content to upload
+   * @param {string} contentType - MIME type of the content
+   */
+  async function uploadContent(content, contentType = "text/plain") {
+    try {
+      const cursorPosition = textarea.selectionStart;
 
-    card.innerHTML = /*html*/ `
-      <div class="contextarea-loading" aria-live="polite" aria-busy="true" role="status">
-        <span class="contextarea-spinner" aria-hidden="true"></span>
-        Loading context for <strong>${hostname}</strong>...
-      </div>
-    `;
-    return card;
-  }
+      const response = await fetch("https://pastebin.contextarea.com/", {
+        method: "POST",
+        body: content,
+        headers: {
+          "Content-Type": contentType,
+        },
+      });
 
-  // Create an error card for a URL load failure
-  function createErrorCard(url, message) {
-    const card = document.createElement("article");
-    card.className = "contextarea-card";
-    card.dataset.url = url;
-    const hostname = safeHostname(url);
-
-    card.innerHTML = /*html*/ `
-      <div class="contextarea-card-content">
-        <h3 class="contextarea-card-title">${hostname}</h3>
-        <p class="contextarea-card-description" style="color:#b34747;">Failed to load context: ${escapeHTML(
-          message,
-        )}</p>
-        <div class="contextarea-card-actions">
-          <button class="contextarea-card-button goto-url-btn" type="button" aria-label="Open URL ${escapeHTML(
-            url,
-          )} in new tab">Go to URL</button>
-          <button class="contextarea-card-button goto-cursor-btn" type="button" aria-label="Find URL in text area">Find in Text</button>
-        </div>
-      </div>
-    `;
-
-    card.querySelector(".goto-url-btn").addEventListener("click", () => {
-      window.open(url, "_blank", "noopener");
-    });
-
-    card.querySelector(".goto-cursor-btn").addEventListener("click", () => {
-      findInTextarea(url);
-    });
-
-    return card;
-  }
-
-  // Create a fully rendered context card from context API data
-  function createContextCard(data, url) {
-    const card = document.createElement("article");
-    card.className = "contextarea-card";
-    card.dataset.url = url;
-
-    const hasImage = !!data.ogImageUrl;
-    const hostname = safeHostname(url);
-
-    // Escape helper for user/text content:
-    function esc(s) {
-      return escapeHTML(s || "");
-    }
-
-    card.innerHTML = /*html*/ `
-      ${
-        hasImage
-          ? `<img class="contextarea-card-image" src="${esc(
-              data.ogImageUrl,
-            )}" alt="${esc(data.title || "Preview Image")}" loading="lazy">`
-          : ""
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.status}`);
       }
-      <div class="contextarea-card-content">
-        <h3 class="contextarea-card-title">${esc(data.title || hostname)}</h3>
-        <p class="contextarea-card-description">${esc(
-          data.description || "No description available",
-        )}</p>
-        <div class="contextarea-card-meta" aria-label="Metadata">
-          ${
-            data.type
-              ? `<div class="contextarea-card-meta-item" title="Content Type">Type: <strong>${esc(
-                  data.type,
-                )}</strong></div>`
-              : ""
-          }
-          ${
-            typeof data.tokens === "number"
-              ? `<div class="contextarea-card-meta-item" title="Estimated token count">Tokens: <strong>${data.tokens}</strong></div>`
-              : ""
-          }
-          ${
-            data.twitterUsername
-              ? `<div class="contextarea-card-meta-item" title="Twitter Username">Twitter: <strong>@${esc(
-                  data.twitterUsername,
-                )}</strong></div>`
-              : ""
-          }
-          ${
-            data.githubOwner
-              ? `<div class="contextarea-card-meta-item" title="GitHub Owner">GitHub: <strong>${esc(
-                  data.githubOwner,
-                )}</strong></div>`
-              : ""
-          }
-        </div>
-        <div class="contextarea-card-actions">
-          <button class="contextarea-card-button goto-url-btn" type="button" aria-label="Open URL ${esc(
-            url,
-          )} in new tab">Go to URL</button>
-          <button class="contextarea-card-button goto-cursor-btn" type="button" aria-label="Find URL in text area">Find in Text</button>
-        </div>
-      </div>
-    `;
 
-    // Button: Open original URL in new tab/window securely
-    card.querySelector(".goto-url-btn").addEventListener("click", () => {
-      window.open(url, "_blank", "noopener");
-    });
+      const url = await response.text();
 
-    // Button: Scroll textarea to the URL location, focus and move cursor after it
-    card.querySelector(".goto-cursor-btn").addEventListener("click", () => {
-      findInTextarea(url);
-    });
+      // Insert the URL at cursor position
+      const beforeText = textarea.value.substring(0, cursorPosition);
+      const afterText = textarea.value.substring(cursorPosition);
 
-    return card;
+      textarea.value = beforeText + url + afterText;
+
+      // Set cursor position after inserted URL
+      const newPosition = cursorPosition + url.length;
+      textarea.setSelectionRange(newPosition, newPosition);
+
+      // Trigger input event to process URLs
+      textarea.dispatchEvent(new Event("input"));
+    } catch (error) {
+      console.error("Error uploading content:", error);
+    }
   }
 
-  // Scroll textarea selection to the first occurrence of url text in textarea
-  function findInTextarea(url) {
+  /**
+   * Process URLs in the textarea and create context cards
+   */
+  function processUrlsInTextarea() {
     const text = textarea.value;
-    const idx = text.indexOf(url);
-    if (idx === -1) return;
-    textarea.focus();
-    textarea.setSelectionRange(idx, idx + url.length);
-    textarea.scrollTop = lineScrollTop(textarea, idx);
+    const urls = [...new Set(text.match(urlPattern) || [])];
+
+    // Track existing cards to update or remove
+    const existingCards = new Map();
+    Array.from(cardsContainer.children).forEach((card) => {
+      existingCards.set(card.dataset.url, card);
+    });
+
+    // Process each URL
+    urls.forEach(async (url) => {
+      // Skip if card already exists
+      if (existingCards.has(url)) {
+        existingCards.delete(url); // Remove from tracking map to keep it
+        return;
+      }
+
+      // Create and add new card
+      const card = createContextCard(url);
+      cardsContainer.appendChild(card);
+
+      // Fetch context data for the URL
+      await fetchAndUpdateContext(url, card);
+    });
+
+    // Remove cards for URLs that are no longer in the textarea
+    existingCards.forEach((card) => {
+      cardsContainer.removeChild(card);
+    });
   }
 
-  // Calculates approximate vertical scroll offset so selection is visible
-  // based on textarea line height and position - rough, but works reasonably.
-  function lineScrollTop(textarea, index) {
-    // Count line number of index
-    const value = textarea.value;
-    const substring = value.slice(0, index);
-    const lines = substring.split("\n").length - 1;
-    const lineHeight = parseInt(
-      window.getComputedStyle(textarea).lineHeight,
-      10,
-    );
-    return lines * lineHeight;
+  /**
+   * Create a context card for a URL
+   * @param {string} url - URL to create card for
+   * @returns {HTMLElement} Created card element
+   */
+  function createContextCard(url) {
+    const card = document.createElement("div");
+    card.className = "contextarea-card";
+    card.dataset.url = url;
+
+    const image = document.createElement("div");
+    image.className = "contextarea-card-image";
+
+    const content = document.createElement("div");
+    content.className = "contextarea-card-content";
+
+    const urlLine = document.createElement("div");
+    urlLine.className = "contextarea-card-url";
+    urlLine.textContent = url;
+
+    const infoLine = document.createElement("div");
+    infoLine.className = "contextarea-card-info";
+    infoLine.textContent = "Loading...";
+
+    content.appendChild(urlLine);
+    content.appendChild(infoLine);
+
+    card.appendChild(image);
+    card.appendChild(content);
+
+    return card;
   }
 
-  // Fetch context area data from API for given URL
-  async function fetchContextData(url) {
-    const query = `?url=${encodeURIComponent(url)}`;
-    const response = await fetch(CONTEXT_API_URL + query);
-    if (!response.ok) {
-      throw new Error(`Context API error ${response.status}`);
+  /**
+   * Fetch context data for a URL and update its card
+   * @param {string} url - URL to fetch context for
+   * @param {HTMLElement} card - Card element to update
+   */
+  async function fetchAndUpdateContext(url, card) {
+    try {
+      // Use cached data if available
+      if (contextCache.has(url)) {
+        updateCardWithContext(card, contextCache.get(url));
+        return;
+      }
+
+      // Fetch context data
+      const response = await fetch(
+        `https://context.contextarea.com/?url=${encodeURIComponent(url)}`,
+      );
+
+      if (!response.ok) {
+        throw new Error(`Context fetch failed: ${response.status}`);
+      }
+
+      const contextData = await response.json();
+
+      // Cache the result
+      contextCache.set(url, contextData);
+
+      // Update the card
+      updateCardWithContext(card, contextData);
+    } catch (error) {
+      console.error("Error fetching context:", error);
+      updateCardWithError(card);
     }
-    const data = await response.json();
-    return data;
   }
 
-  // Send text or ArrayBuffer content to pastebin and return paste URL
-  async function sendToPastebin(content, contentType = "text/plain") {
-    let body;
-
-    if (typeof content === "string") {
-      body = content;
-      contentType = "text/plain";
+  /**
+   * Update a context card with fetched data
+   * @param {HTMLElement} card - Card element to update
+   * @param {Object} data - Context data
+   */
+  function updateCardWithContext(card, data) {
+    // Update image
+    const imageDiv = card.querySelector(".contextarea-card-image");
+    if (data.ogImageUrl) {
+      imageDiv.style.backgroundImage = `url(${data.ogImageUrl})`;
     } else {
-      // ArrayBuffer, wrap in blob
-      body = new Blob([content], { type: contentType });
+      // Use icon based on content type
+      imageDiv.innerHTML = getIconForType(data.type);
     }
 
-    const response = await fetch(PASTEBIN_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": contentType },
-      body,
-    });
+    // Update info line
+    const infoLine = card.querySelector(".contextarea-card-info");
+    infoLine.innerHTML = "";
 
-    if (!response.ok) {
-      throw new Error(`Pastebin API error ${response.status}`);
+    if (data.title) {
+      const titleSpan = document.createElement("span");
+      titleSpan.className = "contextarea-card-title";
+      titleSpan.textContent = data.title;
+      infoLine.appendChild(titleSpan);
     }
-    return await response.text();
+
+    if (data.type) {
+      const typeSpan = document.createElement("span");
+      typeSpan.className = "contextarea-card-type";
+      typeSpan.textContent = data.type;
+      infoLine.appendChild(typeSpan);
+    }
+
+    if (data.tokens) {
+      const tokensSpan = document.createElement("span");
+      tokensSpan.className = "contextarea-card-tokens";
+      tokensSpan.textContent = `${data.tokens} tokens`;
+      infoLine.appendChild(tokensSpan);
+    }
   }
 
-  // Check if string is a valid URL
+  /**
+   * Update a context card with error state
+   * @param {HTMLElement} card - Card element to update
+   */
+  function updateCardWithError(card) {
+    const imageDiv = card.querySelector(".contextarea-card-image");
+    imageDiv.innerHTML = `
+            <svg viewBox="0 0 24 24" width="24" height="24">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+        `;
+
+    const infoLine = card.querySelector(".contextarea-card-info");
+    infoLine.textContent = "Unable to load context";
+  }
+
+  /**
+   * Get an icon SVG based on content type
+   * @param {string} type - Content type
+   * @returns {string} SVG markup
+   */
+  function getIconForType(type) {
+    switch (type) {
+      case "image":
+        return `
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                    </svg>
+                `;
+      case "video":
+        return `
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
+                    </svg>
+                `;
+      default:
+        return `
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                    </svg>
+                `;
+    }
+  }
+
+  /**
+   * Check if a string is a URL
+   * @param {string} text - Text to check
+   * @returns {boolean} True if text is a URL
+   */
   function isUrl(text) {
-    if (!text || typeof text !== "string") return false;
-    try {
-      new URL(text);
-      return true;
-    } catch {
-      return false;
-    }
+    return urlPattern.test(text);
   }
-
-  // Inserts text at current cursor position in textarea without overwriting
-  function insertTextAtCursor(textarea, text) {
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const oldValue = textarea.value;
-    const prefix = oldValue.substring(0, start);
-    const suffix = oldValue.substring(end);
-    textarea.value = prefix + text + suffix;
-    const pos = start + text.length;
-    textarea.selectionStart = textarea.selectionEnd = pos;
-  }
-
-  // Reads a File as ArrayBuffer (Promise based)
-  function readFileAsArrayBuffer(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(reader.error);
-      reader.onload = () => resolve(reader.result);
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
-  // Returns safe hostname string from url
-  function safeHostname(url) {
-    try {
-      return new URL(url).hostname;
-    } catch {
-      return url;
-    }
-  }
-
-  // Escape HTML entities for safe insertion into the DOM text content
-  function escapeHTML(str) {
-    if (!str) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-});
+})();
