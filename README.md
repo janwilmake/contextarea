@@ -11,11 +11,12 @@ In your head, add the following
 
 To your textarea, add `id="contextarea"` and poof! It's all there.
 
-## Requirements
+## Components
 
-| Component              | Description                                                                                               | URL                                        |     |
-| ---------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------ | --- |
-| [pastebin](./pastebin) | for OS-provided text or binary files (via copy or drag/drop)                                              | https://pastebin.contextarea.com/worker.js |     |
-| [context](./context)   | for fetching/caching any URL (or string with urls) into the belonging metadata to build up a beautiful UI | https://context.contextarea.com/worker.js  |     |
-| [root](.)              | for js library to enhance any textarea with the above, easily embeddable                                  | https://contextarea.com/lib.js             |     |
-| [demo](./demo)         | that brings it all together in a standalone html                                                          | https://demo.contextarea.com               |     |
+| Component                  | Description                                                  | URL                                           |     |
+| -------------------------- | ------------------------------------------------------------ | --------------------------------------------- | --- |
+| [pastebin](./pastebin)     | for OS-provided text or binary files (via copy or drag/drop) | https://pastebin.contextarea.com/openapi.json |     |
+| [context](./context)       | for fetching/caching any URL into the belonging metadata     | https://context.contextarea.com/openapi.json  |     |
+| [lib.js](lib.js)           | the js lib                                                   | https://contextarea.com/lib.js                |     |
+| [style.css](style.css)     | the styles                                                   | https://contextarea.com/style.css             |     |
+| [index.html](./index.html) |                                                              | https://contextarea.com                       |     |

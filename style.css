@@ -8,6 +8,7 @@
 .contextarea-container {
   position: relative;
   width: 100%;
+  height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   margin-bottom: 20px;
@@ -18,7 +19,7 @@
   width: 100%;
   min-height: 150px;
   padding: 12px;
-  border: 1px solid #cfd8dc;
+  border: none; /* Removed border */
   border-radius: 4px;
   font-size: 16px;
   line-height: 1.5;
@@ -28,13 +29,13 @@
 
 #contextarea:focus {
   outline: none;
-  border-color: #2196f3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+  border: none; /* No border on focus */
+  box-shadow: none; /* No box shadow on focus */
 }
 
 /* Drag and drop styling */
 #contextarea.contextarea-dragover {
-  border: 2px dashed #2196f3;
+  border: 2px dashed #ffffff; /* White dotted border only when drag area is active */
   background-color: rgba(33, 150, 243, 0.05);
 }
 
@@ -94,7 +95,7 @@
   align-items: center;
   padding: 10px;
   border-bottom: 1px solid #e0e0e0;
-  background-color: #f9f9f9;
+  background-color: transparent;
   transition: background-color 0.2s ease;
 }
 
@@ -103,7 +104,12 @@
 }
 
 .contextarea-context-item:hover {
-  background-color: #f0f0f0;
+  background-color: rgba(
+    240,
+    240,
+    240,
+    0.2
+  ); /* More subtle transparent hover effect */
 }
 
 /* Context image container */
@@ -147,6 +153,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin-bottom: 2px;
+  cursor: pointer; /* Added pointer cursor for clickable links */
 }
 
 /* Details line */
