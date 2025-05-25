@@ -1,15 +1,6 @@
-# IDEA: Make prompt button more appealing
-
-- Add links alternative clients in the model modal
-- Add copy button for prompt textarea contents
-
-It's interesting ways to make the 'prompt it' button more appealing
-
 # High Impact Improvements
 
 Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
-
-Add toggle button to view context in right panel rather than result. Later, this could be live connected with context-cards, rather than from data.
 
 Add easily embeddable link that links to result. It's now just clickable but not insertable.
 
@@ -40,6 +31,8 @@ Ultimately, also get back to https://x.com/EastlondonDev/status/1925191566362030
 
 # Patchlink
 
+🛑 blocked by mdapply systemprompt. can't have this be unreliable
+
 IDEA: Help the idea guys with making their content more actionable
 
 I basically created a 'mirror thread' and this could possibly be automated if lmpify had an MCP: https://x.com/janwilmake/status/1925218363774570938. But even if it's not automated it could be a great way to make ideas more actionable right away.
@@ -51,6 +44,8 @@ The button should lead to this, and this should request permission to github oau
 This patch could also add the original lmpify that lead to the fork into the README, creating another viral loop! Besides, based on which boilerplate it is, it should add buttons to deploy (deploy to vercel, deploy to cloudflare, etc) so it's just one more click away from deployment.
 
 # Analytics & revshare
+
+🛑 talk with what OSS repo-owners want. make profit, or pay for larger free tier (and make profit elsewhere)? https://x.com/janwilmake/status/1926518646785917107
 
 IDEA: to enable Rev-sharing with repo owners, X users, and knowledge-base builders
 
@@ -85,6 +80,13 @@ Revshare with the creators is super epic. Can be done directly to client_referen
 - **Edit history**; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.
 
 - **Add models and other mediatypes**: Add Gemini 2.5 Pro w/ video upload - https://x.com/tryingET/status/1924810864260960271. Add image urls as images for claude/chatgpt. Also grok would be nice. Also, let's use some cerebras models.
+
+# IDEA: Make prompt button more appealing
+
+- Add links alternative clients in the model modal
+- Add copy button for prompt textarea contents
+
+It's interesting ways to make the 'prompt it' button more appealing
 
 # BUGS/Problems
 
