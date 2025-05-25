@@ -2,25 +2,71 @@
 /// <reference lib="esnext" />
 //@ts-check
 
-interface FootprintResult {
+interface Env {
+  FOOTPRINT_KV: KVNamespace;
+}
+
+interface FootprintData {
   title: string;
   description: string;
   meta: Record<string, string>;
   mime: string;
   type: "text" | "image" | "video";
-  ogImageUrl: string | null;
-  context: string | null;
-  tokens: number;
-  githubOwner: string | null;
-  twitterUsername: string | null;
+  ogImageUrl?: string;
+  context?: string;
+  tokens?: number;
+  githubOwner?: string;
+  twitterUsername?: string;
+  fetchedAt: number;
 }
 
-interface Env {
-  FOOTPRINT_KV: KVNamespace;
+// HTML Rewriter handler for extracting meta information
+class MetaHandler {
+  title: string = "";
+  description: string = "";
+  meta: Record<string, string> = {};
+  ogImageUrl: string = "";
+  twitterUsername: string = "";
+
+  element(element: Element) {
+    // Handle title tag
+    if (element.tagName === "title") {
+      this.title = element.textContent;
+    }
+
+    // Handle meta tags
+    if (element.tagName === "meta") {
+      const name =
+        element.getAttribute("name") || element.getAttribute("property");
+      const content = element.getAttribute("content");
+
+      if (name && content) {
+        this.meta[name] = content;
+
+        if (name === "description") {
+          this.description = content;
+        } else if (name === "og:image" || name === "twitter:image") {
+          this.ogImageUrl = content;
+        } else if (name === "twitter:creator" || name === "twitter:author") {
+          this.twitterUsername = content.replace("@", "");
+        }
+      }
+    }
+  }
 }
 
-const CACHE_TTL = 60 * 60 * 24; // 24 hours in seconds
-const USER_AGENT = "CloudflareWorkerFootprint/1.0";
+// Content handler for extracting text content
+class ContentHandler {
+  content: string = "";
+
+  text(text: Text) {
+    // Clean up text and append to content
+    const cleanText = text.text.trim();
+    if (cleanText) {
+      this.content += " " + cleanText;
+    }
+  }
+}
 
 export default {
   async fetch(
@@ -28,191 +74,194 @@ export default {
     env: Env,
     ctx: ExecutionContext,
   ): Promise<Response> {
-    try {
-      const url = new URL(request.url).searchParams.get("url");
+    const url = new URL(request.url).searchParams.get("url");
 
-      if (!url) {
-        return new Response("Missing url parameter", { status: 400 });
-      }
-
-      // Try to get from KV cache first
-      const cachedResult = await env.FOOTPRINT_KV.get(url, "json");
-      let result: FootprintResult | null = null;
-
-      if (cachedResult) {
-        result = cachedResult as FootprintResult;
-
-        // If cache exists but might be old, refresh it in the background
-        const metadata = await env.FOOTPRINT_KV.getWithMetadata<{
-          cacheTime: number;
-        }>(url);
-        const cacheTime = metadata.metadata?.cacheTime || 0;
-
-        if (Date.now() - cacheTime > (CACHE_TTL * 1000) / 2) {
-          ctx.waitUntil(fetchAndCache(url, env));
-        }
-      } else {
-        // No cache, fetch fresh data
-        result = await fetchAndProcessUrl(url);
-
-        // Store in KV cache
-        ctx.waitUntil(
-          env.FOOTPRINT_KV.put(url, JSON.stringify(result), {
-            metadata: { cacheTime: Date.now() },
-          }),
-        );
-      }
-
-      return new Response(JSON.stringify(result), {
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      return new Response(`Error: ${error.message}`, { status: 500 });
+    if (!url) {
+      return new Response("URL parameter is required", { status: 400 });
     }
+
+    // Create a cache key from the URL
+    const cacheKey = `footprint:${url}`;
+
+    // Try to get data from KV
+    let cachedData: FootprintData | null = null;
+    try {
+      cachedData = await env.FOOTPRINT_KV.get(cacheKey, "json");
+    } catch (error) {
+      console.error("Error fetching from KV:", error);
+    }
+
+    // If we have cached data and it's not too old (24 hours)
+    const now = Date.now();
+    const MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+    if (cachedData && now - cachedData.fetchedAt < MAX_AGE) {
+      // If cache is getting old but still valid, refresh in the background
+      if (now - cachedData.fetchedAt > MAX_AGE / 2) {
+        ctx.waitUntil(fetchAndCache(url, env, cacheKey));
+      }
+
+      return new Response(JSON.stringify(cachedData, undefined, 2), {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=3600",
+        },
+      });
+    }
+
+    // If no cache or cache is too old, fetch the data
+    const footprintData = await fetchAndCache(url, env, cacheKey);
+
+    return new Response(JSON.stringify(footprintData), {
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "public, max-age=3600",
+      },
+    });
   },
 };
 
-async function fetchAndCache(url: string, env: Env): Promise<void> {
-  const result = await fetchAndProcessUrl(url);
-  await env.FOOTPRINT_KV.put(url, JSON.stringify(result), {
-    metadata: { cacheTime: Date.now() },
-  });
-}
+async function fetchAndCache(
+  url: string,
+  env: Env,
+  cacheKey: string,
+): Promise<FootprintData> {
+  // First try to fetch as HTML
+  let response = await fetchWithPreference(url, "text/html");
 
-async function fetchAndProcessUrl(url: string): Promise<FootprintResult> {
-  // Try to fetch as HTML first
-  const htmlResponse = await fetch(url, {
-    headers: {
-      Accept: "text/html,*/*",
-      "User-Agent": USER_AGENT,
-    },
-  });
+  // If not HTML, try markdown
+  if (!response.headers.get("Content-Type")?.includes("text/html")) {
+    const markdownResponse = await fetchWithPreference(url, "text/markdown");
 
-  const contentType = htmlResponse.headers.get("Content-Type") || "";
+    // Use markdown if we got it
+    if (
+      markdownResponse.headers.get("Content-Type")?.includes("text/markdown")
+    ) {
+      response = markdownResponse;
+    }
+  }
+
+  const contentType = response.headers.get("Content-Type") || "*/*";
   const isHtml = contentType.includes("text/html");
+  const isText =
+    contentType.includes("text") ||
+    contentType.includes("json") ||
+    contentType.includes("javascript");
+  const isImage = contentType.includes("image");
+  const isVideo = contentType.includes("video");
 
-  let result: FootprintResult = {
+  // Determine type
+  let type: "text" | "image" | "video" = "text";
+  if (isImage) type = "image";
+  if (isVideo) type = "video";
+
+  // Initialize data
+  const footprintData: FootprintData = {
     title: "",
     description: "",
     meta: {},
     mime: contentType,
-    type: "text",
-    ogImageUrl: null,
-    context: null,
-    tokens: 0,
-    githubOwner: null,
-    twitterUsername: null,
+    type,
+    fetchedAt: Date.now(),
   };
 
-  // Determine content type
-  if (contentType.includes("image/")) {
-    result.type = "image";
-  } else if (contentType.includes("video/")) {
-    result.type = "video";
-  } else {
-    result.type = "text";
+  // Parse github owner from URL if applicable
+  const githubMatch = url.match(/github\.com\/([^\/]+)/);
+  if (githubMatch) {
+    footprintData.githubOwner = githubMatch[1];
   }
 
-  // Parse HTML if available
+  // Parse twitter username from URL if applicable
+  const twitterMatch = url.match(/twitter\.com\/([^\/]+)|x\.com\/([^\/]+)/);
+  if (twitterMatch) {
+    footprintData.twitterUsername = twitterMatch[1] || twitterMatch[2];
+  }
+
+  // Clone the response to reuse it
+  const clonedResponse = response.clone();
+
   if (isHtml) {
-    const html = await htmlResponse.text();
+    // Extract metadata using HTMLRewriter
+    const metaHandler = new MetaHandler();
+    const contentHandler = new ContentHandler();
 
-    // Extract information from HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
+    await new HTMLRewriter()
+      .on("title", metaHandler)
+      .on("meta", metaHandler)
+      .on("body", contentHandler)
+      .transform(response)
+      .text();
 
-    // Title
-    result.title = doc.querySelector("title")?.textContent || url;
+    footprintData.title = metaHandler.title;
+    footprintData.description = metaHandler.description;
+    footprintData.meta = metaHandler.meta;
+    footprintData.ogImageUrl = metaHandler.ogImageUrl;
 
-    // Meta tags
-    const metaTags = doc.querySelectorAll("meta");
-    metaTags.forEach((tag) => {
-      const name = tag.getAttribute("name") || tag.getAttribute("property");
-      const content = tag.getAttribute("content");
-      if (name && content) {
-        result.meta[name] = content;
-      }
-    });
-
-    // Description
-    result.description =
-      result.meta["description"] ||
-      result.meta["og:description"] ||
-      extractDescription(html) ||
-      `Content from ${url}`;
-
-    // OG Image
-    result.ogImageUrl =
-      result.meta["og:image"] || result.meta["twitter:image"] || null;
-
-    // Twitter username
-    result.twitterUsername =
-      result.meta["twitter:creator"] ||
-      result.meta["twitter:site"] ||
-      extractTwitterUsername(url) ||
-      null;
-
-    // Text content
-    const bodyText = extractTextContent(doc);
-    result.context = bodyText;
-    result.tokens = Math.ceil(bodyText.length / 5);
-  } else {
-    // For non-HTML content
-    const responseClone = htmlResponse.clone();
-
-    if (result.type === "text") {
-      const text = await responseClone.text();
-      result.context = text;
-      result.tokens = Math.ceil(text.length / 5);
-      result.description =
-        text.substring(0, 200) + (text.length > 200 ? "..." : "");
-    } else {
-      result.context = null;
-      result.tokens = 0;
-      result.description = `${
-        result.type.charAt(0).toUpperCase() + result.type.slice(1)
-      } from ${url}`;
+    if (metaHandler.twitterUsername) {
+      footprintData.twitterUsername = metaHandler.twitterUsername;
     }
 
-    result.title = url.split("/").pop() || url;
+    // Get content text for HTML
+    footprintData.context = contentHandler.content.trim();
+  } else if (isText) {
+    // For non-HTML text, just get the content
+    const text = await clonedResponse.text();
+    footprintData.context = text;
+
+    // Try to extract a title from the first line or response headers
+    const firstLine = text.split("\n")[0].trim();
+    footprintData.title = firstLine.length > 10 ? firstLine : response.url;
+
+    // Create a description from the text
+    footprintData.description =
+      text.slice(0, 200).trim() + (text.length > 200 ? "..." : "");
+  } else {
+    // For non-text content, use the URL or filename as title
+    const urlParts = new URL(url).pathname.split("/");
+    const fileName = urlParts[urlParts.length - 1];
+    footprintData.title = fileName || url;
+    footprintData.description = `${
+      type.charAt(0).toUpperCase() + type.slice(1)
+    } content from ${url}`;
   }
 
-  // Extract GitHub owner if applicable
-  result.githubOwner = extractGithubOwner(url);
+  // Calculate token count for text content
+  if (footprintData.context) {
+    footprintData.tokens = Math.ceil(footprintData.context.length / 5);
+  }
 
-  return result;
+  // Store in KV
+  try {
+    await env.FOOTPRINT_KV.put(cacheKey, JSON.stringify(footprintData), {
+      expirationTtl: 86400,
+    });
+  } catch (error) {
+    console.error("Error storing in KV:", error);
+  }
+
+  return footprintData;
 }
 
-function extractTextContent(doc: Document): string {
-  // Remove script and style elements
-  const scripts = doc.querySelectorAll("script, style");
-  scripts.forEach((el) => el.remove());
-
-  // Get the main content
-  const article =
-    doc.querySelector("article") ||
-    doc.querySelector("main") ||
-    doc.querySelector("body");
-
-  return article ? article.textContent?.trim() || "" : "";
-}
-
-function extractDescription(html: string): string {
-  const text = html
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return text.substring(0, 200) + (text.length > 200 ? "..." : "");
-}
-
-function extractGithubOwner(url: string): string | null {
-  const githubRegex = /github\.com\/([^\/]+)/;
-  const match = url.match(githubRegex);
-  return match ? match[1] : null;
-}
-
-function extractTwitterUsername(url: string): string | null {
-  const twitterRegex = /twitter\.com\/([^\/]+)|x\.com\/([^\/]+)/;
-  const match = url.match(twitterRegex);
-  return match ? match[1] || match[2] : null;
+async function fetchWithPreference(
+  url: string,
+  preferredType: string,
+): Promise<Response> {
+  try {
+    return await fetch(url, {
+      headers: {
+        Accept: `${preferredType}, */*;q=0.8`,
+      },
+      cf: {
+        cacheTtl: 3600,
+        cacheEverything: true,
+      },
+    });
+  } catch (error) {
+    console.error(
+      `Error fetching ${url} with preference ${preferredType}:`,
+      error,
+    );
+    // Fallback to standard fetch
+    return fetch(url);
+  }
 }
