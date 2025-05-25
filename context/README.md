@@ -12,8 +12,7 @@ High level Requirements:
 
 # TODO
 
-1. **Make this work** as embeddable worker lib
-2. Use this in pastebin `demo.html` instead of doing the fetch in there (risking cors or other different results)
-3. Make demo into a js-lib (`contextarea.js`) so the HTML has full control over styling and page composition.
-4. In api, add result to `window.data.context: object[]`
-5. In both `homepage.html` and `result.html` use `contextarea.js`
+1. ✅ **Make this work** as embeddable worker lib
+2. ✅ Use this in pastebin `demo.html` instead of doing the fetch in there (risking cors or other different results)
+3. ✅ Make demo into a js-lib (`contextarea.js`) so the HTML has full control over styling and page composition.
+4. ✅ In both `homepage.html` and `result.html` use `contextarea.js`
