@@ -13,6 +13,7 @@ How to gather context:
 - temporarily caches the output into kv for faster retrieval
 - must always get kv if available, but if it's too old, also re-retrieve it in ctx.waitUntil
 - for HTML parsing, use `HTMLRewriter`, `DOMParser` is not available in Cloudflare Workers
+- use tee to clone the response
 
 output:
 
