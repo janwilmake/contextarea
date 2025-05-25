@@ -12,6 +12,9 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script src="/markdown-highlighter.js"></script>
+    <link rel="stylesheet" href="https://contextarea.com/style.css">
+    <script src="https://contextarea.com/lib.js" defer></script>
+
 
     <style>
         /* Enhanced mobile styles with removed padding and borders */
@@ -548,7 +551,7 @@
                 <div class="column-header">Prompt</div>
                 <span id="tokenCounter"
                     style="position:absolute;right:25px;font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
-                <textarea class="prompt-textarea" id="promptTextarea">Loading...</textarea>
+                <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
             </div>
 
             <div class="column" style="position: relative;">
@@ -695,7 +698,7 @@
         // 2. UI Manager Module
         class UIManager {
             constructor() {
-                this.promptTextarea = document.getElementById('promptTextarea');
+                this.contextarea = document.getElementById('contextarea');
                 this.resultContent = document.getElementById('resultContent');
                 this.copyButton = document.getElementById('copyButton');
                 this.currentResult = "";
@@ -713,7 +716,7 @@
                         .replace(/&#39;/g, "'")
                         .replace(/&amp;/g, '&');
 
-                    this.promptTextarea.value = unescapedPrompt;
+                    this.contextarea.value = unescapedPrompt;
                     this.adjustTextareaHeight();
                 }
 
@@ -749,8 +752,8 @@
             }
 
             adjustTextareaHeight() {
-                this.promptTextarea.style.height = 'auto';
-                this.promptTextarea.style.height = this.promptTextarea.scrollHeight + 'px';
+                this.contextarea.style.height = 'auto';
+                this.contextarea.style.height = this.contextarea.scrollHeight + 'px';
             }
 
             handleSSEMessage(message) {
@@ -854,18 +857,18 @@
         // 4. Token Counter Module
         class TokenCounter {
             constructor() {
-                this.promptTextarea = document.getElementById('promptTextarea');
+                this.contextarea = document.getElementById('contextarea');
                 this.tokenCounter = document.getElementById('tokenCounter');
                 this.setupEventListeners();
             }
 
             setupEventListeners() {
-                this.promptTextarea.addEventListener('input', () => this.updateTokenCount());
+                this.contextarea.addEventListener('input', () => this.updateTokenCount());
                 setTimeout(() => this.updateTokenCount(), 0);
             }
 
             updateTokenCount() {
-                const promptText = this.promptTextarea.value;
+                const promptText = this.contextarea.value;
                 const tokenCount = Math.round(promptText.length / 5);
                 const contextCount = data.context ? Math.round(data.context.length / 5) : null;
 
@@ -880,7 +883,7 @@
         // 5. Mobile Responsiveness Module
         class MobileResponsiveness {
             constructor() {
-                this.promptTextarea = document.getElementById('promptTextarea');
+                this.contextarea = document.getElementById('contextarea');
                 this.setupMobileScrolling();
                 this.setupEventListeners();
             }
@@ -904,8 +907,8 @@
 
                     // Function to resize the textarea to fit content
                     const resizeTextarea = () => {
-                        this.promptTextarea.style.height = 'auto';
-                        this.promptTextarea.style.height = Math.min(this.promptTextarea.scrollHeight, 150) + 'px';
+                        this.contextarea.style.height = 'auto';
+                        this.contextarea.style.height = Math.min(this.contextarea.scrollHeight, 150) + 'px';
                     };
 
                     // Ensure proper layout setup
@@ -915,13 +918,13 @@
                     }
 
                     // Adjust textarea on load and input
-                    if (this.promptTextarea) {
+                    if (this.contextarea) {
                         resizeTextarea();
 
                         // Remove existing listener if any
-                        this.promptTextarea.removeEventListener('input', resizeTextarea);
+                        this.contextarea.removeEventListener('input', resizeTextarea);
                         // Add the listener again
-                        this.promptTextarea.addEventListener('input', resizeTextarea);
+                        this.contextarea.addEventListener('input', resizeTextarea);
                     }
 
                     // Ensure all columns don't scroll independently
@@ -994,7 +997,7 @@
                 this.tryAgainButton = document.getElementById('tryAgainButton');
                 this.replyInsteadButton = document.getElementById('replyInsteadButton');
                 this.openResultButton = document.getElementById('openResultButton');
-                this.promptTextarea = document.getElementById('promptTextarea');
+                this.contextarea = document.getElementById('contextarea');
 
                 this.setupEventListeners();
             }
@@ -1011,7 +1014,7 @@
                 this.openResultButton.addEventListener('click', () => this.handleOpenResult());
 
                 // Keyboard shortcut for try again
-                this.promptTextarea.addEventListener('keydown', (event) => {
+                this.contextarea.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' && event.shiftKey) {
                         event.preventDefault(); // Prevent default behavior (new line)
                         this.tryAgainButton.click(); // Trigger the try again button
@@ -1041,7 +1044,7 @@
             }
 
             handleTryAgain() {
-                const promptText = this.promptTextarea.value.trim();
+                const promptText = this.contextarea.value.trim();
                 if (!promptText) return;
 
                 // Generate slug from first 20 characters
@@ -1080,7 +1083,7 @@
             }
 
             handleReplyInstead() {
-                const promptText = this.promptTextarea.value.trim();
+                const promptText = this.contextarea.value.trim();
                 if (promptText) {
                     const currentPath = window.location.pathname;
                     window.location.href = `/?q=${encodeURIComponent(`Previous Prompt:\n\n${window.location.origin + currentPath + ".md"}\n\n------\n\n`)}`;

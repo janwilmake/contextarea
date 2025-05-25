@@ -10,6 +10,7 @@ New footer. Footer Real Estate:
 - ✔️ change model
 - ✔️ try again or reply
 - if output has codeblocks: patch button
+- markdown for prompt-it button
 
 # `/chat/completions`
 

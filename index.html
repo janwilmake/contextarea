@@ -9,6 +9,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
 
+    <link rel="stylesheet" href="https://contextarea.com/style.css">
+    <script src="https://contextarea.com/lib.js" defer></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Let Me Prompt It For You — Fast, Smart Prompting for Devs</title>
@@ -327,7 +330,7 @@
         <div class="form-container" id="formView">
             <form id="promptForm" method="POST">
                 <div class="textarea-container">
-                    <textarea id="promptTextarea" name="prompt" placeholder="Type your prompt..." rows="3"></textarea>
+                    <textarea id="contextarea" name="prompt" placeholder="Type your prompt..." rows="3"></textarea>
                     <div class="buttons-row">
                         <div class="left-buttons">
                             <button type="button" class="icon-button" id="addUrlButton" title="Add URL">
@@ -388,7 +391,7 @@
         style="top:20px;right:20px;" title="Privacy">Privacy</a>
 
     <script>
-        const textarea = document.getElementById('promptTextarea');
+        const textarea = document.getElementById('contextarea');
         const submitButton = document.getElementById('submitButton');
         const form = document.getElementById('promptForm');
         const formView = document.getElementById('formView');
@@ -403,7 +406,7 @@
 
         // Function to fill textarea with query parameter content
         function fillTextareaFromQuery() {
-            const textarea = document.getElementById('promptTextarea');
+            const textarea = document.getElementById('contextarea');
             const queryContent = new URLSearchParams(window.location.search).get('q');
 
             if (queryContent) {
@@ -477,7 +480,7 @@
 
         // Handle shift+enter for newline, enter for submit
         textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && e.shiftKey) {
                 e.preventDefault();
                 if (textarea.value.trim()) {
                     form.dispatchEvent(new Event('submit'));
@@ -597,7 +600,7 @@
             fillTextareaFromQuery();
 
             // Keep the existing focus line
-            const textarea = document.getElementById("promptTextarea");
+            const textarea = document.getElementById("contextarea");
             textarea.focus();
         });
     </script>
