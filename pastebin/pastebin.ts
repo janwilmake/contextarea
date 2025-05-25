@@ -1,3 +1,7 @@
+/// <reference types="@cloudflare/workers-types" />
+/// <reference lib="esnext" />
+//@ts-check
+
 export default {
   async fetch(
     request: Request,

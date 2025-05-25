@@ -1,0 +1,35 @@
+# Cloudflare Worker Footprint
+
+Input: url
+
+How to gather context:
+
+- try kv and ctx.waitUntil the actual fetch
+- if no kv, do the actual fetch and store in kv afterwards
+- it should do several fetches: one preferring text/html, one preferring text/markdown, with fallback to `*/*` to also get things like images
+
+notes:
+
+- temporarily caches the output into kv for faster retrieval
+- must always get kv if available, but if it's too old, also re-retrieve it in ctx.waitUntil
+
+output:
+
+- `title` from HTML or response headers if no html
+- `description` from HTML or create a custom description if no HTML
+- `meta`: infer this from HTML if HTML was found. should be all meta-tags values
+- `mime`: the content-type
+- `type`: "text"|"image|"video"
+- `ogImageUrl` from metatags og:image or twitter:image
+- `context`: the actual text content if type is text
+- `tokens` amount of tokens of the text content (length / 5)
+- `githubOwner` - incase it's known (can be based on URL)
+- `twitterUsername` - incase it's known (can be based on URL or meta `twitter:author` value)
+
+Implement this using `export default { fetch }` syntax in typescript, using the following up top:
+
+```ts
+/// <reference types="@cloudflare/workers-types" />
+/// <reference lib="esnext" />
+//@ts-check
+```
