@@ -14,8 +14,6 @@
 
 - IDEA 3 = Paid prompts. A way to incentivize people to share a prompt is by allowing them to price it. Not sure if this should be core or a layer on top somehow, but it could be a great product after people create collections.
 
-- Idea: bookmarks - ability to save cool generations; NO; lets focus on superior personal X search which could accomplish the same goal.
-
 # IDEAS
 
 - IDEA: if at least one URL returns a `multipart/form-data` stream or file object, take the biggest of those, and use it with `uithub.filetransformers` with the rest of the prompt. we now apply the prompt on every file. Critical component: detecting streamable url response early + proxy traffic.

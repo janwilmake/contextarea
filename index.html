@@ -601,7 +601,7 @@
 
             // Keep the existing focus line
             const textarea = document.getElementById("contextarea");
-            textarea.focus();
+            setTimeout(() => textarea.focus(), 50)
         });
     </script>
 

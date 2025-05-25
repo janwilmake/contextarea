@@ -379,10 +379,17 @@ class MarkdownHighlighter {
         ? this.htmlCodeBlockView
         : this.getCodeBlockView();
 
+      let highlightedCode = undefined;
+
       // Apply syntax highlighting to the code
-      const highlightedCode = hljs.highlight(block.code, {
-        language: language,
-      }).value;
+
+      try {
+        highlightedCode = hljs.highlight(block.code, {
+          language: language,
+        }).value;
+      } catch (e) {
+        highlightedCode = hljs.highlight(block.code).value;
+      }
 
       // Create the HTML for the code block with all the new features
       let html = `<div class="code-block-container" data-block-id="${blockId}" data-language="${language}" data-view="${defaultView}">`;
