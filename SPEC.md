@@ -10,9 +10,10 @@ Based on this API Spec, create a demo HTML + JS + CSS for this.
 
 Pasting:
 
-- allows pasting anything (text or binary) into a textarea, captures that and sends to the api, and retrieves the URL, inserts the URL into the textarea instead.
-- when the paste is a text that is a url in itself (or a trimmed version is a url) then just do a regular paste. also when the paste is a text of 1000 characters or less, make it a regular paste
-- when holding shift while pasting, will do a regular paste also
+- when the paste is a text that is a url in itself (or a trimmed version is a url) then just do a regular paste.
+- also when the paste is a text of 1000 characters or less, make it a regular paste
+- when holding shift while pasting, will do a regular paste
+- if none of the above, captures that and sends to the paste api (use string for text, blob for binary), and retrieves the URL, inserts the URL into the textarea instead.
 
 Drag and drop:
 
@@ -49,4 +50,4 @@ implement all 3 files fully:
 - lib.js,
 - style.css.
 
-Return with the full implementation
+Return with the full implementation.

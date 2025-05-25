@@ -1,7 +1,15 @@
 # contextarea.js - textarea for context-building
 
-> [!IMPORTANT]
-> 🚧 This is a WIP and the below is not done yet ⚠️
+## Usage
+
+In your head, add the following
+
+```html
+<link rel="stylesheet" href="https://contextarea.com/style.css" />
+<script src="https://contextarea.com/lib.js" defer></script>
+```
+
+To your textarea, add `id="contextarea"` and poof! It's all there.
 
 ## Requirements
 
