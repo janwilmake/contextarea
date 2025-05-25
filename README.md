@@ -1,5 +1,7 @@
 # contextarea.js - textarea for context-building
 
+> Submission to [this hackathon](https://x.com/mattzcarey/status/1926186148369408354): to make humans better we have to optimise for truth and human understanding. to do that, we have to make the interface be a map of reality. this is why URLs, universal resource locators, are perfect, and we should not hide them away, we should embrace them for what they are: they are maps to expand our perception.
+
 ## Usage
 
 In your head, add the following
