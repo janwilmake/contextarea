@@ -13,8 +13,11 @@ In your head, add the following
 
 To your textarea, add `id="contextarea"` and poof! It's all there.
 
-> ![IMPORTANT]
-> This is meant to be self-hosted. Please do not use this in production.
+> [!IMPORTANT]
+>
+> This is meant to be self-hosted.
+>
+> Please do not use the widget as-is in production, it's better to self-host from the start!
 
 ## Components
 
