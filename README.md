@@ -11,6 +11,9 @@ In your head, add the following
 
 To your textarea, add `id="contextarea"` and poof! It's all there.
 
+> ![IMPORTANT]
+> This is meant to be self-hosted. Please do not use this in production.
+
 ## Components
 
 | Component                  | Description                                                  | URL                                           |     |
