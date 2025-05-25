@@ -1,0 +1,8 @@
+{
+  "name": "contextarea-context-worker",
+  "version": "0.0.2",
+  "main": "main.ts",
+  "files": [
+    "main.ts"
+  ]
+}

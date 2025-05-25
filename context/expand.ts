@@ -1,3 +1,5 @@
+// NB: this is old
+
 export interface Env {
   // Add environment variables here if needed
 }

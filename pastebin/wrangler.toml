@@ -4,9 +4,7 @@ main = "pastebin.ts"
 dev.port = 3000
 assets.directory = "./"
 routes = [
-  { pattern = "pastebin.contextarea.com", custom_domain = true },
-  # demo initial x post (https://x.com/janwilmake/status/1923008410582200599)
-  { pattern = "pastebin.wilmake.com", custom_domain = true }
+  { pattern = "pastebin.contextarea.com", custom_domain = true }
 ]
 
 [[kv_namespaces]]

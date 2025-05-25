@@ -2,10 +2,6 @@
 /// <reference lib="esnext" />
 //@ts-check
 
-interface Env {
-  LINKS_KV: KVNamespace;
-}
-
 interface FootprintData {
   title: string;
   description: string;
@@ -23,7 +19,9 @@ interface FootprintData {
 export default {
   async fetch(
     request: Request,
-    env: Env,
+    env: {
+      LINKS_KV: KVNamespace;
+    },
     ctx: ExecutionContext,
   ): Promise<Response> {
     const url = new URL(request.url).searchParams.get("url");
@@ -41,7 +39,10 @@ export default {
     try {
       // Try to get from KV first
       const cacheKey = `footprint:${url}`;
-      const cachedData = await env.LINKS_KV.get(cacheKey, "json");
+      const cachedData = await env.LINKS_KV.get<{ timestamp: number }>(
+        cacheKey,
+        "json",
+      );
 
       // If cache exists and is not too old (less than 24 hours)
       const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
@@ -82,7 +83,7 @@ export default {
 
 async function fetchAndCache(
   url: string,
-  env: Env,
+  env: { LINKS_KV: KVNamespace },
   cacheKey: string,
 ): Promise<void> {
   try {
@@ -117,12 +118,12 @@ async function fetchAndProcess(url: string): Promise<FootprintData> {
   const markdownContentType =
     markdownResponse.headers.get("Content-Type") || "";
 
-  console.log({ htmlContentType, markdownContentType });
   // Determine primary content type and response
   const isHtml = htmlContentType.includes("text/html");
   const isMarkdown =
-    markdownContentType.includes("text/markdown") ||
-    markdownContentType.includes("text/plain");
+    markdownResponse.ok &&
+    (markdownContentType.includes("text/markdown") ||
+      markdownContentType.includes("text/plain"));
 
   let primaryContentType = htmlContentType;
   let type: "text" | "image" | "video" = "text";
@@ -194,7 +195,9 @@ async function fetchAndProcess(url: string): Promise<FootprintData> {
     title,
     description,
     meta,
-    mime: primaryContentType,
+    mime: isMarkdown
+      ? markdownContentType?.split(";")[0]
+      : primaryContentType?.split(";")[0],
     type,
     ogImageUrl,
     tokens,
@@ -287,6 +290,8 @@ function extractGithubOwner(url: string): string | undefined {
     const urlObj = new URL(url);
     if (
       urlObj.hostname === "github.com" ||
+      urlObj.hostname === "uithub.com" ||
+      urlObj.hostname === "uuithub.com" ||
       urlObj.hostname === "raw.githubusercontent.com"
     ) {
       const pathParts = urlObj.pathname.split("/").filter(Boolean);
@@ -303,7 +308,11 @@ function extractGithubOwner(url: string): string | undefined {
 function extractTwitterUsername(url: string): string | undefined {
   try {
     const urlObj = new URL(url);
-    if (urlObj.hostname === "twitter.com" || urlObj.hostname === "x.com") {
+    if (
+      urlObj.hostname === "twitter.com" ||
+      urlObj.hostname === "x.com" ||
+      urlObj.hostname === "xymake.com"
+    ) {
       const pathParts = urlObj.pathname.split("/").filter(Boolean);
       if (
         pathParts.length >= 1 &&
