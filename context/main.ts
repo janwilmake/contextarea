@@ -2,7 +2,11 @@
 /// <reference lib="esnext" />
 //@ts-check
 
-interface ParsedData {
+interface Env {
+  LINKS_KV: KVNamespace;
+}
+
+interface FootprintData {
   title: string;
   description: string;
   meta: Record<string, string>;
@@ -13,10 +17,7 @@ interface ParsedData {
   tokens?: number;
   githubOwner?: string;
   twitterUsername?: string;
-}
-
-interface Env {
-  FOOTPRINT_KV: KVNamespace;
+  timestamp: number;
 }
 
 export default {
@@ -32,209 +33,287 @@ export default {
         JSON.stringify({ error: "URL parameter is required" }, null, 2),
         {
           headers: { "Content-Type": "application/json" },
+          status: 400,
         },
       );
     }
 
-    // Check KV for cached data
-    const cacheKey = `footprint:${url}`;
-    const cachedData = await env.FOOTPRINT_KV.get(cacheKey, "json");
-    const cacheMetadata = await env.FOOTPRINT_KV.getWithMetadata(cacheKey);
-    const cacheAge = cacheMetadata?.metadata?.timestamp
-      ? Date.now() - cacheMetadata.metadata.timestamp
-      : Infinity;
+    try {
+      // Try to get from KV first
+      const cacheKey = `footprint:${url}`;
+      const cachedData = await env.LINKS_KV.get(cacheKey, "json");
 
-    // If cache is available and not too old (24 hours), use it
-    if (cachedData && cacheAge < 24 * 60 * 60 * 1000) {
-      // If cache is older than 1 hour, refresh it in the background
-      if (cacheAge > 1 * 60 * 60 * 1000) {
-        ctx.waitUntil(fetchAndProcessUrl(url, env, cacheKey));
+      // If cache exists and is not too old (less than 24 hours)
+      const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+      const now = Date.now();
+
+      if (cachedData && now - cachedData.timestamp < CACHE_TTL) {
+        return new Response(JSON.stringify(cachedData, null, 2), {
+          headers: { "Content-Type": "application/json;charset=utf8" },
+        });
       }
-      return new Response(JSON.stringify(cachedData, null, 2), {
-        headers: { "Content-Type": "application/json" },
+
+      // If cache is too old but exists, use it for now but update in the background
+      if (cachedData) {
+        ctx.waitUntil(fetchAndCache(url, env, cacheKey));
+        return new Response(JSON.stringify(cachedData, null, 2), {
+          headers: { "Content-Type": "application/json;charset=utf8" },
+        });
+      }
+
+      // No cache, fetch and cache
+      const footprint = await fetchAndProcess(url);
+      await env.LINKS_KV.put(
+        cacheKey,
+        JSON.stringify({ ...footprint, timestamp: now }),
+      );
+
+      return new Response(JSON.stringify(footprint, null, 2), {
+        headers: { "Content-Type": "application/json;charset=utf8" },
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: error.message }, null, 2), {
+        headers: { "Content-Type": "application/json;charset=utf8" },
+        status: 500,
       });
     }
-
-    // Otherwise fetch and process the URL
-    const data = await fetchAndProcessUrl(url, env, cacheKey);
-
-    return new Response(JSON.stringify(data, null, 2), {
-      headers: { "Content-Type": "application/json" },
-    });
   },
 };
 
-async function fetchAndProcessUrl(
+async function fetchAndCache(
   url: string,
   env: Env,
   cacheKey: string,
-): Promise<ParsedData> {
-  // Perform two fetches: one for HTML and one for Markdown
-  const [htmlResponse, markdownResponse] = await Promise.all([
-    fetch(url, {
-      headers: {
-        Accept: "text/html, */*",
-        "User-Agent": "CloudflareWorkerFootprint/1.0",
-      },
-    }),
-    fetch(url, {
-      headers: {
-        Accept: "text/markdown, */*",
-        "User-Agent": "CloudflareWorkerFootprint/1.0",
-      },
-    }),
-  ]);
+): Promise<void> {
+  try {
+    const footprint = await fetchAndProcess(url);
+    await env.LINKS_KV.put(
+      cacheKey,
+      JSON.stringify({ ...footprint, timestamp: Date.now() }),
+    );
+  } catch (error) {
+    console.error("Background fetch error:", error);
+  }
+}
 
-  // Clone responses to work with them multiple times
-  const htmlResponseClone = htmlResponse.clone();
-  const markdownResponseClone = markdownResponse.clone();
+async function fetchAndProcess(url: string): Promise<FootprintData> {
+  // Prepare headers for different content types
+  const htmlHeaders = new Headers({
+    Accept: "text/html, */*;q=0.8",
+    "User-Agent": "CloudflareWorker/1.0",
+  });
 
+  const markdownHeaders = new Headers({
+    Accept: "text/markdown",
+    "User-Agent": "CloudflareWorker/1.0",
+  });
+
+  // Fetch both content types
+  const htmlResponse = await fetch(url, { headers: htmlHeaders });
+  const markdownResponse = await fetch(url, { headers: markdownHeaders });
+
+  // Get content types
   const htmlContentType = htmlResponse.headers.get("Content-Type") || "";
   const markdownContentType =
     markdownResponse.headers.get("Content-Type") || "";
 
-  // Determine the primary mime type
-  const mime = htmlContentType.includes("text/html")
-    ? htmlContentType.split(";")[0]
-    : markdownContentType.split(";")[0];
+  console.log({ htmlContentType, markdownContentType });
+  // Determine primary content type and response
+  const isHtml = htmlContentType.includes("text/html");
+  const isMarkdown =
+    markdownContentType.includes("text/markdown") ||
+    markdownContentType.includes("text/plain");
+
+  let primaryContentType = htmlContentType;
+  let type: "text" | "image" | "video" = "text";
 
   // Determine content type
-  let type: "text" | "image" | "video" = "text";
-  if (mime.startsWith("image/")) {
+  if (primaryContentType.includes("image/")) {
     type = "image";
-  } else if (mime.startsWith("video/")) {
+  } else if (primaryContentType.includes("video/")) {
     type = "video";
   }
 
-  // Initialize the result object
-  const result: ParsedData = {
-    title: "",
-    description: "",
-    meta: {},
-    mime,
-    type,
-    ogImageUrl: undefined,
-    context: undefined,
-    tokens: undefined,
-    githubOwner: undefined,
-    twitterUsername: undefined,
-  };
+  // Extract data from HTML if available
+  let title = "";
+  let description = "";
+  let meta: Record<string, string> = {};
+  let ogImageUrl: string | undefined;
+  let context: string | undefined;
 
-  // Extract GitHub owner if applicable
-  if (url.includes("github.com")) {
-    const matches = url.match(/github\.com\/([^\/]+)/);
-    if (matches && matches[1]) {
-      result.githubOwner = matches[1];
+  // Process HTML response for metadata
+  if (isHtml) {
+    const htmlClone = htmlResponse.clone();
+    const htmlData = await extractHtmlData(htmlClone);
+    title = htmlData.title;
+    description = htmlData.description;
+    meta = htmlData.meta;
+    ogImageUrl = htmlData.ogImageUrl;
+
+    // Also extract text content from HTML if needed
+    if (type === "text" && !isMarkdown) {
+      const htmlTextClone = htmlResponse.clone();
+      context = await extractTextFromHtml(htmlTextClone);
     }
-  }
-
-  // Extract Twitter username if applicable
-  if (url.includes("twitter.com") || url.includes("x.com")) {
-    const matches = url.match(/(?:twitter|x)\.com\/([^\/]+)/);
-    if (
-      matches &&
-      matches[1] &&
-      !["search", "hashtag", "explore"].includes(matches[1])
-    ) {
-      result.twitterUsername = matches[1];
-    }
-  }
-
-  // Process HTML content if available
-  if (htmlContentType.includes("text/html")) {
-    const htmlData = await processHtmlContent(htmlResponseClone);
-    Object.assign(result, htmlData);
   } else {
-    // Use basic metadata from response if not HTML
-    result.title = new URL(url).pathname.split("/").pop() || url;
-    result.description = `Content from ${url}`;
+    // If not HTML, use headers for title
+    title = new URL(url).pathname.split("/").pop() || url;
   }
 
-  // Get the text content, preferring markdown if available
+  // Get context from markdown if available
   if (type === "text") {
-    let textContent = "";
-
-    if (markdownContentType.includes("text/markdown")) {
-      textContent = await markdownResponseClone.text();
-    } else if (htmlContentType.includes("text/html")) {
-      // Extract text from HTML if markdown is not available
-      const htmlText = await htmlResponseClone.text();
-      textContent = extractTextFromHtml(htmlText);
-    } else {
-      // Fallback to any text content
+    if (isMarkdown) {
+      context = await markdownResponse.text();
+    } else if (!isHtml) {
+      // If neither HTML nor markdown, just get text from the response
       try {
-        textContent = await htmlResponseClone.text();
+        context = await htmlResponse.text();
       } catch (e) {
-        textContent = "Unable to extract text content";
+        context = "Content could not be extracted";
       }
     }
-
-    result.context = textContent;
-    result.tokens = Math.ceil(textContent.length / 5);
   }
 
-  // Store the result in KV with metadata
-  await env.FOOTPRINT_KV.put(cacheKey, JSON.stringify(result), {
-    metadata: { timestamp: Date.now() },
-  });
+  // Calculate tokens if context exists
+  const tokens = context ? Math.ceil(context.length / 5) : undefined;
 
-  return result;
+  // Extract github owner and twitter username
+  const githubOwner = extractGithubOwner(url);
+  const twitterUsername =
+    meta["twitter:creator"] ||
+    meta["twitter:author"] ||
+    extractTwitterUsername(url);
+
+  // Create description if not available
+  if (!description && context) {
+    description =
+      context.substring(0, 200) + (context.length > 200 ? "..." : "");
+  }
+
+  return {
+    title,
+    description,
+    meta,
+    mime: primaryContentType,
+    type,
+    ogImageUrl,
+    tokens,
+    githubOwner,
+    twitterUsername,
+    timestamp: Date.now(),
+    context,
+  };
 }
 
-async function processHtmlContent(
-  response: Response,
-): Promise<Partial<ParsedData>> {
-  const result: Partial<ParsedData> = {
-    title: "",
-    description: "",
-    meta: {},
-    ogImageUrl: undefined,
-    twitterUsername: undefined,
-  };
+async function extractHtmlData(response: Response): Promise<{
+  title: string;
+  description: string;
+  meta: Record<string, string>;
+  ogImageUrl?: string;
+}> {
+  let title = "";
+  let description = "";
+  let ogImageUrl: string | undefined;
+  const meta: Record<string, string> = {};
 
-  const metaTags: Record<string, string> = {};
-
-  // Process HTML with HTMLRewriter
   const rewriter = new HTMLRewriter()
     .on("title", {
       text(text) {
-        result.title = (result.title || "") + text.text;
+        title += text.text;
       },
     })
-    .on("meta", {
+    .on("meta[name][content]", {
       element(element) {
-        const name =
-          element.getAttribute("name") || element.getAttribute("property");
+        const name = element.getAttribute("name");
         const content = element.getAttribute("content");
-
         if (name && content) {
-          metaTags[name] = content;
-
+          meta[name] = content;
           if (name === "description") {
-            result.description = content;
-          } else if (name === "og:image" || name === "twitter:image") {
-            result.ogImageUrl = content;
-          } else if (name === "twitter:creator" || name === "twitter:author") {
-            result.twitterUsername = content.replace("@", "");
+            description = content;
           }
+        }
+      },
+    })
+    .on("meta[property][content]", {
+      element(element) {
+        const property = element.getAttribute("property");
+        const content = element.getAttribute("content");
+        if (property && content) {
+          meta[property] = content;
+          if (property === "og:description") {
+            description = description || content;
+          }
+          if (property === "og:title") {
+            title = title || content;
+          }
+          if (property === "og:image") {
+            ogImageUrl = content;
+          }
+        }
+      },
+    })
+    .on('meta[name="twitter:image"][content]', {
+      element(element) {
+        const content = element.getAttribute("content");
+        if (content) {
+          meta["twitter:image"] = content;
+          ogImageUrl = ogImageUrl || content;
         }
       },
     });
 
-  await rewriter.transform(response).arrayBuffer();
+  await rewriter.transform(response).text();
 
-  result.meta = metaTags;
-
-  return result;
+  return { title, description, meta, ogImageUrl };
 }
 
-function extractTextFromHtml(html: string): string {
-  // Simple text extraction logic
-  // Remove HTML tags, scripts, styles
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+async function extractTextFromHtml(response: Response): Promise<string> {
+  let textContent = "";
+
+  const rewriter = new HTMLRewriter().on("body", {
+    text(text) {
+      textContent += text.text;
+    },
+  });
+
+  await rewriter.transform(response).text();
+
+  // Clean up text: remove excessive whitespace
+  return textContent.replace(/\s+/g, " ").trim();
+}
+
+function extractGithubOwner(url: string): string | undefined {
+  try {
+    const urlObj = new URL(url);
+    if (
+      urlObj.hostname === "github.com" ||
+      urlObj.hostname === "raw.githubusercontent.com"
+    ) {
+      const pathParts = urlObj.pathname.split("/").filter(Boolean);
+      if (pathParts.length >= 1) {
+        return pathParts[0];
+      }
+    }
+    return undefined;
+  } catch (e) {
+    return undefined;
+  }
+}
+
+function extractTwitterUsername(url: string): string | undefined {
+  try {
+    const urlObj = new URL(url);
+    if (urlObj.hostname === "twitter.com" || urlObj.hostname === "x.com") {
+      const pathParts = urlObj.pathname.split("/").filter(Boolean);
+      if (
+        pathParts.length >= 1 &&
+        !["search", "hashtag", "explore", "home"].includes(pathParts[0])
+      ) {
+        return pathParts[0];
+      }
+    }
+    return undefined;
+  } catch (e) {
+    return undefined;
+  }
 }

@@ -8,5 +8,5 @@ routes = [
 ]
 
 [[kv_namespaces]]
-binding = "FOOTPRINT_KV"
+binding = "LINKS_KV"
 id = "43999fa31a3145979e69c066da55ab39"
