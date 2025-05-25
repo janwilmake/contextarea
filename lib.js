@@ -22,6 +22,9 @@ document.addEventListener("DOMContentLoaded", function () {
   uploadButton.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", handleFileSelect);
 
+  // Track processed URLs to avoid duplicate processing
+  let processedUrls = new Map();
+
   // Initialize
   processUrls();
 
@@ -120,20 +123,102 @@ document.addEventListener("DOMContentLoaded", function () {
   // Process URLs in textarea
   async function processUrls() {
     const text = contextarea.value;
-    const urls = text.match(URL_REGEX) || [];
+    const foundUrls = text.match(URL_REGEX) || [];
 
-    // Clear existing cards
-    cardsContainer.innerHTML = "";
+    // Track current URLs to find ones that are no longer present
+    const currentUrls = new Set(foundUrls);
 
-    // Process each URL
-    for (const url of urls) {
-      try {
-        const contextData = await fetchContextData(url);
-        createContextCard(contextData, url);
-      } catch (error) {
-        console.error(`Failed to fetch context for ${url}:`, error);
+    // Remove cards for URLs that are no longer in the text
+    for (const [url, element] of processedUrls.entries()) {
+      if (!currentUrls.has(url)) {
+        element.remove();
+        processedUrls.delete(url);
       }
     }
+
+    // Process new URLs
+    for (const url of foundUrls) {
+      if (!processedUrls.has(url)) {
+        try {
+          // Create a loading placeholder
+          const placeholder = createLoadingPlaceholder(url);
+          cardsContainer.appendChild(placeholder);
+          processedUrls.set(url, placeholder);
+
+          // Fetch data in background
+          fetchContextData(url)
+            .then((contextData) => {
+              const card = createContextCard(contextData, url);
+              // Replace the placeholder with the actual card
+              cardsContainer.replaceChild(card, placeholder);
+              processedUrls.set(url, card);
+            })
+            .catch((error) => {
+              console.error(`Failed to fetch context for ${url}:`, error);
+              const errorCard = createErrorCard(url, error.message);
+              cardsContainer.replaceChild(errorCard, placeholder);
+              processedUrls.set(url, errorCard);
+            });
+        } catch (error) {
+          console.error(`Failed to process ${url}:`, error);
+        }
+      }
+    }
+
+    // Update active state after processing
+    handleCursorMove();
+  }
+
+  // Create a loading placeholder
+  function createLoadingPlaceholder(url) {
+    const placeholder = document.createElement("div");
+    placeholder.className = "context-card";
+    placeholder.dataset.url = url;
+    placeholder.innerHTML = `
+      <div class="card-content">
+        <div class="contextarea-loading">
+          <div class="contextarea-spinner"></div>
+          <div>Loading context for ${new URL(url).hostname}...</div>
+        </div>
+      </div>
+    `;
+    return placeholder;
+  }
+
+  // Create an error card
+  function createErrorCard(url, errorMessage) {
+    const card = document.createElement("div");
+    card.className = "context-card";
+    card.dataset.url = url;
+    card.innerHTML = `
+      <div class="card-content">
+        <h3 class="card-title">${new URL(url).hostname}</h3>
+        <div class="card-description">Failed to load context: ${errorMessage}</div>
+        <div class="card-actions">
+          <button class="card-button goto-url-btn">Go to URL</button>
+          <button class="card-button goto-cursor-btn">Find in Text</button>
+        </div>
+      </div>
+    `;
+
+    // Add event listeners to card buttons
+    card.querySelector(".goto-url-btn").addEventListener("click", () => {
+      window.open(url, "_blank");
+    });
+
+    card.querySelector(".goto-cursor-btn").addEventListener("click", () => {
+      const text = contextarea.value;
+      const urlIndex = text.indexOf(url);
+      if (urlIndex !== -1) {
+        contextarea.focus();
+        contextarea.setSelectionRange(
+          urlIndex + url.length,
+          urlIndex + url.length,
+        );
+      }
+    });
+
+    return card;
   }
 
   // Handle cursor movement to highlight relevant card
@@ -220,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    cardsContainer.appendChild(card);
+    return card;
   }
 
   // API Functions

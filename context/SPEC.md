@@ -32,6 +32,8 @@ Ensure the output is a prettified JSON.stringify json object
 
 Be sure not to run into the issue where we were trying to read the same response multiple times by being more careful with how we handle the response streams.
 
+Add cors header to allow all
+
 Implement this using `export default { fetch }` syntax in typescript, using the following up top:
 
 ```ts

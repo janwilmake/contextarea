@@ -5,159 +5,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ContextArea Demo</title>
+    <link rel="stylesheet" href="https://contextarea.com/style.css">
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
             color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
+        header {
+            margin-bottom: 30px;
         }
 
         h1 {
-            margin-top: 0;
             color: #2c3e50;
+            margin-bottom: 5px;
         }
 
-        .editor-container {
-            position: relative;
+        .description {
             margin-bottom: 20px;
+            color: #7f8c8d;
         }
 
-        #contextarea {
-            width: 100%;
-            min-height: 200px;
-            padding: 12px;
-            font-size: 16px;
-            line-height: 1.5;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            resize: vertical;
-            box-sizing: border-box;
-        }
-
-        .upload-button {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background-color: #3498db;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 14px;
-            opacity: 0.9;
-        }
-
-        .upload-button:hover {
-            opacity: 1;
-        }
-
-        .context-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .context-card {
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            overflow: hidden;
-            transition: box-shadow 0.3s, transform 0.3s;
-        }
-
-        .context-card.active {
-            box-shadow: 0 0 0 2px #3498db;
-            transform: translateY(-3px);
-        }
-
-        .card-image {
-            width: 100%;
-            height: 160px;
-            object-fit: cover;
-            background-color: #f1f1f1;
-        }
-
-        .card-content {
-            padding: 15px;
-        }
-
-        .card-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 0 0 10px 0;
-            color: #2c3e50;
-        }
-
-        .card-description {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .card-meta {
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 10px;
-        }
-
-        .card-actions {
+        .repo-link {
             display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
+            align-items: center;
+            margin-bottom: 30px;
         }
 
-        .card-button {
-            background-color: #3498db;
+        .github-button {
+            display: inline-flex;
+            align-items: center;
+            background-color: #24292e;
             color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 6px 10px;
-            cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin-right: 15px;
             font-size: 14px;
+            font-weight: 600;
+            transition: background-color 0.3s;
         }
 
-        .card-button:hover {
-            background-color: #2980b9;
+        .github-button:hover {
+            background-color: #1a1e22;
         }
 
-        .hidden {
-            display: none;
+        .github-button svg {
+            margin-right: 8px;
         }
 
-        .file-input {
-            display: none;
+        .github-stars {
+            display: inline-flex;
+            align-items: center;
+            background-color: #f6f8fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: #24292e;
+        }
+
+        .github-stars svg {
+            margin-right: 5px;
+            fill: #f1c40f;
+        }
+
+        footer {
+            margin-top: 50px;
+            color: #7f8c8d;
+            font-size: 14px;
+            text-align: center;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
+    <header>
         <h1>ContextArea Demo</h1>
-        <div class="editor-container">
-            <textarea id="contextarea" placeholder="Paste text, URLs, or drop files here..."></textarea>
-            <button class="upload-button">Upload Files</button>
+        <p class="description">
+            A powerful tool that enhances your text input with context-aware URL processing.
+            Paste text, URLs, or drop files - ContextArea handles it all efficiently.
+        </p>
+        <div class="repo-link">
+            <a href="https://github.com/janwilmake/contextarea" class="github-button" target="_blank">
+                <svg height="16" viewBox="0 0 16 16" width="16" aria-hidden="true">
+                    <path fill-rule="evenodd"
+                        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z">
+                    </path>
+                </svg>
+                janwilmake/contextarea
+            </a>
+            <div class="github-stars">
+                <svg aria-hidden="true" height="16" viewBox="0 0 16 16" width="16">
+                    <path
+                        d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z">
+                    </path>
+                </svg>
+                <span>Stars</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <p>
+            Try it out! Paste text (hold Shift for direct paste), drop files, or use the upload button:
+        </p>
+
+        <div class="contextarea-container">
+            <textarea id="contextarea" placeholder="Paste text, URLs, or drag & drop files here..."></textarea>
+            <button class="upload-button" title="Upload files">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </button>
             <input type="file" class="file-input" multiple>
         </div>
-        <div class="context-cards"></div>
-    </div>
 
-    <a href="https://github.com/janwilmake/contextarea">REPO</a>
+        <div class="context-cards"></div>
+    </main>
+
+    <footer>
+        <p>ContextArea - Enhance your text input with context-aware URL processing</p>
+    </footer>
 
     <script src="https://contextarea.com/lib.js"></script>
 </body>

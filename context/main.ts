@@ -24,13 +24,32 @@ export default {
     },
     ctx: ExecutionContext,
   ): Promise<Response> {
+    // Handle CORS
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, HEAD, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Access-Control-Max-Age": "86400",
+        },
+      });
+    }
+
+    // Add CORS headers to all responses
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, HEAD, OPTIONS",
+      "Access-Control-Allow-Headers": "*",
+    };
+
     const url = new URL(request.url).searchParams.get("url");
 
     if (!url) {
       return new Response(
         JSON.stringify({ error: "URL parameter is required" }, null, 2),
         {
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...corsHeaders },
           status: 400,
         },
       );
@@ -50,7 +69,10 @@ export default {
 
       if (cachedData && now - cachedData.timestamp < CACHE_TTL) {
         return new Response(JSON.stringify(cachedData, null, 2), {
-          headers: { "Content-Type": "application/json;charset=utf8" },
+          headers: {
+            "Content-Type": "application/json;charset=utf8",
+            ...corsHeaders,
+          },
         });
       }
 
@@ -58,7 +80,10 @@ export default {
       if (cachedData) {
         ctx.waitUntil(fetchAndCache(url, env, cacheKey));
         return new Response(JSON.stringify(cachedData, null, 2), {
-          headers: { "Content-Type": "application/json;charset=utf8" },
+          headers: {
+            "Content-Type": "application/json;charset=utf8",
+            ...corsHeaders,
+          },
         });
       }
 
@@ -70,11 +95,17 @@ export default {
       );
 
       return new Response(JSON.stringify(footprint, null, 2), {
-        headers: { "Content-Type": "application/json;charset=utf8" },
+        headers: {
+          "Content-Type": "application/json;charset=utf8",
+          ...corsHeaders,
+        },
       });
     } catch (error) {
       return new Response(JSON.stringify({ error: error.message }, null, 2), {
-        headers: { "Content-Type": "application/json;charset=utf8" },
+        headers: {
+          "Content-Type": "application/json;charset=utf8",
+          ...corsHeaders,
+        },
         status: 500,
       });
     }
@@ -157,6 +188,9 @@ async function fetchAndProcess(url: string): Promise<FootprintData> {
       context = await extractTextFromHtml(htmlTextClone);
     }
   } else {
+    if (type === "image") {
+      ogImageUrl = url;
+    }
     // If not HTML, use headers for title
     title = new URL(url).pathname.split("/").pop() || url;
   }
