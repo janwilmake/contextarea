@@ -18,6 +18,22 @@
       premium: true,
       features: ["vision"],
     },
+    {
+      id: "claude-sonnet-4-20250514",
+      name: "Claude 4 Sonnet",
+      icon: "🤖",
+      description: "",
+      premium: true,
+      features: ["vision"],
+    },
+    {
+      id: "claude-opus-4-20250514",
+      name: "Claude 4 Opus",
+      icon: "🤖",
+      description: "",
+      premium: true,
+      features: ["vision"],
+    },
   ];
 
   // SVG icons

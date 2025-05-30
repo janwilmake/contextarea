@@ -8,6 +8,40 @@
 
 ❌ Add toggle button to view context in right panel rather than result. this could be live connected with context-cards, rather than from data. **with direct link to each context it may not be needed, but total token-count would be nice**
 
+## Proper Markdown Rendering
+
+Problem: Fix bugs on response with ``` in code etc. this is very important: https://lmpify.com/httpsuithubcomj-odsfdc0.md?key=result
+
+Research: https://x.com/janwilmake/status/1926992658536206687
+
+The solution is bi-partial:
+
+1. use `marked` and render things with that
+2. ensure by default a system promopt is used that instructs how to write code block fences in markdown.
+
+TODO:
+
+- ✅ write system prompt that instructs using `````` (5 backticks by default or more when necessary)
+- apply adding 1 backtick to fence in `getMarkdownResponse`
+- ensure `named-codeblocks.md` system prompt is used by default without making things ugly
+- rewrite `markdown-highlighter.js` using `marked`
+- Test 1 https://lmpify.com/httpsuithubcomj-y3ac2c0
+- Test 2 md-example that contains several codeblocks
+
+After this works, deploy and get code for `x-oauth-stripe` repo (https://lmpify.com/httpsuuithubcom-waprk40)
+
+# 2025-06?
+
+❗️❗️❗️❗️❗️❗️❗️ Bookmark contexts: separate interface that I can just embed as js that allows adding contexts that I bookmark.
+
+- Adds button 🔖 to topleft which opens/closes bookmarks sidepanel
+- loads in all bookmarks through context.contextarea.com and renders in nice way showing url, title, tokens, og, may be a bit bigger
+- button on every bookmark to remove bookmark or use
+- also shows current textarea value ones on top with ability to bookmark
+- search on top that searches over titles and urls
+
+The state of bookmark contexts is just a flat list of urls and we can use localStorage to store that as `string[]`. Great thing about it is that we use the already authenticated api of context to expand it into something useful. The UI could just make it possible to send this `string[]` over to a predictable URL that is github-authorized, e.g. https://bookmarks.contextarea.com/janwilmake. This can be done by just using pastebin, then using https://bookmarks.contextarea.com/publish?url={url}. This would authenticate, then set the value, making it shareable everybody.
+
 # High Impact Improvements
 
 We can embed images as images into chat/completions.

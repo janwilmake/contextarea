@@ -1,5 +1,6 @@
 // @ts-check
 /// <reference types="@cloudflare/workers-types" />
+/// <reference lib="esnext" />
 
 const PRICE_MARKUP_FACTOR = 1.5;
 
@@ -186,6 +187,7 @@ interface ModelConfig {
   model: string;
   basePath: string;
   apiKey: string;
+  maxTokens: number;
   premium?: boolean;
 }
 
@@ -517,7 +519,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             stream: true,
             ...(isAnthropic && context && { system: context }),
             ...(!isAnthropic && { stream_options: { include_usage: true } }),
-            ...(isAnthropic && { max_tokens: 64000 }),
+            ...(isAnthropic && { max_tokens: modelConfig.maxTokens }),
           }),
         },
       );
@@ -951,22 +953,42 @@ const getMarkdownResponse = (
   let markdownResponse = `# ${data.headline || pathname}\n\n`;
 
   // Add prompt section
-  markdownResponse += "## Prompt\n\n```prompt.md\n";
+  // TODO: Find longest fence character count
+  const longestFenceCharacterCount = 3;
+  const fence =
+    longestFenceCharacterCount > 10
+      ? "~~~"
+      : "`".repeat(longestFenceCharacterCount + 1);
+
+  markdownResponse += `## Prompt\n\n${fence}md path="prompt.md"\n`;
   markdownResponse += data.prompt;
-  markdownResponse += "\n```\n\n";
+  markdownResponse += `\n${fence}\n\n`;
 
   // Add context section if available
   if (data.context) {
-    markdownResponse += "## Context\n\n```context.md\n";
+    const longestFenceCharacterCount = 3;
+    const fence =
+      longestFenceCharacterCount > 10
+        ? "~~~"
+        : "`".repeat(longestFenceCharacterCount + 1);
+
+    markdownResponse += `## Context\n\n${fence}md path="context.md"\n`;
+
     markdownResponse += data.context;
-    markdownResponse += "\n```\n\n";
+    markdownResponse += `\n${fence}\n\n`;
   }
 
   // Add result section if available
   if (data.result) {
-    markdownResponse += "## Result\n\n```result.md\n";
+    const longestFenceCharacterCount = 3;
+    const fence =
+      longestFenceCharacterCount > 10
+        ? "~~~"
+        : "`".repeat(longestFenceCharacterCount + 1);
+
+    markdownResponse += `## Result\n\n${fence}md path="result.md"\n`;
     markdownResponse += data.result;
-    markdownResponse += "\n```\n\n";
+    markdownResponse += `\n${fence}\n\n`;
   } else {
     markdownResponse += "## Status\n\n";
     markdownResponse += `Model: ${data.model}\n`;
@@ -1139,6 +1161,7 @@ const requestHandler = async (
       apiKey: env.FREE_SECRET,
       pricePerMillionInput: 0.4,
       pricePerMillionOutput: 1.6,
+      maxTokens: 64000,
     },
     {
       model: "claude-3-7-sonnet-latest",
@@ -1147,6 +1170,25 @@ const requestHandler = async (
       premium: true,
       pricePerMillionInput: 3,
       pricePerMillionOutput: 15,
+      maxTokens: 64000,
+    },
+    {
+      model: "claude-sonnet-4-20250514",
+      basePath: "https://api.anthropic.com",
+      apiKey: env.ANTHROPIC_SECRET,
+      premium: true,
+      pricePerMillionInput: 3,
+      pricePerMillionOutput: 15,
+      maxTokens: 64000,
+    },
+    {
+      model: "claude-opus-4-20250514",
+      basePath: "https://api.anthropic.com",
+      apiKey: env.ANTHROPIC_SECRET,
+      premium: true,
+      pricePerMillionInput: 15,
+      pricePerMillionOutput: 75,
+      maxTokens: 32000,
     },
   ];
 
@@ -1371,6 +1413,26 @@ const requestHandler = async (
   }
 };
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+// Simple hash function for 7-character SHA-like string
+function simpleHash(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, "0");
+}
+
 export default {
   fetch: async (request: Request, env: Env, ctx: ExecutionContext) => {
     const url = new URL(request.url);
@@ -1388,25 +1450,6 @@ export default {
         const promptText = await response.text();
 
         const first20 = promptText.substring(0, 20);
-        function slugify(text) {
-          return text
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s-]/g, "")
-            .replace(/[\s_-]+/g, "-")
-            .replace(/^-+|-+$/g, "");
-        }
-
-        // Simple hash function for 7-character SHA-like string
-        function simpleHash(str) {
-          let hash = 0;
-          for (let i = 0; i < str.length; i++) {
-            const char = str.charCodeAt(i);
-            hash = (hash << 5) - hash + char;
-            hash = hash & hash;
-          }
-          return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, "0");
-        }
 
         const slug = slugify(first20);
         const hash = simpleHash(promptText);
