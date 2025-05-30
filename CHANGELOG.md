@@ -9,20 +9,10 @@
 - ✅ the contextarea.context api returns mediatype
 - ✅ Make this api ready for revshare too by extracting the 'context creator'. Leverage `meta name="author"` as well as `twitter:creator` but also simply the URL itself for github and x to identify the owner of the URL context.
 
-# 3 more things
+# 2025-05-26
 
-❗️ For https://xymake.com/janwilmake/status/1926366057482109066 ensure we prompt it in the way that it seems like a crawler so we show HTML
+## contextarea.context fetch
 
-❗️❗️❗️❗️❗️❗️❗️ Fix bugs on response with ``` in code etc. this is very important: https://lmpify.com/httpsuithubcomj-odsfdc0.md?key=result
+✅ For https://xymake.com/janwilmake/status/1926366057482109066 ensure we prompt the default one in the way that it seems like a crawler (that wants the OG) so we show HTML.
 
-- rewrite this using `marked` ensuring it also supports codeblocks in codeblocks. try this with markdown example
-- Test 1 https://lmpify.com/httpsuithubcomj-y3ac2c0
-- Test 2 md example
-
-❗️❗️❗️❗️❗️❗️❗️ Bookmark contexts: separate interface that I can just embed as js that allows adding contexts that I bookmark.
-
-- Adds button 🔖 to topleft which opens/closes bookmarks sidepanel
-- loads in all bookmarks through context.contextarea.com and renders in nice way showing url, title, tokens, og, may be a bit bigger
-- button on every bookmark to remove bookmark or use
-- also shows current textarea value ones on top with ability to bookmark
-- search on top that searches over titles and urls
+✅ See how I did that in `user-agent-router`

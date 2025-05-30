@@ -132,12 +132,13 @@ async function fetchAndProcess(url: string): Promise<FootprintData> {
   // Prepare headers for different content types
   const htmlHeaders = new Headers({
     Accept: "text/html, */*;q=0.8",
-    "User-Agent": "CloudflareWorker/1.0",
+    // FIX: using bingbot here such that its seen as a crawler and may show html with og instead of md in some cases
+    "User-Agent": "bingbot",
   });
 
   const markdownHeaders = new Headers({
     Accept: "text/markdown",
-    "User-Agent": "CloudflareWorker/1.0",
+    "User-Agent": "CloudflareWorker",
   });
 
   // Fetch both content types
