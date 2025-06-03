@@ -103,3 +103,13 @@ the result is added to kv under key of pathname
 ✅ Made `usage.html/md`
 
 ✅ Turn usage, why and privacy-policy into https://github.com/janwilmake/lmpify-docs and link from homepage
+
+# After contextarea works... add to lmpify and focus on this (2025-05-24)
+
+✅ Add contextarea! seeing tokens of urls and seeing if urls not work is huge for understanding.
+
+✅ On homepage, ensure shift+enter is submit, not enter.
+
+✅ Fix bugs on mdapply: we can't accomodate for all structures progamatically but we can accomodate for ```ext filename=""`. Let's do that instead, and instruct this to be system-prompted on how to respond. In lmpify, I'd want a simple system prompt that can be deleted. It can just be a URL! **Created gist: https://uithub.com/janwilmake/gists/blob/main/named-codeblocks.md**
+
+❌ Add toggle button to view context in right panel rather than result. this could be live connected with context-cards, rather than from data. **with direct link to each context it may not be needed, but total token-count would be nice**

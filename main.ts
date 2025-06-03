@@ -1210,24 +1210,17 @@ const requestHandler = async (
   }
 
   if (!result.session) {
-    return new Response("No session could be estabilished");
+    return new Response("No session could be estabilished", { status: 400 });
   }
 
   const { user } = result.session;
-  // Get user data from stripeflare
   const { access_token, verified_user_access_token, ...publicUser } =
     user || {};
-
   const headers = new Headers(result.session.headers || {});
 
   // Only accept POST and GET methods
   if (!["POST", "GET"].includes(request.method)) {
     return new Response("Method not allowed", { status: 405, headers });
-  }
-
-  if (pathname === "/me") {
-    headers.append("content-type", "application/json");
-    return new Response(JSON.stringify(publicUser, undefined, 2), { headers });
   }
 
   const pathnameWithoutExt = pathname.split(".")[0];

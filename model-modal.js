@@ -446,9 +446,11 @@
                                     : `<p style="color:red;">You have been ratelimited! Try again in a bit, or please purchase tokens to continue</p>`
                                   : ""
                               }
-                              <div class="model-modal-upgrade-title">Unlock premium models, pay as you go.</div>
-                              <div class="model-modal-upgrade-price">$20</div>
-                              <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Upgrade now</a>
+                              <div class="model-modal-upgrade-title">Unlock premium models.</div>
+                              <div class="model-modal-upgrade-price">$20 top-up</div>
+                              <div class="model-modal-upgrade-title" style="padding-bottom:8px;">Change to any amount</div>
+
+                              <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Pay with Stripe</a>
                           </div>`
                           }
   
