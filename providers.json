@@ -13,13 +13,13 @@
   },
 
   {
-    "model": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+    "model": "@cf/meta/llama-4-scout-17b-16e-instruct",
     "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
     "providerSlug": "cloudflare",
-    "pricePerMillionInput": 0.05,
-    "pricePerMillionOutput": 0.05,
-    "maxTokens": 32000,
-    "name": "Cloudflare - Deepseek R1 32B (90% discount)",
+    "pricePerMillionInput": 0.027,
+    "pricePerMillionOutput": 0.085,
+    "maxTokens": 100000,
+    "name": "Meta's Llama 4 Scout 17B (90% discount)",
     "icon": "☁️",
     "description": "Experimental",
     "features": []
