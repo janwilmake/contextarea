@@ -1,5 +1,31 @@
 [
   {
+    "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
+    "providerSlug": "cloudflare",
+    "pricePerMillionInput": 0.075,
+    "pricePerMillionOutput": 0.075,
+    "maxTokens": 16000,
+    "name": "Cloudflare - Llama 3.3 70B (90% discount)",
+    "icon": "☁️",
+    "description": "Experimental",
+    "features": []
+  },
+
+  {
+    "model": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
+    "providerSlug": "cloudflare",
+    "pricePerMillionInput": 0.05,
+    "pricePerMillionOutput": 0.05,
+    "maxTokens": 32000,
+    "name": "Cloudflare - Deepseek R1 32B (90% discount)",
+    "icon": "☁️",
+    "description": "Experimental",
+    "features": []
+  },
+
+  {
     "model": "llama-4-scout-17b-16e-instruct",
     "basePath": "https://api.cerebras.ai/v1",
     "providerSlug": "cerebras",
@@ -110,32 +136,6 @@
     "icon": "🍑",
 
     "features": ["vision"]
-  },
-
-  {
-    "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
-    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
-    "providerSlug": "cloudflare",
-    "pricePerMillionInput": 0.075,
-    "pricePerMillionOutput": 0.075,
-    "maxTokens": 16000,
-    "name": "Cloudflare - Llama 3.3 70B (90% discount)",
-    "icon": "☁️",
-    "description": "Experimental",
-    "features": []
-  },
-
-  {
-    "model": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
-    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
-    "providerSlug": "cloudflare",
-    "pricePerMillionInput": 0.05,
-    "pricePerMillionOutput": 0.05,
-    "maxTokens": 32000,
-    "name": "Cloudflare - Deepseek R1 32B (90% discount)",
-    "icon": "☁️",
-    "description": "Experimental",
-    "features": []
   },
 
   {

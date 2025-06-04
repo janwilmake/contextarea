@@ -2,7 +2,11 @@
 
 A lot of knowledge is stuck in the heads of smart prompt engineers. That's why I built 'let me prompt it for you', because it needs to be easier and more rewarding to share this. The potential of lmpify is far grander than it just being for developers!!! Let's double down on accessibility!
 
-## ❗️ Put 'Prompt it' button on uithub.com
+## uithub.com link
+
+git clone https://github.com/janwilmake/uithub.v1
+
+Put prompt it button on uithub v1
 
 This is my biggest leverage thing I can do probably: Lead everything to the monetisation funnel.
 
