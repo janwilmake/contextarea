@@ -1,0 +1,249 @@
+[
+  {
+    "model": "llama-4-scout-17b-16e-instruct",
+    "basePath": "https://api.cerebras.ai/v1",
+    "providerSlug": "cerebras",
+    "pricePerMillionInput": 0.65,
+    "pricePerMillionOutput": 0.85,
+    "maxTokens": 8000,
+    "name": "Cerebras - Llama 4 Scout 17B",
+    "icon": "🧠",
+    "description": "Ultra-fast inference ~2600 tokens/s",
+    "features": []
+  },
+
+  {
+    "model": "llama-3.3-70b",
+    "basePath": "https://api.cerebras.ai/v1",
+    "providerSlug": "cerebras",
+    "pricePerMillionInput": 0.6,
+    "pricePerMillionOutput": 0.6,
+    "maxTokens": 128000,
+    "name": "Cerebras - Llama 3.3 70B",
+    "icon": "🧠",
+    "description": "Ultra-fast inference ~2100 tokens/s",
+    "features": []
+  },
+
+  {
+    "model": "qwen-3-32b",
+    "basePath": "https://api.cerebras.ai/v1",
+    "providerSlug": "cerebras",
+    "pricePerMillionInput": 0.6,
+    "pricePerMillionOutput": 0.6,
+    "maxTokens": 128000,
+    "name": "Cerebras - Qwen 3 32B",
+    "icon": "🧠",
+    "description": "Ultra-fast inference ~2100 tokens/s",
+    "features": []
+  },
+
+  {
+    "model": "grok-3-latest",
+    "basePath": "https://api.x.ai/v1",
+    "providerSlug": "xai",
+    "pricePerMillionInput": 3,
+    "pricePerMillionOutput": 15,
+    "premium": true,
+    "maxTokens": 64000,
+    "name": "X AI - Grok 3",
+    "icon": "𝕩",
+    "description": "Least Woke",
+    "features": []
+  },
+
+  {
+    "model": "claude-sonnet-4-20250514",
+    "basePath": "https://api.anthropic.com",
+    "providerSlug": "anthropic",
+    "premium": true,
+    "pricePerMillionInput": 3,
+    "pricePerMillionOutput": 15,
+    "maxTokens": 64000,
+    "name": "Anthropic - Claude 4 Sonnet",
+    "description": "",
+    "icon": "🍑",
+
+    "features": ["vision"]
+  },
+
+  {
+    "model": "claude-opus-4-20250514",
+    "basePath": "https://api.anthropic.com",
+    "providerSlug": "anthropic",
+    "premium": true,
+    "pricePerMillionInput": 15,
+    "pricePerMillionOutput": 75,
+    "maxTokens": 32000,
+    "name": "Anthropic - Claude 4 Opus",
+    "description": "",
+    "icon": "🍑",
+
+    "features": ["vision"]
+  },
+
+  {
+    "model": "claude-3-7-sonnet-latest",
+    "basePath": "https://api.anthropic.com",
+    "providerSlug": "anthropic",
+    "premium": true,
+    "pricePerMillionInput": 3,
+    "pricePerMillionOutput": 15,
+    "maxTokens": 64000,
+    "name": "Anthropic - Claude 3.7 Sonnet",
+    "description": "",
+    "icon": "🍑",
+
+    "features": ["vision"]
+  },
+
+  {
+    "model": "claude-3-5-sonnet-latest",
+    "basePath": "https://api.anthropic.com",
+    "providerSlug": "anthropic",
+    "premium": true,
+    "pricePerMillionInput": 3,
+    "pricePerMillionOutput": 15,
+    "maxTokens": 8000,
+    "name": "Anthropic - Claude 3.5 Sonnet",
+    "description": "",
+    "icon": "🍑",
+
+    "features": ["vision"]
+  },
+
+  {
+    "model": "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
+    "providerSlug": "cloudflare",
+    "pricePerMillionInput": 0.075,
+    "pricePerMillionOutput": 0.075,
+    "maxTokens": 16000,
+    "name": "Cloudflare - Llama 3.3 70B (90% discount)",
+    "icon": "☁️",
+    "description": "Experimental",
+    "features": []
+  },
+
+  {
+    "model": "@cf/deepseek-ai/deepseek-r1-distill-qwen-32b",
+    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
+    "providerSlug": "cloudflare",
+    "pricePerMillionInput": 0.05,
+    "pricePerMillionOutput": 0.05,
+    "maxTokens": 32000,
+    "name": "Cloudflare - Deepseek R1 32B (90% discount)",
+    "icon": "☁️",
+    "description": "Experimental",
+    "features": []
+  },
+
+  {
+    "model": "models/gemini-2.5-flash-preview-05-20",
+    "basePath": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "providerSlug": "google",
+    "pricePerMillionInput": 0.15,
+    "pricePerMillionOutput": 0.6,
+    "maxTokens": 1000000,
+    "name": "Google - Gemini 2.5 Flash Preview",
+    "icon": "🔥",
+    "description": "Best price-performance with thinking capabilities",
+    "features": ["vision", "audio", "video", "thinking"]
+  },
+
+  {
+    "model": "models/gemini-2.5-pro-preview-05-06",
+    "basePath": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "providerSlug": "google",
+    "pricePerMillionInput": 1.25,
+    "pricePerMillionOutput": 10.0,
+    "maxTokens": 2000000,
+    "premium": true,
+    "name": "Google - Gemini 2.5 Pro Preview",
+    "icon": "🔥",
+    "description": "Most powerful thinking model with maximum accuracy",
+    "features": ["vision", "audio", "video", "thinking", "coding"]
+  },
+
+  {
+    "model": "gpt-4.1-mini",
+    "basePath": "https://api.openai.com/v1",
+    "providerSlug": "openai",
+    "pricePerMillionInput": 0.4,
+    "pricePerMillionOutput": 1.6,
+    "maxTokens": 32768,
+    "name": "OpenAI - ChatGPT 4.1 Mini",
+    "icon": "🅾️",
+    "description": "",
+    "features": ["vision", "globe"]
+  },
+
+  {
+    "model": "o3-mini",
+    "basePath": "https://api.openai.com/v1",
+    "providerSlug": "openai",
+    "pricePerMillionInput": 1.1,
+    "pricePerMillionOutput": 4.4,
+    "maxTokens": 128000,
+    "name": "OpenAI - o3 Mini",
+    "icon": "🅾️",
+    "description": "Not that open *",
+    "features": [],
+    "premium": true
+  },
+
+  {
+    "model": "gpt-4o",
+    "basePath": "https://api.openai.com/v1",
+    "providerSlug": "openai",
+    "pricePerMillionInput": 2.5,
+    "pricePerMillionOutput": 10.0,
+    "maxTokens": 128000,
+    "name": "OpenAI - GPT-4o",
+    "icon": "🅾️",
+    "description": "Not that open *",
+    "features": ["vision"],
+    "premium": true
+  },
+
+  {
+    "model": "deepseek-chat",
+    "basePath": "https://api.deepseek.com/v1",
+    "providerSlug": "deepseek",
+    "pricePerMillionInput": 0.14,
+    "pricePerMillionOutput": 0.28,
+    "maxTokens": 64000,
+    "name": "Deepseek - Deepseek Chat v3",
+    "icon": "🐳",
+    "description": "The real OpenAI",
+    "features": []
+  },
+
+  {
+    "model": "deepseek-reasoner",
+    "basePath": "https://api.deepseek.com/v1",
+    "providerSlug": "deepseek",
+    "pricePerMillionInput": 0.55,
+    "pricePerMillionOutput": 2.19,
+    "premium": true,
+    "maxTokens": 64000,
+    "name": "Deepseek - Deepseek R1",
+    "icon": "🐳",
+    "description": "The real OpenAI",
+    "features": []
+  },
+
+  {
+    "model": "llama-3.3-70b-versatile",
+    "basePath": "https://api.groq.com/openai/v1",
+    "providerSlug": "groq",
+    "pricePerMillionInput": 5,
+    "pricePerMillionOutput": 5,
+    "maxTokens": 32000,
+    "name": "Groq - Llama 3.3 70B",
+    "icon": "🅶",
+    "description": "Great speeds, low ratelimits",
+    "features": [],
+    "premium": true
+  }
+]

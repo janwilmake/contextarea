@@ -1,40 +1,6 @@
 // Model Modal Component
 (function () {
   // Hardcoded models array
-  const MODELS = [
-    {
-      id: "gpt-4.1-mini",
-      name: "ChatGPT 4.1 Mini",
-      icon: "⚡",
-      description: "",
-      features: ["vision", "globe"],
-    },
-
-    {
-      id: "claude-3-7-sonnet-latest",
-      name: "Claude 3.7 Sonnet",
-      icon: "🤖",
-      description: "",
-      premium: true,
-      features: ["vision"],
-    },
-    {
-      id: "claude-sonnet-4-20250514",
-      name: "Claude 4 Sonnet",
-      icon: "🤖",
-      description: "",
-      premium: true,
-      features: ["vision"],
-    },
-    {
-      id: "claude-opus-4-20250514",
-      name: "Claude 4 Opus",
-      icon: "🤖",
-      description: "",
-      premium: true,
-      features: ["vision"],
-    },
-  ];
 
   // SVG icons
   const ICONS = {
@@ -446,9 +412,8 @@
                                     : `<p style="color:red;">You have been ratelimited! Try again in a bit, or please purchase tokens to continue</p>`
                                   : ""
                               }
-                              <div class="model-modal-upgrade-title">Unlock premium models.</div>
-                              <div class="model-modal-upgrade-price">$20 top-up</div>
-                              <div class="model-modal-upgrade-title" style="padding-bottom:8px;">Change to any amount</div>
+                              <div class="model-modal-upgrade-title">15M Free Tokens for Cloudflare models and unlock premium models.</div>
+                              <div class="model-modal-upgrade-price">$0.99 one-time</div>
 
                               <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Pay with Stripe</a>
                           </div>`
@@ -475,8 +440,9 @@
                           <div class="model-modal-footer-right">
                               <span id="modelModalSelectedName">${
                                 selectedModelId
-                                  ? models.find((m) => m.id === selectedModelId)
-                                      ?.name
+                                  ? models.find(
+                                      (m) => m.model === selectedModelId,
+                                    )?.name
                                   : "Select a model"
                               }</span>
                               <button class="model-modal-icon-button" id="modelModalSearchButton">
@@ -493,7 +459,7 @@
 
   // Create individual model item
   function createModelItem(model, selectedModelId, me) {
-    const isSelected = model.id === selectedModelId;
+    const isSelected = model.model === selectedModelId;
     const isPremium = model.premium === true;
     const isDisabled = (!me || me.balance <= 0) && isPremium;
     const features = model.features
@@ -503,7 +469,7 @@
     return `
               <li class="model-modal-item ${isSelected ? "selected" : ""} ${
       isDisabled ? "disabled" : ""
-    }" data-model-id="${model.id}">
+    }" data-model-id="${model.model}">
                   <div class="model-modal-item-icon">${model.icon}</div>
                   <div class="model-modal-item-info">
                       <span class="model-modal-item-name">${model.name}</span>
@@ -537,20 +503,22 @@
       this.selectedModelId =
         typeof window.localStorage.getItem("model") === "string"
           ? window.localStorage.getItem("model")
-          : MODELS[0].id; // Default selection
+          : undefined;
       this.modalElement = null;
       this.onSelectCallback = null;
       this.showingAll = false;
       this.me = null;
+      this.models = null;
       this.init();
     }
 
-    init() {
+    async init() {
       // Inject styles
       injectStyles();
 
       // Create container
       const container = document.getElementById("model-modal");
+
       if (!container) {
         // retry after 100ms
         setTimeout(() => this.init(), 100);
@@ -558,11 +526,19 @@
         return;
       }
 
-      fetch("/me")
+      const modelsPromise = fetch("/providers.json")
+        .then((res) => res.json())
+        .then((models) => {
+          this.models = models;
+          return models;
+        });
+
+      const mePromise = fetch("/me")
         .then(async (res) => {
           if (!res.ok) {
             console.log("Not ok", res.status);
             console.log(await res.text());
+            return;
           }
           const json = await res.json();
           return json;
@@ -570,12 +546,14 @@
         .then((me) => {
           console.log("set me", me);
           this.me = me;
-          this.createModal(container);
-          this.attachEventListeners();
         });
-      this.createTriggerButton(container);
+
+      await Promise.all([mePromise, modelsPromise]);
 
       // Create trigger button and modal
+      this.createTriggerButton(container);
+      this.createModal(container);
+      this.attachEventListeners();
     }
 
     createTriggerButton(container) {
@@ -622,7 +600,12 @@
       document.head.appendChild(styleElement);
 
       // Create button
-      const selectedModel = MODELS.find((m) => m.id === this.selectedModelId);
+      const selectedModel =
+        this.models?.find((m) => m.model === this.selectedModelId) ||
+        this.models[0];
+
+      console.log({ selected: this.selectedModelId, models: this.models });
+
       const button = document.createElement("button");
       button.className = "model-modal-trigger";
       //needed to not submit forms it appears in
@@ -640,7 +623,7 @@
 
     createModal(container) {
       container.innerHTML = createModalHTML(
-        MODELS,
+        this.models,
         this.selectedModelId,
         this.me,
       );
@@ -702,7 +685,7 @@
     }
 
     selectModel(modelId) {
-      const model = MODELS.find((m) => m.id === modelId);
+      const model = this.models?.find((m) => m.model === modelId);
 
       // Don't select if it's a premium model
       if (model.premium && (!this.me || this.me.balance <= 0)) {
@@ -766,10 +749,10 @@
 
       items.forEach((item) => {
         const modelId = item.dataset.modelId;
-        const model = MODELS.find((m) => m.id === modelId);
+        const model = this.models.find((m) => m.model === modelId);
         const matches =
           model.name.toLowerCase().includes(lowerQuery) ||
-          model.id.toLowerCase().includes(lowerQuery);
+          model.model.toLowerCase().includes(lowerQuery);
 
         item.style.display = matches ? "flex" : "none";
       });
@@ -806,19 +789,5 @@
 
   window.closeModelModal = function () {
     window.modelModal.close();
-  };
-
-  window.getSelectedModel = function () {
-    return MODELS.find((m) => m.id === window.modelModal.selectedModelId);
-  };
-
-  window.setSelectedModel = function (modelId) {
-    const model = MODELS.find((m) => m.id === modelId);
-    if (
-      !model.premium ||
-      (window.modelModal.me && window.modelModal.me.balance > 0)
-    ) {
-      window.modelModal.selectModel(modelId);
-    }
   };
 })();

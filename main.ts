@@ -13,6 +13,8 @@ import {
 export { DORM } from "stripeflare";
 import { createClient } from "dormroom";
 import { DurableObject } from "cloudflare:workers";
+//@ts-ignore
+import providers from "./providers.json";
 import { RatelimitDO } from "./ratelimiter.js";
 export { RatelimitDO };
 
@@ -182,11 +184,11 @@ interface SSEEvent {
  * Model configuration
  */
 interface ModelConfig {
+  providerSlug: string;
   pricePerMillionInput: number;
   pricePerMillionOutput: number;
   model: string;
   basePath: string;
-  apiKey: string;
   maxTokens: number;
   premium?: boolean;
 }
@@ -447,6 +449,13 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       if (!prompt || !modelConfig || !pathname) {
         throw new Error("Missing required state");
       }
+      const envVariableName = `${modelConfig.providerSlug.toUpperCase()}_SECRET`;
+      const apiKey = this.env[envVariableName];
+      if (!apiKey) {
+        throw new Error(
+          `Missing API Key for ${modelConfig.model}: ${envVariableName}`,
+        );
+      }
 
       const { context } = await generateContext(prompt);
       console.log("GOT CONTEXT", context?.length);
@@ -476,6 +485,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         });
       }
       const isAnthropic = modelConfig.model.includes("claude");
+      const isCloudflare = modelConfig.providerSlug === "cloudflare";
 
       // Prepare LLM request
       const messages = [
@@ -506,20 +516,26 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             "Content-Type": "application/json",
             ...(isAnthropic
               ? {
-                  "x-api-key": modelConfig.apiKey,
+                  "x-api-key": apiKey,
                   "anthropic-version": "2023-06-01",
                 }
               : {
-                  Authorization: `Bearer ${modelConfig.apiKey}`,
+                  Authorization: `Bearer ${apiKey}`,
                 }),
           },
           body: JSON.stringify({
             model: modelConfig.model,
             messages,
             stream: true,
+            ...(isAnthropic || isCloudflare
+              ? {
+                  max_tokens:
+                    modelConfig.maxTokens -
+                    Math.round(JSON.stringify(messages).length / 5),
+                }
+              : {}),
             ...(isAnthropic && context && { system: context }),
             ...(!isAnthropic && { stream_options: { include_usage: true } }),
-            ...(isAnthropic && { max_tokens: modelConfig.maxTokens }),
           }),
         },
       );
@@ -1154,43 +1170,6 @@ const requestHandler = async (
   const acceptHeader = request.headers.get("Accept") || "*/*";
 
   // Get model configuration
-  const models: ModelConfig[] = [
-    {
-      model: "gpt-4.1-mini",
-      basePath: "https://api.openai.com/v1",
-      apiKey: env.FREE_SECRET,
-      pricePerMillionInput: 0.4,
-      pricePerMillionOutput: 1.6,
-      maxTokens: 64000,
-    },
-    {
-      model: "claude-3-7-sonnet-latest",
-      basePath: "https://api.anthropic.com",
-      apiKey: env.ANTHROPIC_SECRET,
-      premium: true,
-      pricePerMillionInput: 3,
-      pricePerMillionOutput: 15,
-      maxTokens: 64000,
-    },
-    {
-      model: "claude-sonnet-4-20250514",
-      basePath: "https://api.anthropic.com",
-      apiKey: env.ANTHROPIC_SECRET,
-      premium: true,
-      pricePerMillionInput: 3,
-      pricePerMillionOutput: 15,
-      maxTokens: 64000,
-    },
-    {
-      model: "claude-opus-4-20250514",
-      basePath: "https://api.anthropic.com",
-      apiKey: env.ANTHROPIC_SECRET,
-      premium: true,
-      pricePerMillionInput: 15,
-      pricePerMillionOutput: 75,
-      maxTokens: 32000,
-    },
-  ];
 
   const t = Date.now();
   // Apply stripeflare middleware
@@ -1293,15 +1272,15 @@ const requestHandler = async (
       const formData = await request.formData();
       prompt = formData?.get("prompt")?.toString();
       const modelName = formData?.get("model")?.toString();
-
+      console.log("received submission", modelName);
       if (!prompt) {
         console.log("missing prompt");
         return new Response("Missing prompt", { status: 400, headers });
       }
 
       const modelConfig =
-        models.find((m) => m.model === modelName) || models[0];
-
+        providers.find((m) => m.model === modelName) || providers[0];
+      console.log({ modelConfig });
       model = modelConfig?.model;
 
       const userNeedsPayment =
@@ -1392,7 +1371,7 @@ const requestHandler = async (
       env,
       publicUser,
       {
-        model: model || models[0].model,
+        model: model || providers[0].model,
         prompt,
         context,
         headline: result.headline || undefined,

@@ -2,5 +2,8 @@
   "dependencies": {
     "stripeflare": "0.0.22",
     "workers-og": "^0.0.25"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250204.0"
   }
 }

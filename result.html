@@ -2,6 +2,8 @@
 <html lang="en">
 
 <head>
+    <!-- Analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
 
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
@@ -1048,22 +1050,20 @@
             handleTryAgain() {
                 const promptText = this.contextarea.value.trim();
                 if (!promptText) return;
-
+                const model = window.localStorage.getItem('model');
                 // Generate slug from first 20 characters
                 const first20 = promptText.substring(0, 20);
                 const slug = this.slugify(first20);
-                const hash = this.simpleHash(promptText);
+                const hash = this.simpleHash(model + ":" + promptText);
 
                 // Create the URL path
                 const path = `/${slug}-${hash}`;
 
-                // Get selected model from the modal
-                const selectedModel = window.getSelectedModel();
 
                 // Create form data
                 const formData = new FormData();
                 formData.append('prompt', promptText);
-                formData.append('model', selectedModel.id);
+                formData.append('model', model);
 
                 // Create a form and submit it
                 const form = document.createElement('form');
@@ -1106,10 +1106,6 @@
             setTimeout(() => window.openModelModal(), 400)
         }
 
-        if (data?.model) {
-            // set for model-modal
-            window.setSelectedModel(data.model);
-        }
 
         // Initialize modules
         const uiManager = new UIManager();

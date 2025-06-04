@@ -2,36 +2,19 @@
 
 A lot of knowledge is stuck in the heads of smart prompt engineers. That's why I built 'let me prompt it for you', because it needs to be easier and more rewarding to share this. The potential of lmpify is far grander than it just being for developers!!! Let's double down on accessibility!
 
-## Free 70B llama model
-
-This can be taken for free from cloudflares credit!!! Should still have IP-based ratelimit though, but can easily be 100 requests per day per IP with this model.
-
-Or we can see if people would pay $0.60 atleast, and set that as initial requirement. This is MUCH better!
-
-POST: models added, lmpify now free for `llama70b`
-
-## Put 'Prompt it' button on uithub.com
+## ❗️ Put 'Prompt it' button on uithub.com
 
 This is my biggest leverage thing I can do probably: Lead everything to the monetisation funnel.
 
-## Patchlink Plugin
+https://x.com/janwilmake/status/1929879737322598536 this gets liked. what if it became even clearer that you can prompt from here?
 
-IDEA: Help the idea guys with making their content more actionable
+## Render images
 
-I basically created a 'mirror thread' and this could possibly be automated if lmpify had an MCP: https://x.com/janwilmake/status/1925218363774570938. But even if it's not automated it could be a great way to make ideas more actionable right away.
+Just like html, images should be able to be shown as MD and as image. Sick! Now we can add any images into html using https://googllm-image.brubslabs.com. Just have a good system prompt for that
 
-To truly optimise for actionability, it'd make a ton of sense to add 'patch for github' as a button, which would send the repo + result to the patch-api, which would basically be an independent glue. I can even charge a dollar for this instead since a lot of people don't know git, nor MCP.
+## Make links clickable
 
-The button should lead to this, and this should request permission to github oauth, then fork and patch, then redirect there! https://patch.forgithub.com/prepare?markdown={URL}&sourceOwner={OWNER}&sourceRepo={REPO}&sourceBranch={BRANCH}
-
-This patch could also add the original lmpify that lead to the fork into the README, creating another viral loop! Besides, based on which boilerplate it is, it should add buttons to deploy (deploy to vercel, deploy to cloudflare, etc) so it's just one more click away from deployment.
-
-The way the plugin system could work is by creating a **simple URL regex** that gets applied on the URLs in the prompt. For this patchlink to appear, the input prompt should have https://uithub.com/janwilmake/gists/tree/main/named-codeblocks.md
-
-Add transformation to patcher:
-
-- Ability inject HTML scripts
-- Ability to inject buttons into README
+Links should still be shown as markdown but need to be clickable.
 
 ## Proper Markdown Rendering
 
@@ -47,27 +30,25 @@ The solution is bi-partial:
 TODO:
 
 - ✅ write system prompt that instructs using `````` (5 backticks by default or more when necessary)
-- apply adding 1 backtick to fence in `getMarkdownResponse`
-- ensure `named-codeblocks.md` system prompt is used by default without making things ugly
-- rewrite `markdown-highlighter.js` using `marked`
+- Apply adding 1 backtick to fence in `getMarkdownResponse`
+- Ensure `named-codeblocks.md` system prompt is used by default without making things ugly
+- Rewrite `markdown-highlighter.js` using `marked`
 - Test 1 https://lmpify.com/httpsuithubcomj-y3ac2c0
 - Test 2 md-example that contains several codeblocks
 
 After this works, deploy and get code for `x-oauth-stripe` repo (https://lmpify.com/httpsuuithubcom-waprk40)
 
-## Render images
+## Images as context, videos as context
 
-Just like html, images should be able to be shown as MD and as image. Sick! Now we can add any images into html using https://googllm-image.brubslabs.com. Just have a good system prompt for that
+HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
 
-## Make links clickable
+Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
 
-Links should still be shown as markdown but need to be clickable.
+Video urls should be inserted as video context to the model (if the model supports it)
 
-## Images as context
+Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context ui.
 
-HTML is terrible since it's too big. Let's use HTML as screenshots by default
-
-Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick shit!
+Worth a post!
 
 ## Bookmarking context
 
@@ -80,3 +61,5 @@ Any URL that's an image should be inserted as image context to the model. Now we
 - search on top that searches over titles and urls
 
 The state of bookmark contexts is just a flat list of urls and we can use localStorage to store that as `string[]`. Great thing about it is that we use the already authenticated api of context to expand it into something useful. The UI could just make it possible to send this `string[]` over to a predictable URL that is github-authorized, e.g. https://bookmarks.contextarea.com/janwilmake. This can be done by just using pastebin, then using https://bookmarks.contextarea.com/publish?url={url}. This would authenticate, then set the value, making it shareable everybody.
+
+The 'personal context base' should be available publicly as well! this in turn allows turning this into a simple fetch mcp to gather a context prompt!

@@ -113,3 +113,15 @@ the result is added to kv under key of pathname
 ✅ Fix bugs on mdapply: we can't accomodate for all structures progamatically but we can accomodate for ```ext filename=""`. Let's do that instead, and instruct this to be system-prompted on how to respond. In lmpify, I'd want a simple system prompt that can be deleted. It can just be a URL! **Created gist: https://uithub.com/janwilmake/gists/blob/main/named-codeblocks.md**
 
 ❌ Add toggle button to view context in right panel rather than result. this could be live connected with context-cards, rather than from data. **with direct link to each context it may not be needed, but total token-count would be nice**
+
+## ❗️ Improve Models (2025-06-04)
+
+1. ✅ Add cloudflare account-id into the basepath
+2. ✅ Add secrets for all
+3. ✅ Add X AI (Grok)
+4. ✅ Add superfast model (llama-3.3-70b on https://api.cerebras.ai/v1/chat/completions)
+5. ❌ ~~Add Gemini Video input model~~ (not possible with /chat/completion)
+6. ✅ Make it possible to use LLAMA3.3 70B unlimited after initial payment (charge 0 for non-api use)
+7. ❌ Use Company Logos
+
+POST: models added, LMPIFY is now Free after Tiny $0.99 Payment (Proof of Personhood Payment)
