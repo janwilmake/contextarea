@@ -145,7 +145,7 @@ interface Env extends StripeflareEnv {
   RESULTS: KVNamespace; // KV namespace for storing results
   SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
   ANTHROPIC_SECRET: string;
-  FREE_SECRET: string;
+  OPENAI_SECRET: string;
   ASSETS: Fetcher;
   RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
 }
@@ -468,7 +468,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       });
 
       this.ctx.waitUntil(
-        generateTitleWithAI(markdown, this.env.FREE_SECRET).then((data) => {
+        generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
           console.log("GOT HEADLINE", data.title);
           this.set("headline", data.title);
         }),

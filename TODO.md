@@ -10,7 +10,7 @@ Put prompt it button on uithub v1
 
 This is my biggest leverage thing I can do probably: Lead everything to the monetisation funnel.
 
-https://x.com/janwilmake/status/1929879737322598536 this gets liked. what if it became even clearer that you can prompt from here?
+improve og image? https://x.com/janwilmake/status/1929879737322598536 this gets liked. what if it became even clearer that you can prompt from here?
 
 ## Render images
 
