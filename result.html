@@ -516,6 +516,8 @@
 </head>
 
 <body>
+    <script src="/sidebar.js"></script>
+
     <style>
         #link {
             position: fixed;
@@ -550,9 +552,15 @@
 
         <div class="content-container">
             <div class="column" style="position:relative;">
-                <div class="column-header">Prompt</div>
+                <div class="column-header">
+                    <span>Prompt</span>
+                    <span id="twitterLink" style="font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
+                </div>
+
+
                 <span id="tokenCounter"
                     style="position:absolute;right:25px;font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
+
                 <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
             </div>
 
@@ -884,6 +892,27 @@
             }
         }
 
+        class TwitterLink {
+            constructor() {
+                this.contextarea = document.getElementById('contextarea');
+                this.twitterLink = document.getElementById('twitterLink');
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.contextarea.addEventListener('input', () => this.updateTwitterLink());
+                setTimeout(() => this.updateTwitterLink(), 0);
+            }
+
+            updateTwitterLink() {
+                const promptText = this.contextarea.value;
+
+                if (promptText) {
+                    this.twitterLink.innerHTML = `<a href="https://x.com/intent/post?text=${encodeURIComponent(promptText + '\n\n' + window.location.href)}">Post on X</a>`;
+                }
+            }
+        }
+
         // 5. Mobile Responsiveness Module
         class MobileResponsiveness {
             constructor() {
@@ -1111,6 +1140,7 @@
         const uiManager = new UIManager();
         const copyManager = new CopyManager();
         const tokenCounter = new TokenCounter();
+        const twitterLink = new TwitterLink();
         const mobileResponsiveness = new MobileResponsiveness();
         const actionButtons = new ActionButtons();
 

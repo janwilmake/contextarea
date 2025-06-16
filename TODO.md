@@ -1,16 +1,18 @@
+Make it work nicely.
+
 # GOAL: Make lmpify super accessible and minimise barrier to payment.
 
 A lot of knowledge is stuck in the heads of smart prompt engineers. That's why I built 'let me prompt it for you', because it needs to be easier and more rewarding to share this. The potential of lmpify is far grander than it just being for developers!!! Let's double down on accessibility!
 
 ## uithub.com link
 
-git clone https://github.com/janwilmake/uithub.v1
+✅ git clone https://github.com/janwilmake/uithub.v1
 
-Put prompt it button on uithub v1
+✅ Put prompt it button on uithub v1
 
 This is my biggest leverage thing I can do probably: Lead everything to the monetisation funnel.
 
-improve og image? https://x.com/janwilmake/status/1929879737322598536 this gets liked. what if it became even clearer that you can prompt from here?
+Improve og image? https://x.com/janwilmake/status/1929879737322598536 this gets liked. what if it became even clearer that you can prompt from here?
 
 ## Render images
 
@@ -19,6 +21,20 @@ Just like html, images should be able to be shown as MD and as image. Sick! Now 
 ## Make links clickable
 
 Links should still be shown as markdown but need to be clickable.
+
+## Render links and urls as forms
+
+If a link contains `{var}` or `?var=` (not filled in) it is assumed to require parameters and submission. Let's only support public GET.
+
+## Link behavior markdown standard syntax
+
+It could be interesting if we could make lmpify agentic more easily. I guess one of the ways to do this is by making found URLs and codeblocks alike easy to insert back into the prompt.
+
+But imagine we even had a way for the agent to go off and immediately go to a particular URL, or even execute a new prompt? In this case, we've just made it agentic as it can choose to continue until it's satisfied a certain condition.
+
+What if we use `goto://` as a protocol for this? If a link to `goto` is found in the response document, the behavior of lmpify client would be to immediately navigate there, even if the original prompt hasn't finished yet.
+
+This can also be combined with lookup of information. What if you could specify a new promopt in a codeblock, then goto a new prompt, executing it, from that codeblock? I guess every codeblock should definitely have a fixed URL that can be made known to the LLM so it can self-reference stuff.
 
 ## Proper Markdown Rendering
 
@@ -54,16 +70,12 @@ Whenever context is an image, it should show the # of tokens and it should show 
 
 Worth a post!
 
-## Bookmarking context
+# Theo deadline
 
-❗️❗️❗️❗️❗️❗️❗️ Bookmark contexts: separate interface that I can just embed as js that allows adding contexts that I bookmark.
+June 17
 
-- Adds button 🔖 to topleft which opens/closes bookmarks sidepanel
-- loads in all bookmarks through context.contextarea.com and renders in nice way showing url, title, tokens, og, may be a bit bigger
-- button on every bookmark to remove bookmark or use
-- also shows current textarea value ones on top with ability to bookmark
-- search on top that searches over titles and urls
+https://x.com/theo/status/1931516591478575476
 
-The state of bookmark contexts is just a flat list of urls and we can use localStorage to store that as `string[]`. Great thing about it is that we use the already authenticated api of context to expand it into something useful. The UI could just make it possible to send this `string[]` over to a predictable URL that is github-authorized, e.g. https://bookmarks.contextarea.com/janwilmake. This can be done by just using pastebin, then using https://bookmarks.contextarea.com/publish?url={url}. This would authenticate, then set the value, making it shareable everybody.
+Also add byok & free if OSS: https://x.com/senbodev/status/1931336902327824891
 
-The 'personal context base' should be available publicly as well! this in turn allows turning this into a simple fetch mcp to gather a context prompt!
+Some would use it like that, some would just pay me.

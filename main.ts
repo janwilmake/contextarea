@@ -710,7 +710,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           // NB: need to wrap because of the this reference
           waitUntil: (promise: Promise<void>) => this.ctx.waitUntil(promise),
         },
-        name: user?.access_token,
+        name: user?.client_reference_id,
         mirrorName: "aggregate",
       });
       client.exec(
@@ -1184,18 +1184,14 @@ const requestHandler = async (
   console.log({ stripeMiddlewareMs: Date.now() - t });
 
   // If middleware returned a response, return it directly
-  if (result.response) {
+  if (result.type === "response") {
     return result.response;
   }
 
-  if (!result.session) {
-    return new Response("No session could be estabilished", { status: 400 });
-  }
-
-  const { user } = result.session;
+  const { user } = result;
   const { access_token, verified_user_access_token, ...publicUser } =
     user || {};
-  const headers = new Headers(result.session.headers || {});
+  const headers = new Headers(result.headers || {});
 
   // Only accept POST and GET methods
   if (!["POST", "GET"].includes(request.method)) {

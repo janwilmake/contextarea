@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "stripeflare": "0.0.22",
+    "stripeflare": "^0.0.32",
     "workers-og": "^0.0.25"
   },
   "devDependencies": {
