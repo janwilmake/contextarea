@@ -4,5 +4,8 @@
   "main": "main.ts",
   "files": [
     "main.ts"
-  ]
+  ],
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250620.0"
+  }
 }
