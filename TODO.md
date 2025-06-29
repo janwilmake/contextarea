@@ -1,4 +1,14 @@
-Make it work nicely.
+FLAREDREAM (or is this claudeflair material?)
+
+- ✅ https://deploy.flaredream.com prompt in lmpify should generate the one file needed to deploy
+- ✅ add additional system prompt
+- ✅ add `prompt it!` button
+- Make `?key=result&codeblock={path-or-index}` work (i may have better ideas)
+- Ensure variable `{{prompt_id}}` is filled into context if present there. I had ideas for this
+- MAKE IT A STREAMING `/chat/completions` endpoint with-money ™️ (I had ideas for this)
+- Add "prompt it!" button to flaredream
+- Put extexe in xytext terminal. Output should be a new file you make and already named.
+- Make extexe-cli (see `cli.js.md`).
 
 # GOAL: Make lmpify super accessible and minimise barrier to payment.
 
@@ -69,13 +79,3 @@ Video urls should be inserted as video context to the model (if the model suppor
 Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context ui.
 
 Worth a post!
-
-# Theo deadline
-
-June 17
-
-https://x.com/theo/status/1931516591478575476
-
-Also add byok & free if OSS: https://x.com/senbodev/status/1931336902327824891
-
-Some would use it like that, some would just pay me.
