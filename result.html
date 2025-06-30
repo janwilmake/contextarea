@@ -1122,8 +1122,8 @@
             }
 
             handleOpenResult() {
-                const currentPath = window.location.pathname;
-                window.open(`${window.location.origin}${currentPath}.md?key=result`, '_blank');
+                const subdomain = window.location.pathname.slice(1)
+                window.open(`https://${subdomain}.gptideas.com`, '_blank');
             }
         }
 

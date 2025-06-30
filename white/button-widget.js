@@ -1,7 +1,7 @@
 /**
  * Prompt It Button Widget
  * Easy to implement buttons for lmpify integration
- * Visit https://lmpify.com/buttons for more info
+ * Visit https://letmeprompt.com/buttons for more info
  */
 
 (function () {
@@ -232,7 +232,7 @@
 
       // Add click handler
       element.addEventListener("click", () => {
-        let targetUrl = "https://lmpify.com/";
+        let targetUrl = "https://letmeprompt.com/";
 
         if (prompt) {
           targetUrl += `?p=${encodeURIComponent(prompt)}`;

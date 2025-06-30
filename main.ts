@@ -17,6 +17,146 @@ import { DurableObject } from "cloudflare:workers";
 import providers from "./providers.json";
 import { RatelimitDO } from "./ratelimiter.js";
 export { RatelimitDO };
+import { Token, lexer } from "marked";
+
+/**
+ * Recursively flatten a marked token and return something if a find function is met
+ */
+export const flattenMarkedTokenRecursive = (
+  token: Token,
+  findFunction: (token: any) => boolean,
+): Token[] => {
+  if (findFunction(token)) {
+    return [token];
+  }
+
+  if (token.type === "table") {
+    const header = token.header
+      .map((token: any) => {
+        const result = token.tokens
+          .map((x: any) => flattenMarkedTokenRecursive(x, findFunction))
+          .flat();
+        return result;
+      })
+      .flat();
+
+    const rows = token.rows
+      .map((row: any) => {
+        const result = row
+          .map((token: any) => {
+            const result = token.tokens
+              .map((x: any) => flattenMarkedTokenRecursive(x, findFunction))
+              .flat();
+
+            return result;
+          })
+          .flat();
+
+        return result;
+      })
+      .flat();
+
+    return [header, rows].flat();
+  }
+
+  if (token.type === "list") {
+    const result = token.items
+      .map((token: any) => {
+        const result = token.tokens
+          .map((x: any) => flattenMarkedTokenRecursive(x, findFunction))
+          .flat();
+        return result;
+      })
+      .flat();
+
+    return result;
+  }
+
+  if (
+    token.type === "del" ||
+    token.type === "em" ||
+    token.type === "heading" ||
+    token.type === "link" ||
+    token.type === "paragraph" ||
+    token.type === "strong"
+  ) {
+    if (!token.tokens) {
+      return [];
+    }
+    const result = token.tokens
+      .map((x: any) => flattenMarkedTokenRecursive(x, findFunction))
+      .flat();
+    return result;
+  }
+
+  return [];
+};
+
+/**
+ * find all items that match a token, recursively in all nested things
+ */
+export const flattenMarkdownString = (
+  markdownString: string,
+  findFunction: (token: Token) => boolean,
+): Token[] => {
+  const tokenList = lexer(markdownString);
+  const result = tokenList
+    .map((x) => flattenMarkedTokenRecursive(x, findFunction))
+    .filter((x) => !!x)
+    .map((x) => x!)
+    .flat();
+
+  return result;
+};
+/**
+ * find all codeblocks  (stuff between triple bracket)
+ *
+ * ```
+ * here
+ * is
+ * example
+ * ```
+ */
+export const findCodeblocks = (
+  markdownString: string,
+): {
+  text: string;
+  lang?: string;
+  parameters?: { [key: string]: string };
+}[] => {
+  const result = flattenMarkdownString(
+    markdownString,
+    (token) => token.type === "code",
+  );
+
+  const codesblocks = result
+    .map((token) => {
+      if (token.type !== "code") return;
+
+      const { text, lang } = token;
+
+      const [ext, ...meta] = lang ? (lang as string).trim().split(" ") : [];
+      const parameters = Object.fromEntries(
+        meta.map((chunk) => {
+          const key = chunk.split("=")[0].trim();
+          const value0 = chunk.split("=").slice(1).join("=").trim();
+          const isQuoted =
+            (value0.startsWith('"') && value0.endsWith('"')) ||
+            (value0.startsWith("'") && value0.endsWith("'"));
+
+          const value = isQuoted ? value0.slice(1, value0.length - 1) : value0;
+
+          return [key, value];
+        }),
+      );
+
+      return { text, lang: ext, parameters };
+    })
+    .filter((x) => !!x)
+    .map((x) => x!);
+
+  return codesblocks;
+};
 
 const DORM_VERSION = "bare-stripeflare";
 
@@ -415,12 +555,51 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     });
   };
 
+  async getCurrentResult() {
+    const initialized = this.get<boolean>("initialized");
+
+    if (!initialized) {
+      return new Response("Not initialized", { status: 404 });
+    }
+
+    const prompt = this.get<string>("prompt");
+    const modelConfig = this.get<ModelConfig>("modelConfig");
+    const context = this.get<string>("context");
+    const headline = this.get<string>("headline");
+    const streamComplete = this.get<boolean>("streamComplete") || false;
+    const error = this.get<string>("error");
+    const isProcessing = this.get<boolean>("isProcessing") || false;
+
+    const currentResult = {
+      prompt,
+      model: modelConfig?.model,
+      context,
+      headline,
+      result: this.accumulatedData, // This is the current result so far
+      status: error
+        ? "error"
+        : streamComplete
+        ? "complete"
+        : isProcessing
+        ? "streaming"
+        : "pending",
+      error,
+      timestamp: Date.now(),
+    };
+
+    return new Response(JSON.stringify(currentResult), {
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
 
     try {
       // Handle initial setup from POST request
-
+      if (request.method === "GET" && url.pathname === "/current") {
+        return this.getCurrentResult();
+      }
       // Handle SSE stream requests
       if (request.method === "GET" && url.pathname === "/stream") {
         const user = await request.json<User>().catch(() => undefined);
@@ -960,10 +1139,32 @@ const getMarkdownResponse = (
   pathname: string,
   data: KVData,
   key?: string | null,
+  codeblock?: string | null,
 ) => {
   if (key) {
     // allow returning a specific key
-    return data[key];
+    const value = data[key];
+
+    if (!value) {
+      if (!["prompt", "result", "context"].includes(key)) {
+        return "Please provide key prompt, result, or context";
+      }
+      return `${key} not found.`;
+    }
+
+    if (codeblock) {
+      const codeblocks = findCodeblocks(value);
+      const selected = !isNaN(Number(codeblock))
+        ? codeblocks[Number(codeblock)].text
+        : codeblocks.find((item) => item.parameters.path === codeblock)?.text;
+      if (!selected) {
+        return "Codeblock not found. Please provide the index (number) or filename that was specified using 'path' parameter";
+      }
+
+      return selected;
+    }
+
+    return value;
   }
 
   let markdownResponse = `# ${data.headline || pathname}\n\n`;
@@ -1011,6 +1212,7 @@ const getMarkdownResponse = (
   }
   return markdownResponse;
 };
+
 const getResult = async (
   request: Request,
   env: Env,
@@ -1111,7 +1313,12 @@ const getResult = async (
     headers.set("Content-Type", "text/markdown");
 
     return new Response(
-      getMarkdownResponse(url.pathname, data, url.searchParams.get("key")),
+      getMarkdownResponse(
+        url.pathname,
+        data,
+        url.searchParams.get("key"),
+        url.searchParams.get("codeblock"),
+      ),
       { headers },
     );
   }
@@ -1251,7 +1458,6 @@ const requestHandler = async (
     // Get or create Durable Object
     const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
     const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
-
     const result = await doStub.details();
 
     let model: string | undefined = undefined;
@@ -1343,7 +1549,7 @@ const requestHandler = async (
               "WWW-Authenticate":
                 'Bearer realm="uithub service",' +
                 'error="rate_limit_exceeded",' +
-                'error_description="Rate limit exceeded. Please purchase credit at https://lmpify.com for higher limits"',
+                'error_description="Rate limit exceeded. Please purchase credit at https://letmeprompt.com for higher limits"',
             },
           },
         );
@@ -1362,19 +1568,13 @@ const requestHandler = async (
       console.log("GET METHOD got details", { prompt, model });
     }
 
-    return getResult(
-      request,
-      env,
-      publicUser,
-      {
-        model: model || providers[0].model,
-        prompt,
-        context,
-        headline: result.headline || undefined,
-      },
-      "pending",
-      headers,
-    );
+    const data: KVData = {
+      model: model || providers[0].model,
+      prompt,
+      context,
+      headline: result.headline || undefined,
+    };
+    return getResult(request, env, publicUser, data, "pending", headers);
   } catch (error) {
     console.error("Error in fetch handler:", error);
     return new Response("Internal server error", { status: 500, headers });

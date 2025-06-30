@@ -81,7 +81,7 @@
   const websites = [
     {
       name: "XYText",
-      url: "https://lmpify.com/notes", // "https://xytext.com/:user/context",
+      url: "https://letmeprompt.com/notes", // "https://xytext.com/:user/context",
       logo: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iI2ZkN2QzNCIvPgo8cGF0aCBkPSJNOCAxMEgzMlYzMkg4VjEwWiIgZmlsbD0iI0ZGRjNBMCIvPgo8cGF0aCBkPSJNOSAzMUgzMVYzM0g5VjMxWiIgZmlsbD0iI2ZkN2QzNCIvPgo8cGF0aCBkPSJNMTIgMTRIMjhWMTZIMTJWMTRaIiBmaWxsPSIjRUY0NDQ0Ii8+CjxwYXRoIGQ9Ik0xMiAxOEgyNFYyMEgxMlYxOFoiIGZpbGw9IiNFRjQ0NDQiLz4KPHBhdGggZD0iTTEyIDIySDI2VjI0SDEyVjIyWiIgZmlsbD0iI0VGNDQ0NCIvPgo8cGF0aCBkPSJNMTIgMjZIMjJWMjhIMTJWMjZaIiBmaWxsPSIjRUY0NDQ0Ii8+Cjwvc3ZnPgo=",
     },
     {
@@ -274,7 +274,7 @@
     iconContainer.addEventListener("click", () => {
       if (index === 0 && isOnFirstWebsite) {
         // Go back in history
-        goBackWithFallback("https://lmpify.com");
+        goBackWithFallback("https://letmeprompt.com");
       } else {
         // Open the website
         window.open(site.url, "_blank");

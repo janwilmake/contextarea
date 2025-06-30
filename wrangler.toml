@@ -4,8 +4,8 @@ dev.port = 3000
 main = "main.ts"
 assets = { directory = "./", binding = "ASSETS" }
 routes = [ 
-  { pattern = "lmpify.com", custom_domain = true },
-  { pattern = "www.lmpify.com", custom_domain = true }
+  { pattern = "letmeprompt.com", custom_domain = true },
+  { pattern = "www.letmeprompt.com", custom_domain = true }
 ]
 
 kv_namespaces = [

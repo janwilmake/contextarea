@@ -311,10 +311,10 @@
 
       const logo = document.createElement("a");
       logo.className = "lmpify-logo";
-      logo.href = "https://lmpify.com";
+      logo.href = "https://letmeprompt.com";
       logo.target = "_blank";
       logo.innerHTML = `
-          <img src="https://lmpify.com/android-chrome-192x192.png" alt="lmpify logo" />
+          <img src="https://letmeprompt.com/android-chrome-192x192.png" alt="lmpify logo" />
           <span>let me prompt it for you</span>
         `;
 
@@ -369,8 +369,8 @@
       const footer = document.createElement("div");
       footer.className = "lmpify-footer";
       footer.innerHTML = `
-          <div>Powered by <a href="https://lmpify.com" target="_blank">lmpify.com</a></div>
-          <div><a href="https://lmpify.com/privacy" target="_blank">Privacy Policy</a></div>
+          <div>Powered by <a href="https://letmeprompt.com" target="_blank">lmpify.com</a></div>
+          <div><a href="https://letmeprompt.com/privacy" target="_blank">Privacy Policy</a></div>
         `;
 
       // Assemble the widget
@@ -448,7 +448,7 @@
       if (!promptText) return;
       const modelId = this.options.defaultModel;
       // Create the URL with query parameters
-      const url = `https://lmpify.com/?prompt=${encodeURIComponent(
+      const url = `https://letmeprompt.com/?prompt=${encodeURIComponent(
         promptText,
       )}&model=${encodeURIComponent(modelId)}`;
 

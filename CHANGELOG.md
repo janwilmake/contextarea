@@ -125,3 +125,11 @@ the result is added to kv under key of pathname
 7. ❌ Use Company Logos
 
 POST: models added, LMPIFY is now Free after Tiny $0.99 Payment (Proof of Personhood Payment)
+
+# RENAME (2025-06-30)
+
+✅ Rename to letmepromp. Same visible name, easy to remember, more readable.
+
+✅ The problem is I have a lot of links to lmpify already and they should stay working. The old lmpify.com should redirect to the new with the same path+query. Forever.
+
+✅ Every codeblock should be available using the proper mediatype at `https://{slug}-{hash}.gptideas.com/{path}`. All links should be easy to find and add to the prompt.
