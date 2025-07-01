@@ -7,8 +7,6 @@ class MarkdownHighlighter {
     this.loading = false;
     this.injectStyles();
     this.codeBlockView = localStorage.getItem("codeblockView") || "code"; // Default to 'code' if not set
-    this.htmlCodeBlockView =
-      localStorage.getItem("htmlCodeblockView") || "render"; // Default to 'render' for HTML
     this.initializeMarked();
   }
 
@@ -351,11 +349,6 @@ class MarkdownHighlighter {
     }
   }
 
-  // Get current view mode
-  getCodeBlockView() {
-    return this.codeBlockView;
-  }
-
   // Create an iframe for HTML rendering
   createRenderIframe(htmlContent, blockId) {
     const iframeId = `iframe-${blockId}`;
@@ -402,12 +395,7 @@ class MarkdownHighlighter {
       // string with params
       parameters,
     } = blockData;
-
-    const defaultView = this.loading
-      ? "code"
-      : language === "html"
-      ? this.htmlCodeBlockView
-      : this.getCodeBlockView();
+    const defaultView = this.loading ? "code" : this.codeBlockView;
 
     let highlightedCode = code;
 
@@ -437,18 +425,9 @@ class MarkdownHighlighter {
     // Create the HTML for the code block with all the features
     let html = `<div class="code-block-container" data-block-id="${blockId}" data-language="${language}" data-view="${defaultView}">`;
 
-    // Header with language and actions
-    html += `
-    <div class="code-block-header">
-      <div class="code-block-title">
-        <span>${language}${parameters ? ` ${parameters}` : ""}</span>
-        <span>${tokenCount} tokens</span>
-      </div>
-      ${
-        this.loading
-          ? ""
-          : `
-      <div class="code-block-actions">
+    const actionsPart = this.loading
+      ? ""
+      : `<div class="code-block-actions">
         
         <button class="code-button code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -491,10 +470,19 @@ class MarkdownHighlighter {
         `
             : ""
         }
-      </div>`
-      }
+      </div>`;
+    // Header with language and actions
+    //  ${this.loading? "": `
+    html += `
+    <div class="code-block-header">
+      <div class="code-block-title">
+        <span>${language}${parameters ? ` ${parameters}` : ""}</span>
+        <span>${tokenCount} tokens</span>
+      </div>
+    
+      ${actionsPart}
     </div>`;
-
+    //`}
     // Collapsed view (hidden by default if not in collapsed mode)
     html += `
     <div class="code-block-collapsed" style="${
@@ -843,9 +831,9 @@ class MarkdownHighlighter {
 
     element.innerHTML = this.highlightMarkdown(content);
 
-    if (!loading) {
-      this.setupInteractiveElements();
-    }
+    // if (!loading) {
+    this.setupInteractiveElements();
+    // }
 
     return element;
   }

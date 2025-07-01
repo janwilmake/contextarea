@@ -2,17 +2,11 @@
 
 # Big improvements (FIRST)
 
-Button to edit system prompt (should require login) should create `system-prompt` at https://xytext.com/username/lmpify-system-prompt?from=abc. If this file exists, it should be used instead of the default system prompt.
-
 Ensure variable `{{prompt_id}}` is filled into context if directly present in prompt. This is happening at execution, the variable stays variable.
 
 Default chosen URL should be prettier. For one, we could filter out URLs first, looking for the first language part.
 
-Let's add https://deploy.flaredream.com to my own system prompt for now.
-
-Codeblocks should outlink to {prompt_id}.gptideas.com/index/{index} or if available /{path}
-
-<!-- everything above needs to be done first. let's do it to make letmeprompt actually useful -->
+Codeblocks should outlink to {prompt_id}.gptideas.com/index/{index} or if available `/{path}`
 
 # with-money refactor (Dependency)
 
@@ -47,3 +41,14 @@ Video urls should be inserted as video context to the model (if the model suppor
 Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context ui.
 
 Worth a post!
+
+# Variables
+
+What if:
+
+- If you prompt something with `{{var1}}` and `{{var2}}` it is required to be filled. This can be part of URLs too!
+- https://letmeprompt.com/[id]?var1={{var1}}&var2={{var2}}&key=result&codeblock=0 is where you first get your result. Without variables, it should prompt to pass them.
+- https://[id].gptideas.com is static results with routing.
+- https://[id].chatcompletions.com/chat/completions would allow using the prompt + context as system prompt with additional variables in the headers in `variables:Object`. These would be required if they are present.
+
+These are all GREAT primitives to allow making prompts more flexible
