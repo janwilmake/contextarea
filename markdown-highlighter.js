@@ -4,10 +4,123 @@
 class MarkdownHighlighter {
   constructor() {
     this.setupComplete = false;
+    this.loading = false;
     this.injectStyles();
     this.codeBlockView = localStorage.getItem("codeblockView") || "code"; // Default to 'code' if not set
     this.htmlCodeBlockView =
       localStorage.getItem("htmlCodeblockView") || "render"; // Default to 'render' for HTML
+    this.initializeMarked();
+  }
+
+  // Initialize marked with custom renderer
+  initializeMarked() {
+    // Check if marked is available
+    if (typeof marked === "undefined") {
+      console.warn("Marked library not found. Loading from CDN...");
+      this.loadMarked();
+      return;
+    }
+
+    this.setupMarkedRenderer();
+  }
+
+  // Load marked from CDN if not available
+  loadMarked() {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js";
+    script.onload = () => {
+      this.setupMarkedRenderer();
+    };
+    script.onerror = () => {
+      console.error("Failed to load marked library");
+    };
+    document.head.appendChild(script);
+  }
+
+  calculateCodeHash(code) {
+    let hash = 0;
+
+    // Simple hash function based on string content
+    for (let i = 0; i < code.length; i++) {
+      const char = code.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+
+    // Convert to positive number and create base-36 string
+    const positiveHash = Math.abs(hash);
+    let hashString = positiveHash.toString(36);
+
+    // Ensure we have exactly 7 characters
+    if (hashString.length < 7) {
+      // Pad with the hash of the string length to avoid collisions
+      const lengthHash = (code.length * 7919) % 1000000; // 7919 is a prime
+      const paddingString = lengthHash.toString(36);
+      hashString = (paddingString + hashString).slice(-7);
+    } else if (hashString.length > 7) {
+      // Take first 7 characters
+      hashString = hashString.slice(0, 7);
+    }
+
+    return hashString;
+  }
+
+  // Setup custom marked renderer
+  setupMarkedRenderer() {
+    this.renderer = new marked.Renderer();
+
+    // Override code block rendering
+    this.renderer.code = (code, lang = "plaintext", escaped) => {
+      const blockId = `code-block-${this.calculateCodeHash(code)}`;
+      const tokenCount = this.calculateTokens(code);
+
+      const language = lang.split(" ")[0];
+      const parameters = lang.slice(language.length + 1);
+
+      // Return placeholder that will be replaced later
+      return this.generateCodeBlockHtml({
+        code,
+        language,
+        tokenCount,
+        blockId,
+        parameters,
+      });
+    };
+
+    // Override inline code rendering
+    this.renderer.codespan = (code) => {
+      return `<span class="hljs-inline">\`${this.escapeHTML(code)}\`</span>`;
+    };
+
+    // Override other elements to add custom classes
+    this.renderer.strong = (text) => {
+      return `<span class="md-bold">**${text}**</span>`;
+    };
+
+    this.renderer.em = (text) => {
+      return `<span class="md-italic">*${text}*</span>`;
+    };
+
+    this.renderer.heading = (text, level) => {
+      const hashes = "#".repeat(level);
+      return `<span class="md-heading">${hashes} ${text}</span>\n`;
+    };
+
+    this.renderer.listitem = (text) => {
+      return `<span class="md-list-item">- ${text}</span>\n`;
+    };
+
+    this.renderer.blockquote = (quote) => {
+      return `<span class="md-blockquote">> ${quote}</span>\n`;
+    };
+
+    // Configure marked options
+    marked.setOptions({
+      renderer: this.renderer,
+      highlight: null, // We'll handle highlighting ourselves
+      breaks: true,
+      gfm: true,
+    });
   }
 
   // Inject required CSS styles into the document
@@ -279,229 +392,155 @@ class MarkdownHighlighter {
     }, 0);
   }
 
-  // Main function to highlight markdown text
-  highlightMarkdown(text, loading) {
-    // Save code blocks first (to protect them from HTML escaping)
-    const codeBlocks = [];
-    let codeBlockIndex = 0;
+  // Generate code block HTML
+  generateCodeBlockHtml(blockData) {
+    const {
+      code,
+      language,
+      tokenCount,
+      blockId,
+      // string with params
+      parameters,
+    } = blockData;
 
-    // 1. Extract and save code blocks with a placeholder
-    const extractedText = text.replace(
-      /(```[a-zA-Z0-9_]*\n)([\s\S]*?)(```)/g,
-      (match, opening, code, closing) => {
-        const placeholder = `__CODE_BLOCK_${codeBlockIndex}__`;
-        codeBlocks.push({
-          opening: opening,
-          code: code,
-          closing: closing,
-        });
-        codeBlockIndex++;
-        return placeholder;
-      },
-    );
+    const defaultView = this.loading
+      ? "code"
+      : language === "html"
+      ? this.htmlCodeBlockView
+      : this.getCodeBlockView();
 
-    // 2. Also handle inline code
-    const inlineCodeBlocks = [];
-    let inlineCodeIndex = 0;
+    let highlightedCode = code;
 
-    const extractedTextWithInlineCodes = extractedText.replace(
-      /(`)(.*?)(`)/g,
-      (match, opening, code, closing) => {
-        const placeholder = `__INLINE_CODE_${inlineCodeIndex}__`;
-        inlineCodeBlocks.push({
-          opening: opening,
-          code: code,
-          closing: closing,
-        });
-        inlineCodeIndex++;
-        return placeholder;
-      },
-    );
-
-    // 3. Now escape HTML in the remaining text (not code blocks)
-    let escapedText = this.escapeHTML(extractedTextWithInlineCodes);
-
-    // 4. Process Markdown elements on the escaped text
-
-    // Handle bold (double asterisks)
-    escapedText = escapedText.replace(
-      /(\*\*)([^*]+?)(\*\*)/g,
-      '<span class="md-bold">$1$2$3</span>',
-    );
-
-    // Handle italic (single asterisk)
-    escapedText = escapedText.replace(
-      /([^*]|^)(\*)([^*]+?)(\*)([^*]|$)/g,
-      function (match, before, open, content, close, after) {
-        return (
-          before +
-          '<span class="md-italic">' +
-          open +
-          content +
-          close +
-          "</span>" +
-          after
-        );
-      },
-    );
-
-    // Handle headings
-    escapedText = escapedText.replace(
-      /^((#{1,6})\s+)(.+)$/gm,
-      '<span class="md-heading">$1$3</span>',
-    );
-
-    // Handle lists
-    escapedText = escapedText.replace(
-      /^(\s*[-*+]\s+)(.+)$/gm,
-      '<span class="md-list-item">$1$2</span>',
-    );
-    escapedText = escapedText.replace(
-      /^(\s*\d+\.\s+)(.+)$/gm,
-      '<span class="md-list-item">$1$2</span>',
-    );
-
-    // Handle blockquotes
-    escapedText = escapedText.replace(
-      /^(\s*>\s+)(.+)$/gm,
-      '<span class="md-blockquote">$1$2</span>',
-    );
-
-    // 5. Replace code block placeholders with properly highlighted code
-    for (let i = 0; i < codeBlocks.length; i++) {
-      const block = codeBlocks[i];
-      const language = block.opening.trim().replace("```", "") || "plaintext";
-      const blockId = `code-block-${i}-${Date.now()}`;
-      const tokenCount = this.calculateTokens(block.code);
-      const defaultView = loading
-        ? "code"
-        : language === "html"
-        ? this.htmlCodeBlockView
-        : this.getCodeBlockView();
-
-      let highlightedCode = undefined;
-
-      // Apply syntax highlighting to the code
-
+    // Apply syntax highlighting to the code if hljs is available
+    if (typeof hljs !== "undefined") {
       try {
-        highlightedCode = hljs.highlight(block.code, {
-          language: language,
-        }).value;
-      } catch (e) {
-        highlightedCode = hljs.highlight(block.code).value;
-      }
-
-      // Create the HTML for the code block with all the new features
-      let html = `<div class="code-block-container" data-block-id="${blockId}" data-language="${language}" data-view="${defaultView}">`;
-
-      // Header with language and actions
-      html += `
-      <div class="code-block-header">
-        <div class="code-block-title">
-          <span>${language}</span>
-          <span>${tokenCount} tokens</span>
-        </div>
-        ${
-          loading
-            ? ""
-            : `
-        <div class="code-block-actions">
-          
-          <button class="code-button code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </button>
-
-          <button class="code-button code-copy-button" data-block-id="${blockId}" title="Copy code">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span class="copy-text"></span>
-          </button>
-
-          ${
-            language === "html"
-              ? `
-            <button class="code-button code-open-new-tab" data-block-id="${blockId}" title="Open in New Tab">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </button>
-            <button class="code-button code-button-with-text code-render-toggle" data-block-id="${blockId}" title="Toggle Render">
-              ${
-                defaultView === "code"
-                  ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
-            </svg>`
-                  : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              </svg>`
-              }
-              ${defaultView === "code" ? "Render" : "Code"}
-            </button>
-          `
-              : ""
+        if (language && language !== "plaintext") {
+          try {
+            highlightedCode = hljs.highlight(code, { language }).value;
+          } catch (e) {
+            highlightedCode = this.escapeHTML(code);
           }
-        </div>`
+        } else {
+          try {
+            highlightedCode = hljs.highlightAuto(code).value;
+          } catch (e) {
+            highlightedCode = this.escapeHTML(code);
+          }
         }
-      </div>`;
-
-      // Collapsed view (hidden by default if not in collapsed mode)
-      html += `
-      <div class="code-block-collapsed" style="${
-        defaultView === "collapsed" ? "" : "display: none;"
-      }" data-block-id="${blockId}">
-        <div><strong>${language}</strong> code block (${tokenCount} tokens)</div>
-        <div>Click to expand</div>
-      </div>`;
-
-      // Code view
-      html += `
-      <div class="code-block-wrapper" style="${
-        defaultView === "code" ? "" : "display: none;"
-      }" data-block-id="${blockId}-code">
-        <pre id="${blockId}"><code class="hljs language-${language}">${highlightedCode}</code></pre>
-      </div>`;
-
-      // Render view (only for HTML)
-      if (language === "html") {
-        html += `
-        <div class="code-render-wrapper" style="${
-          defaultView === "render" ? "" : "display: none;"
-        }" data-block-id="${blockId}-render"></div>`;
+      } catch (e) {
+        highlightedCode = this.escapeHTML(code);
       }
-
-      html += `</div>`;
-
-      // Use a regex-based replacement with a function instead of a direct string replacement
-      // This prevents issues with special characters like $ in the replacement string
-      const placeholderRegex = new RegExp(`__CODE_BLOCK_${i}__`, "g");
-      escapedText = escapedText.replace(placeholderRegex, function () {
-        return html;
-      });
+    } else {
+      highlightedCode = this.escapeHTML(code);
     }
 
-    // 6. Replace inline code placeholders with similar safe approach
-    for (let i = 0; i < inlineCodeBlocks.length; i++) {
-      const block = inlineCodeBlocks[i];
-      const html = `<span class="hljs-inline">${this.escapeHTML(
-        block.opening,
-      )}${this.escapeHTML(block.code)}${this.escapeHTML(block.closing)}</span>`;
+    // Create the HTML for the code block with all the features
+    let html = `<div class="code-block-container" data-block-id="${blockId}" data-language="${language}" data-view="${defaultView}">`;
 
-      // Use a regex-based replacement with a function
-      const placeholderRegex = new RegExp(`__INLINE_CODE_${i}__`, "g");
-      escapedText = escapedText.replace(placeholderRegex, function () {
-        return html;
-      });
+    // Header with language and actions
+    html += `
+    <div class="code-block-header">
+      <div class="code-block-title">
+        <span>${language}${parameters ? ` ${parameters}` : ""}</span>
+        <span>${tokenCount} tokens</span>
+      </div>
+      ${
+        this.loading
+          ? ""
+          : `
+      <div class="code-block-actions">
+        
+        <button class="code-button code-collapse-toggle" data-block-id="${blockId}" title="Toggle Collapse">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        <button class="code-button code-copy-button" data-block-id="${blockId}" title="Copy code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span class="copy-text"></span>
+        </button>
+
+        ${
+          language === "html"
+            ? `
+          <button class="code-button code-open-new-tab" data-block-id="${blockId}" title="Open in New Tab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
+          <button class="code-button code-button-with-text code-render-toggle" data-block-id="${blockId}" title="Toggle Render">
+            ${
+              defaultView === "code"
+                ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 12 8 12 11 4 14 20 17 12 24 12"></polyline>
+          </svg>`
+                : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>`
+            }
+            ${defaultView === "code" ? "Render" : "Code"}
+          </button>
+        `
+            : ""
+        }
+      </div>`
+      }
+    </div>`;
+
+    // Collapsed view (hidden by default if not in collapsed mode)
+    html += `
+    <div class="code-block-collapsed" style="${
+      defaultView === "collapsed" ? "" : "display: none;"
+    }" data-block-id="${blockId}">
+      <div><strong>${language}</strong> code block (${tokenCount} tokens)</div>
+      <div>Click to expand</div>
+    </div>`;
+
+    // Code view
+    html += `
+    <div class="code-block-wrapper" style="${
+      defaultView === "code" ? "" : "display: none;"
+    }" data-block-id="${blockId}-code">
+      <pre id="${blockId}"><code class="hljs language-${language}">${highlightedCode}</code></pre>
+    </div>`;
+
+    // Render view (only for HTML)
+    if (language === "html") {
+      html += `
+      <div class="code-render-wrapper" style="${
+        defaultView === "render" ? "" : "display: none;"
+      }" data-block-id="${blockId}-render"></div>`;
     }
 
-    return escapedText;
+    html += `</div>`;
+    return html;
+  }
+
+  // Main function to highlight markdown text using marked
+  highlightMarkdown(text) {
+    // Check if marked is available
+    if (typeof marked === "undefined") {
+      console.warn("Marked library not loaded, falling back to escaped text");
+      return this.escapeHTML(text);
+    }
+
+    try {
+      // Parse markdown with marked
+      let parsedHtml = marked.parse(text);
+
+      return parsedHtml;
+    } catch (error) {
+      console.error("Error parsing markdown:", error);
+      return this.escapeHTML(text);
+    }
   }
 
   // Helper function to escape HTML
@@ -790,8 +829,19 @@ class MarkdownHighlighter {
   // Process content and set up all functionality
   processContent(element, content, loading = false) {
     if (!element) return;
+    this.loading = loading;
 
-    element.innerHTML = this.highlightMarkdown(content, loading);
+    // Wait for marked to be ready if it's still loading
+    if (typeof marked === "undefined") {
+      if (loading === false) {
+        setTimeout(() => {
+          this.processContent(element, content, loading);
+        }, 100);
+      }
+      return;
+    }
+
+    element.innerHTML = this.highlightMarkdown(content);
 
     if (!loading) {
       this.setupInteractiveElements();

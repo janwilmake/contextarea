@@ -133,3 +133,27 @@ POST: models added, LMPIFY is now Free after Tiny $0.99 Payment (Proof of Person
 ✅ The problem is I have a lot of links to lmpify already and they should stay working. The old lmpify.com should redirect to the new with the same path+query. Forever.
 
 ✅ Every codeblock should be available using the proper mediatype at `https://{slug}-{hash}.gptideas.com/{path}`. All links should be easy to find and add to the prompt.
+
+## system prompt (2025-07-01)
+
+✅ A default system prompt, editable after login, should include instructions for named codeblocks. This is just a landingpage thing. On result pages, it's prepended to the actual prompt.
+
+## Proper Markdown Rendering (2025-07-01)
+
+Problem: Fix bugs on response with ``` in code etc. this is very important: https://letmeprompt.com/httpsuithubcomj-odsfdc0.md?key=result
+
+Research: https://x.com/janwilmake/status/1926992658536206687
+
+The solution is bi-partial:
+
+1. use `marked` and render things with that
+2. ensure by default a system promopt is used that instructs how to write code block fences in markdown.
+
+TODO:
+
+- ✅ write system prompt that instructs using `````` (5 backticks by default or more when necessary)
+- ✅ Ensure `named-codeblocks.md` system prompt is used by default without making things ugly
+- Apply adding 1 backtick to fence in `getMarkdownResponse`
+- ✅ Rewrite `markdown-highlighter.js` using `marked`
+
+DONE 🎉

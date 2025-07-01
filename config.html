@@ -249,13 +249,11 @@
 
         <div class="section">
             <h2>How it works</h2>
-            <p>When you submit a prompt, if a system prompt is configured, your final prompt will be formatted as:</p>
+            <p>When you submit a prompt, if a system prompt is configured, your system prompt will be directly prepended
+                to the prompt:</p>
             <div
                 style="background-color: #3a3a3a; padding: 16px; border-radius: 8px; margin: 16px 0; font-family: monospace; font-size: 14px;">
-                SYSTEM:<br><br>
-                [Your system prompt here]<br><br>
-                PROMPT:<br><br>
-                [Your actual prompt here]
+                [Your system prompt here][Your actual prompt here]
             </div>
         </div>
     </div>

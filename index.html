@@ -415,19 +415,21 @@
         }
 
         // Handle form submission
+
+        // Handle form submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const promptText = textarea.value.trim();
             if (!promptText) return;
 
-            const selectedModel = localStorage.getItem('model');
+            const selectedModel = localStorage.getItem('model') || 'claude-3-5-sonnet-20241022'; // Add fallback
             const systemPrompt = await loadSystemPrompt();
 
             // Prepend system prompt if it exists and is not empty
             let finalPrompt = promptText;
             if (systemPrompt && systemPrompt.trim() !== '') {
-                finalPrompt = `SYSTEM:\n\n${systemPrompt}\n\nPROMPT:\n\n${promptText}`;
+                finalPrompt = `${systemPrompt}${promptText}`;
             }
 
             // Generate slug from first 20 characters of the original prompt
@@ -438,27 +440,30 @@
             // Create the URL path
             const path = `/${slug}-${hash}`;
 
-            // Update form action and submit the form with POST method
-            form.action = path;
-            form.method = 'POST';
+            // Update the existing textarea value with the final prompt
+            textarea.value = finalPrompt;
 
-            // Create hidden input fields for the data
-            const promptInput = document.createElement('input');
-            promptInput.type = 'hidden';
-            promptInput.name = 'prompt';
-            promptInput.value = finalPrompt;
-            form.appendChild(promptInput);
+            // Remove any existing hidden inputs to avoid conflicts
+            const existingHiddenInputs = form.querySelectorAll('input[type="hidden"]');
+            existingHiddenInputs.forEach(input => input.remove());
 
-            // Get model from localStorage only, fallback to default
+            // Create hidden input field for the model
             const modelHidden = document.createElement('input');
             modelHidden.type = 'hidden';
             modelHidden.name = 'model';
             modelHidden.value = selectedModel;
             form.appendChild(modelHidden);
 
+            // Update form action and method
+            form.action = path;
+            form.method = 'POST';
+
+            console.log({ selectedModel, finalPrompt, path });
+
             // Submit the form - this will navigate to the new page
             form.submit();
         });
+
 
         // Initialize
         adjustTextareaHeight();
