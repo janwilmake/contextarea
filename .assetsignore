@@ -3,5 +3,9 @@ node_modules
 .git
 .DS_Store
 .dev.vars
-*.md
+TODO.md
+ADR.md
+BACKLOG.md
+CHANGELOG.md
+README.md
 lmpify
