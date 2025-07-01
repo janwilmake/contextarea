@@ -243,9 +243,12 @@
                     <textarea id="contextarea" name="prompt" placeholder="Type your prompt..." rows="3"></textarea>
                     <div class="buttons-row">
                         <div class="left-buttons">
-                            <button type="button" class="icon-button" id="addUrlButton" title="Add URL">
+                            <button type="button" class="icon-button" id="configButton" title="Configuration">
                                 <svg viewBox="0 0 24 24">
-                                    <path d="M12 5v14M5 12h14" stroke="currentColor" />
+                                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" fill="none" />
+                                    <path
+                                        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001.51 1H15a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.79a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+                                        stroke="currentColor" fill="none" />
                                 </svg>
                             </button>
                             <!-- modal for selecting models -->
@@ -298,7 +301,28 @@
         const submitButton = document.getElementById('submitButton');
         const form = document.getElementById('promptForm');
         const formView = document.getElementById('formView');
-        const addUrlButton = document.getElementById('addUrlButton');
+        const configButton = document.getElementById('configButton');
+
+        // System prompt functionality
+        async function loadSystemPrompt() {
+            try {
+                let systemPrompt = localStorage.getItem('system.md');
+                if (!systemPrompt) {
+                    const response = await fetch('/system.md');
+                    if (response.ok) {
+                        systemPrompt = await response.text();
+                        localStorage.setItem('system.md', systemPrompt);
+                    } else {
+                        systemPrompt = '';
+                        localStorage.setItem('system.md', '');
+                    }
+                }
+                return systemPrompt;
+            } catch (error) {
+                console.error('Error loading system prompt:', error);
+                return '';
+            }
+        }
 
         // Function to fill textarea with query parameter content
         function fillTextareaFromQuery() {
@@ -364,12 +388,9 @@
             }
         });
 
-        // Add URL button click
-        addUrlButton.addEventListener('click', () => {
-            const url = prompt('Enter URL to insert:');
-            if (url) {
-                insertUrlAtCursor(url);
-            }
+        // Config button click
+        configButton.addEventListener('click', () => {
+            window.open('config.html', '_blank');
         });
 
         // Slugify function
@@ -394,18 +415,25 @@
         }
 
         // Handle form submission
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const promptText = textarea.value.trim();
             if (!promptText) return;
 
             const selectedModel = localStorage.getItem('model');
+            const systemPrompt = await loadSystemPrompt();
 
-            // Generate slug from first 20 characters
+            // Prepend system prompt if it exists and is not empty
+            let finalPrompt = promptText;
+            if (systemPrompt && systemPrompt.trim() !== '') {
+                finalPrompt = `SYSTEM:\n\n${systemPrompt}\n\nPROMPT:\n\n${promptText}`;
+            }
+
+            // Generate slug from first 20 characters of the original prompt
             const first20 = promptText.substring(0, 20);
             const slug = slugify(first20);
-            const hash = simpleHash(selectedModel + ':' + promptText);
+            const hash = simpleHash(selectedModel + ':' + finalPrompt);
 
             // Create the URL path
             const path = `/${slug}-${hash}`;
@@ -418,7 +446,7 @@
             const promptInput = document.createElement('input');
             promptInput.type = 'hidden';
             promptInput.name = 'prompt';
-            promptInput.value = promptText;
+            promptInput.value = finalPrompt;
             form.appendChild(promptInput);
 
             // Get model from localStorage only, fallback to default
@@ -436,8 +464,11 @@
         adjustTextareaHeight();
         submitButton.disabled = true;
 
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             fillTextareaFromQuery();
+
+            // Load system prompt on page load
+            await loadSystemPrompt();
 
             // Keep the existing focus line
             const textarea = document.getElementById("contextarea");
