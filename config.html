@@ -174,33 +174,28 @@
             color: #f44444;
         }
 
-        .preset-buttons {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
-        }
-
-        .preset-btn {
-            background-color: #3a3a3a;
-            color: #e5e5e5;
-            border: 1px solid #4a4a4a;
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .preset-btn:hover {
-            background-color: #4a4a4a;
-        }
-
         .char-count {
             font-size: 12px;
             color: #8a8a8a;
             text-align: right;
             margin-top: 4px;
+        }
+
+        .autosave-indicator {
+            font-size: 12px;
+            color: #8a8a8a;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .autosave-indicator.saving {
+            opacity: 1;
+            color: #ffa726;
+        }
+
+        .autosave-indicator.saved {
+            opacity: 1;
+            color: #4caf50;
         }
 
         /* Scrollbar styling */
@@ -237,18 +232,13 @@
 
             <div class="form-group">
                 <label for="systemPrompt">System Prompt:</label>
-                <div class="preset-buttons">
-                    <button class="preset-btn" data-preset="developer">Developer</button>
-                    <button class="preset-btn" data-preset="writer">Writer</button>
-                    <button class="preset-btn" data-preset="analyst">Analyst</button>
-                    <button class="preset-btn" data-preset="clear">Clear</button>
+                <textarea id="systemPrompt" placeholder="Enter your system prompt here..."></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                    <div class="autosave-indicator" id="autosaveIndicator">Autosaved</div>
+                    <div class="char-count" id="charCount">0 characters</div>
                 </div>
-                <textarea id="systemPrompt"
-                    placeholder="Enter your system prompt here... (e.g., 'You are a helpful coding assistant. Always provide complete, working code examples.')"></textarea>
-                <div class="char-count" id="charCount">0 characters</div>
 
                 <div class="button-group">
-                    <button id="saveBtn">Save Changes</button>
                     <button class="secondary-btn" id="resetBtn">Reset to Default</button>
                     <button class="danger-btn" id="clearBtn">Clear All</button>
                 </div>
@@ -272,35 +262,14 @@
 
     <script>
         const systemPromptTextarea = document.getElementById('systemPrompt');
-        const saveBtn = document.getElementById('saveBtn');
         const resetBtn = document.getElementById('resetBtn');
         const clearBtn = document.getElementById('clearBtn');
         const statusMessage = document.getElementById('statusMessage');
         const charCount = document.getElementById('charCount');
+        const autosaveIndicator = document.getElementById('autosaveIndicator');
 
-        // Preset prompts
-        const presets = {
-            developer: `You are an expert software developer and architect. When providing code:
-- Always include complete, working examples
-- Use modern best practices and patterns
-- Explain complex concepts clearly
-- Consider edge cases and error handling
-- Provide multiple approaches when relevant`,
-
-            writer: `You are a professional writer and editor. When helping with writing:
-- Focus on clarity, flow, and engagement
-- Suggest improvements for structure and style
-- Consider the target audience
-- Maintain the author's voice while improving quality
-- Provide specific, actionable feedback`,
-
-            analyst: `You are a data analyst and strategic thinker. When analyzing information:
-- Break down complex problems systematically
-- Identify key patterns and insights
-- Consider multiple perspectives and potential biases
-- Provide evidence-based conclusions
-- Suggest actionable recommendations`
-        };
+        let autosaveTimeout;
+        let defaultSystemPrompt = '';
 
         // Load system prompt from localStorage
         function loadSystemPrompt() {
@@ -309,11 +278,14 @@
             updateCharCount();
         }
 
-        // Save system prompt to localStorage
-        function saveSystemPrompt() {
+        // Save system prompt to localStorage with autosave indicator
+        function saveSystemPrompt(showIndicator = true) {
             const systemPrompt = systemPromptTextarea.value;
             localStorage.setItem('system.md', systemPrompt);
-            showStatus('System prompt saved successfully!', 'success');
+
+            if (showIndicator) {
+                showAutosaveIndicator('saved');
+            }
         }
 
         // Load default system prompt from server
@@ -321,10 +293,11 @@
             try {
                 const response = await fetch('/system.md');
                 if (response.ok) {
-                    const defaultPrompt = await response.text();
-                    systemPromptTextarea.value = defaultPrompt;
+                    defaultSystemPrompt = await response.text();
+                    systemPromptTextarea.value = defaultSystemPrompt;
                     updateCharCount();
-                    showStatus('Default system prompt loaded', 'success');
+                    saveSystemPrompt(false);
+                    showStatus('Reset to default system prompt', 'success');
                 } else {
                     showStatus('No default system prompt found on server', 'error');
                 }
@@ -333,12 +306,24 @@
             }
         }
 
+        // Fetch default system prompt on load (for comparison)
+        async function fetchDefaultSystemPrompt() {
+            try {
+                const response = await fetch('/system.md');
+                if (response.ok) {
+                    defaultSystemPrompt = await response.text();
+                }
+            } catch (error) {
+                console.log('No default system prompt available');
+            }
+        }
+
         // Clear system prompt
         function clearSystemPrompt() {
             if (confirm('Are you sure you want to clear the system prompt?')) {
                 systemPromptTextarea.value = '';
                 updateCharCount();
-                localStorage.setItem('system.md', '');
+                saveSystemPrompt(false);
                 showStatus('System prompt cleared', 'success');
             }
         }
@@ -354,30 +339,46 @@
             }, 3000);
         }
 
+        // Show autosave indicator
+        function showAutosaveIndicator(state) {
+            autosaveIndicator.className = `autosave-indicator ${state}`;
+
+            if (state === 'saved') {
+                setTimeout(() => {
+                    autosaveIndicator.className = 'autosave-indicator';
+                }, 2000);
+            }
+        }
+
         // Update character count
         function updateCharCount() {
             const count = systemPromptTextarea.value.length;
             charCount.textContent = `${count} characters`;
         }
 
+        // Autosave functionality
+        function handleInput() {
+            updateCharCount();
+            adjustTextareaHeight();
+
+            // Clear existing timeout
+            if (autosaveTimeout) {
+                clearTimeout(autosaveTimeout);
+            }
+
+            // Show saving indicator
+            showAutosaveIndicator('saving');
+
+            // Set new timeout for autosave
+            autosaveTimeout = setTimeout(() => {
+                saveSystemPrompt(true);
+            }, 1000); // Save after 1 second of no typing
+        }
+
         // Event listeners
-        saveBtn.addEventListener('click', saveSystemPrompt);
         resetBtn.addEventListener('click', loadDefaultSystemPrompt);
         clearBtn.addEventListener('click', clearSystemPrompt);
-        systemPromptTextarea.addEventListener('input', updateCharCount);
-
-        // Preset button handlers
-        document.querySelectorAll('.preset-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const preset = btn.dataset.preset;
-                if (preset === 'clear') {
-                    systemPromptTextarea.value = '';
-                } else if (presets[preset]) {
-                    systemPromptTextarea.value = presets[preset];
-                }
-                updateCharCount();
-            });
-        });
+        systemPromptTextarea.addEventListener('input', handleInput);
 
         // Auto-resize textarea
         function adjustTextareaHeight() {
@@ -385,10 +386,9 @@
             systemPromptTextarea.style.height = systemPromptTextarea.scrollHeight + 'px';
         }
 
-        systemPromptTextarea.addEventListener('input', adjustTextareaHeight);
-
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchDefaultSystemPrompt();
             loadSystemPrompt();
             adjustTextareaHeight();
         });
@@ -397,10 +397,18 @@
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 's') {
                 e.preventDefault();
-                saveSystemPrompt();
+                saveSystemPrompt(true);
             }
             if (e.key === 'Escape') {
                 window.close();
+            }
+        });
+
+        // Save on window close/page unload
+        window.addEventListener('beforeunload', () => {
+            if (autosaveTimeout) {
+                clearTimeout(autosaveTimeout);
+                saveSystemPrompt(false);
             }
         });
     </script>
