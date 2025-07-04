@@ -636,7 +636,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         );
       }
 
-      const { context } = await generateContext(prompt);
+      let { context } = await generateContext(prompt);
+      //overwite prompt_id
+      context = context?.replaceAll("{{prompt_id}}", pathname.slice(1));
+
       console.log("GOT CONTEXT", context?.length);
       // generate title after we have the context
 
@@ -669,9 +672,17 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Prepare LLM request
       const messages = [
         ...(context && !isAnthropic
-          ? [{ role: "system", content: context }]
+          ? [
+              {
+                role: "system",
+                content: context,
+              },
+            ]
           : []),
-        { role: "user", content: prompt },
+        {
+          role: "user",
+          content: prompt.replaceAll("{{prompt_id}}", pathname.slice(1)),
+        },
       ];
 
       let priceAtOutput: number | undefined = undefined;

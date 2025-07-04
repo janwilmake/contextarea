@@ -155,5 +155,15 @@ TODO:
 - ✅ Ensure `named-codeblocks.md` system prompt is used by default without making things ugly
 - Apply adding 1 backtick to fence in `getMarkdownResponse`
 - ✅ Rewrite `markdown-highlighter.js` using `marked`
+- ✅ Links should still be shown as markdown but need to be clickable.
 
 DONE 🎉
+
+✅ Ensure variable `{{prompt_id}}` is filled into context if directly present in prompt. This is happening at execution, the variable stays variable.
+
+# QUICK WINS = 2025-07-04
+
+- ✅ Routes aren't immediately active, which causes it to cache the 404. let's just wait...
+- ✅ Ensure assets directory `./` also works when specified in wrangler.
+- ✅ Upon download, assets that aren't there should not crash, `errors.json` should show this.
+- ✅ Put download and deploy button on letmeprompt.com

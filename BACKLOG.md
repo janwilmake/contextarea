@@ -1,3 +1,8 @@
+# BACKLOG
+
+- **Large Asset Buckets** Test for large files. Overcome `letmeprompt.download` limitations of max 128MB ram by streaming. Would be very cool to test if i can upload a huge music library or something.
+- **Loading UX** Do more making the still-loading website more UX friendly as it loads (indicators and ensuring to never have blank pages; maybe add streaming support with separate iframe!)
+
 # User-owned results 🤔🤔🤔
 
 🤔 Not sure if I should add this to the already complex LMPIFY, or I should make this within xytext!?

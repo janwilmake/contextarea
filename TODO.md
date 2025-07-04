@@ -1,12 +1,19 @@
-<!-- head down focus on this -->
+<!-- Head down focus on this -->
 
-# Big improvements (FIRST)
+![](modules.drawio.png)
 
-Ensure variable `{{prompt_id}}` is filled into context if directly present in prompt. This is happening at execution, the variable stays variable.
+CRITICAL
 
-Default chosen URL should be prettier. For one, we could filter out URLs first, looking for the first language part.
+- **Charge broken** - Just log it and see what's up, fix on stripeflare. Might even be DORM problem. MESSY!
+- Rename deployment to flaredream!
+- Turn payment system into XMoney so people can pay each other.
+- Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
+- Turn `{subdomain}.letmeprompt.com/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt. Results would not show the systemprompt, and would only be available with that model, but would still get their own new subdomain.
+- Use https://oapis.org/openapi/cloudflare/zones-get in claudeflair to attach zone-id to route and do not SKIP THAT STEP.
+- Create a nice prompt for how to use `wrangler.toml` and what is NOT supported (and to omit binding anything unless ID is provided). It should also instruct to put failsaves around if bindings are not available to bind them.
+- Ensure to return the urls deployed at including all zones.
 
-Codeblocks should outlink to {prompt_id}.gptideas.com/index/{index} or if available `/{path}`
+Ultimately I'd want to be able to set worker-name, repo-name, branch, and have these deployments happen automatically, instantly. For this to work, I require `Login with Cloudflare` and `Login with GitHub` to be a part of letmeprompt.com, and allow for generation-configs (name, repo, branch, worker-name). It's not clear to me yet if this should be a completely new app that uses letmeprompt.com? Maybe better; niched towards easy workers: flaredream!
 
 # with-money refactor (Dependency)
 
@@ -20,17 +27,7 @@ Ensure it doesn't logout quickly.
 
 This would also allow getting an API KEY and more securely deposit lots of cash. To easily to build against LMPIFY with XYTEXT. also will allow closed-loop monetary system between creators and generations of these prompts, etc.
 
-# Some more nice Quality of life improvements
-
-## Render images
-
-Just like html, images should be able to be shown as MD and as image. Sick! Now we can add any images into html using https://googllm-image.brubslabs.com. Just have a good system prompt for that
-
-## Make links clickable
-
-Links should still be shown as markdown but need to be clickable.
-
-## Images as context, videos as context
+# Images as context, videos as context
 
 HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
 
@@ -38,17 +35,28 @@ Any URL that's an image should be inserted as image context to the model. Now we
 
 Video urls should be inserted as video context to the model (if the model supports it)
 
-Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context ui.
-
-Worth a post!
+Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
 
 # Variables
 
 What if:
 
 - If you prompt something with `{{var1}}` and `{{var2}}` it is required to be filled. This can be part of URLs too!
-- https://letmeprompt.com/[id]?var1={{var1}}&var2={{var2}}&key=result&codeblock=0 is where you first get your result. Without variables, it should prompt to pass them.
-- https://[id].gptideas.com is static results with routing.
+- https://letmeprompt.com/[id]/{{var1}}/{{var2}} is where you first get your result. Without variables, it should prompt to pass them.
+- `https://[id].gptideas.com/{{var1}}/{{var2}}` is static results with routing (basepath being after variables; this now functions as API!)
 - https://[id].chatcompletions.com/chat/completions would allow using the prompt + context as system prompt with additional variables in the headers in `variables:Object`. These would be required if they are present.
 
 These are all GREAT primitives to allow making prompts more flexible
+
+https://letmeprompt.com/httpsmarkdownfeed-jqin4k0 would be able to be done with variable. Imagine we could also choose a name: `xcategories`.
+
+Now, https://xcategories.gptideas.com/janwilmake/categories.yaml should magically trigger prompting the same for me, IF I authorized it (either lazy with auth token, or predone with scope). We can now use this as some sort of API
+
+Imagine now that we could also configure the scope and max-age. This would make this API truly valuable. It's a lot of extra complexity, and can be made more generically for URLs too, so maybe should be separated from letmeprompt itself, however, I could definitely see this as a quick way to prototype APIs. The API in-browser could then also immediately be the place where you find all results in one place.
+
+I think a great place to start is:
+
+- Establish as OAuth provider (login with letmeprompt)
+- Ability to name prompts to replace, configure, budget for them later
+- Named prompts should get history/versions and a DO as storage for all versions, including with variables.
+- Variables in prompts should become indexes in the SQLite DB.

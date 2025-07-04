@@ -108,6 +108,15 @@ class MarkdownHighlighter {
       return `<span class="md-list-item">- ${text}</span>\n`;
     };
 
+    this.renderer.link = (href, title, text) => {
+      const titleAttr = title ? ` title="${this.escapeHTML(title)}"` : "";
+      return `<a href="${this.escapeHTML(
+        href,
+      )}" class="md-link" target="_blank" rel="noopener noreferrer"${titleAttr}>${
+        text === href ? text : `[${text}](${href})`
+      }</a>`;
+    };
+
     this.renderer.blockquote = (quote) => {
       return `<span class="md-blockquote">> ${quote}</span>\n`;
     };
@@ -132,6 +141,27 @@ class MarkdownHighlighter {
     styleElement.id = "markdown-highlighter-styles";
     styleElement.textContent = `
         /* Code block container styles */
+
+        .md-link {
+          color: #4a9eff;
+          text-decoration: underline;
+          transition: color 0.2s ease;
+        }
+
+        .md-link:hover {
+          color: #2980d9;
+          text-decoration: underline;
+        }
+
+        .md-link:visited {
+          color: #6c5ce7;
+        }
+
+        .md-link:visited:hover {
+          color: #5742d4;
+        }
+
+
         .code-block-container {
           position: relative;
           margin: 0;
