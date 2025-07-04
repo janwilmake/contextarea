@@ -87,12 +87,24 @@
                 font-size: 14px;
             }
 
-            /* Make copy button for result smaller */
-            .copy-button {
-                top: 8px;
-                right: 8px;
-                padding: 4px 8px;
-                font-size: 12px;
+            /* Result buttons container for mobile */
+            .result-buttons-container {
+                position: relative !important;
+                top: auto !important;
+                right: auto !important;
+                margin-top: 8px !important;
+                margin-bottom: 8px !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                justify-content: flex-end !important;
+            }
+
+            .result-button {
+                padding: 6px 8px !important;
+                font-size: 12px !important;
+                border-radius: 6px !important;
+                min-width: auto !important;
             }
 
             /* Footer with less spacing and removed border radius */
@@ -320,11 +332,18 @@
             }
         }
 
-        /* Copy button */
-        .copy-button {
+        /* Result buttons container */
+        .result-buttons-container {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .result-button {
             background-color: transparent;
             border: 1px solid #4a4a4a;
             border-radius: 8px;
@@ -336,20 +355,28 @@
             align-items: center;
             gap: 6px;
             font-size: 14px;
+            text-decoration: none;
+            min-width: 80px;
+            justify-content: center;
         }
 
-        .copy-button:hover {
+        .result-button:hover {
             background-color: #4a4a4a;
+            color: #fff;
         }
 
-        .copy-button.copied {
+        .result-button.copied {
             background-color: #4a9eff;
             border-color: #4a9eff;
         }
 
-        .copy-button svg {
+        .result-button svg {
             width: 16px;
             height: 16px;
+        }
+
+        .result-button.hidden {
+            display: none;
         }
 
         /* Footer styles */
@@ -554,9 +581,7 @@
             <div class="column" style="position:relative;">
                 <div class="column-header">
                     <span>Prompt</span>
-                    <span id="twitterLink" style="font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
                 </div>
-
 
                 <span id="tokenCounter"
                     style="position:absolute;right:25px;font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
@@ -566,23 +591,51 @@
 
             <div class="column" style="position: relative;">
                 <div class="column-header">Result</div>
-                <button class="copy-button" id="copyButton" style="display: none;" title="Copy result">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                    <span>Copy</span>
-                </button>
 
-                <button class="open-result-button" id="openResultButton"
-                    style="position: absolute; top: 20px; right: 110px; background-color: transparent; border: 1px solid #4a4a4a; border-radius: 8px; color: #e5e5e5; padding: 8px 12px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 6px; font-size: 14px;"
-                    title="Open result in new tab">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
-                        <path d="M15 3h6v6"></path>
-                        <path d="M10 14L21 3"></path>
-                    </svg>
-                </button>
+                <!-- Result buttons container -->
+                <div class="result-buttons-container" id="resultButtonsContainer">
+                    <!-- Download button (hidden initially) -->
+                    <button class="result-button hidden" id="downloadButton" title="Download">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Download</span>
+                    </button>
+
+                    <!-- Deploy button (hidden initially) -->
+                    <button class="result-button hidden" id="deployButton" title="Deploy">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6"></path>
+                            <path d="M21 12h-6m-6 0H3"></path>
+                        </svg>
+                        <span>Deploy</span>
+                    </button>
+
+                    <!-- Preview button (visible immediately) -->
+                    <button class="result-button" id="previewButton" title="Preview">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                            <path d="M15 3h6v6"></path>
+                            <path d="M10 14L21 3"></path>
+                        </svg>
+                        <span>Preview</span>
+                    </button>
+
+                    <!-- Copy button (visible immediately) -->
+                    <button class="result-button" id="copyButton" title="Copy result">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>Copy</span>
+                    </button>
+                </div>
 
                 <pre class="result-content" id="resultContent">Loading...</pre>
             </div>
@@ -624,7 +677,6 @@
             </div>
         </div>
     </div>
-
 
     <script src="/model-modal.js"></script>
 
@@ -711,7 +763,6 @@
             constructor() {
                 this.contextarea = document.getElementById('contextarea');
                 this.resultContent = document.getElementById('resultContent');
-                this.copyButton = document.getElementById('copyButton');
                 this.currentResult = "";
                 this.isStreaming = false;
             }
@@ -719,7 +770,6 @@
             updateUI(state, isEscaped) {
                 // Update prompt
                 if (state.prompt) {
-
                     const unescapedPrompt = state.prompt
                         .replace(/&lt;/g, '<')
                         .replace(/&gt;/g, '>')
@@ -739,27 +789,18 @@
                     this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
                 } else if (state.status === "error" || state.error) {
                     this.resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
-                    this.copyButton.style.display = 'none';
                 } else if (content) {
-
                     if (isEscaped) {
-
-                        // // unescape entire content, we escape it again after.
                         this.currentResult = content?.replace(/&lt;/g, '<')
                             .replace(/&gt;/g, '>')
                             .replace(/&quot;/g, '"')
                             .replace(/&#39;/g, "'")
                             .replace(/&amp;/g, '&');
-
                     } else {
                         this.currentResult = content;
                     }
 
-
                     markdownHighlighter.processContent(this.resultContent, this.currentResult);
-                    this.copyButton.style.display = 'flex';
-                } else if (state.status === "complete") {
-                    this.copyButton.style.display = 'flex';
                 }
             }
 
@@ -771,7 +812,6 @@
             handleSSEMessage(message) {
                 switch (message.type) {
                     case 'init':
-                        // Initial state
                         if (message.data.status === "pending") {
                             this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
                             this.currentResult = message.data.result || "";
@@ -781,7 +821,6 @@
                         break;
 
                     case 'token':
-                        // Streaming token
                         if (!this.isStreaming) {
                             this.isStreaming = true;
                             this.resultContent.textContent = "";
@@ -791,37 +830,101 @@
                         markdownHighlighter.processContent(
                             this.resultContent,
                             this.currentResult,
-                            // loading
                             loading);
                         break;
 
                     case 'update':
-                        // Update field
                         if (message.data.field === 'context') {
                             console.log('Context updated');
                         }
                         break;
 
                     case 'complete':
-                        // Stream complete
                         this.currentResult = message.data.result;
                         markdownHighlighter.processContent(this.resultContent, this.currentResult);
-                        this.copyButton.style.display = 'flex';
+                        // Notify result buttons that result is complete
+                        if (window.resultButtonsManager) {
+                            window.resultButtonsManager.onResultComplete();
+                        }
                         break;
 
                     case 'error':
-                        // Error occurred
                         this.resultContent.innerHTML = `<span class="error">Error: ${message.data.message}</span>`;
-                        this.copyButton.style.display = 'none';
                         break;
                 }
             }
         }
 
-        // 3. Copy Functionality Module
+        // 3. Result Buttons Module
+        class ResultButtonsManager {
+            constructor() {
+                this.downloadButton = document.getElementById('downloadButton');
+                this.deployButton = document.getElementById('deployButton');
+                this.previewButton = document.getElementById('previewButton');
+                this.copyButton = document.getElementById('copyButton');
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                // Download button
+                this.downloadButton.addEventListener('click', () => {
+                    window.open('https://download.letmeprompt.com' + window.location.pathname);
+                });
+
+                // Deploy button
+                this.deployButton.addEventListener('click', () => {
+                    window.open(`https://claudeflair.com/https://download.letmeprompt.com${window.location.pathname}.json`);
+                });
+
+                // Preview button
+                this.previewButton.addEventListener('click', () => {
+                    const subdomain = window.location.pathname.slice(1);
+                    window.open(`https://${subdomain}.gptideas.com`, '_blank');
+                });
+
+                // Copy button
+                this.copyButton.addEventListener('click', async () => {
+                    if (!uiManager.currentResult) return;
+                    await this.copyToClipboard(uiManager.currentResult, this.copyButton);
+                });
+            }
+
+            async copyToClipboard(text, button) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    button.classList.add('copied');
+                    const span = button.querySelector('span');
+                    const originalText = span.textContent;
+                    span.textContent = 'Copied!';
+
+                    setTimeout(() => {
+                        button.classList.remove('copied');
+                        span.textContent = originalText;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            }
+
+            onResultComplete() {
+                // Show download and deploy buttons when result is complete
+                this.downloadButton.classList.remove('hidden');
+                this.deployButton.classList.remove('hidden');
+            }
+
+            // Check if result is already complete on page load
+            initializeButtonVisibility() {
+                // If there's already a result and it's not pending, show all buttons
+                if (data.result && data.status !== "pending") {
+                    this.onResultComplete();
+                }
+            }
+        }
+
+        // 4. Copy Functionality Module (for footer)
         class CopyManager {
             constructor() {
-                this.copyButton = document.getElementById('copyButton');
                 this.footerCopyButton = document.getElementById('footerCopyButton');
                 this.shareInput = document.getElementById('shareInput');
                 this.currentUrl = window.location.href;
@@ -832,12 +935,6 @@
             setupEventListeners() {
                 // Set share URL
                 this.shareInput.value = this.currentUrl;
-
-                // Copy result functionality
-                this.copyButton.addEventListener('click', async () => {
-                    if (!uiManager.currentResult) return;
-                    await this.copyToClipboard(uiManager.currentResult, this.copyButton);
-                });
 
                 // Copy share link functionality
                 this.footerCopyButton.addEventListener('click', async () => {
@@ -857,16 +954,14 @@
                     }, 2000);
                 } catch (err) {
                     console.error('Failed to copy:', err);
-                    if (button === this.footerCopyButton) {
-                        this.shareInput.select();
-                        document.execCommand('copy');
-                        alert('Link copied to clipboard!');
-                    }
+                    this.shareInput.select();
+                    document.execCommand('copy');
+                    alert('Link copied to clipboard!');
                 }
             }
         }
 
-        // 4. Token Counter Module
+        // 5. Token Counter Module
         class TokenCounter {
             constructor() {
                 this.contextarea = document.getElementById('contextarea');
@@ -892,28 +987,7 @@
             }
         }
 
-        class TwitterLink {
-            constructor() {
-                this.contextarea = document.getElementById('contextarea');
-                this.twitterLink = document.getElementById('twitterLink');
-                this.setupEventListeners();
-            }
-
-            setupEventListeners() {
-                this.contextarea.addEventListener('input', () => this.updateTwitterLink());
-                setTimeout(() => this.updateTwitterLink(), 0);
-            }
-
-            updateTwitterLink() {
-                const promptText = this.contextarea.value;
-
-                if (promptText) {
-                    this.twitterLink.innerHTML = `<a href="https://x.com/intent/post?text=${encodeURIComponent(promptText + '\n\n' + window.location.href)}">Post on X</a>`;
-                }
-            }
-        }
-
-        // 5. Mobile Responsiveness Module
+        // 6. Mobile Responsiveness Module
         class MobileResponsiveness {
             constructor() {
                 this.contextarea = document.getElementById('contextarea');
@@ -928,46 +1002,36 @@
             }
 
             setupMobileScrolling() {
-                // Only apply on mobile screens
                 const isMobile = window.innerWidth <= 768;
 
                 if (isMobile) {
-                    // Get all relevant elements
                     const container = document.querySelector('.container');
                     const columns = document.querySelectorAll('.column');
                     const footer = document.querySelector('.footer');
                     const contentContainer = document.querySelector('.content-container');
 
-                    // Function to resize the textarea to fit content
                     const resizeTextarea = () => {
                         this.contextarea.style.height = 'auto';
                         this.contextarea.style.height = Math.min(this.contextarea.scrollHeight, 150) + 'px';
                     };
 
-                    // Ensure proper layout setup
                     if (container) {
                         container.style.height = 'auto';
                         container.style.minHeight = 'unset';
                     }
 
-                    // Adjust textarea on load and input
                     if (this.contextarea) {
                         resizeTextarea();
-
-                        // Remove existing listener if any
                         this.contextarea.removeEventListener('input', resizeTextarea);
-                        // Add the listener again
                         this.contextarea.addEventListener('input', resizeTextarea);
                     }
 
-                    // Ensure all columns don't scroll independently
                     columns.forEach(column => {
                         column.style.overflow = 'visible';
                         column.style.maxHeight = 'none';
                         column.style.minHeight = 'unset';
                     });
 
-                    // Fix content container
                     if (contentContainer) {
                         contentContainer.style.display = 'block';
                         contentContainer.style.height = 'auto';
@@ -976,7 +1040,6 @@
                         contentContainer.style.overflow = 'visible';
                     }
 
-                    // Fix share section visibility and placement
                     if (footer) {
                         footer.style.position = 'relative';
                         footer.style.display = 'block';
@@ -984,38 +1047,30 @@
                         footer.style.zIndex = '1';
                     }
 
-                    // Make sure body has no unnecessary scroll
                     document.body.style.overflow = 'auto';
                     document.documentElement.style.overflow = 'auto';
-
-                    // Force reflow to ensure everything renders correctly
                     document.body.offsetHeight;
                 } else {
-                    // Reset to desktop layout if needed
                     const container = document.querySelector('.container');
                     const contentContainer = document.querySelector('.content-container');
                     const columns = document.querySelectorAll('.column');
                     const footer = document.querySelector('.footer');
 
-                    // Reset container
                     if (container) {
                         container.style.height = '100%';
                         container.style.display = 'flex';
                     }
 
-                    // Reset content container
                     if (contentContainer) {
                         contentContainer.style.display = 'flex';
                         contentContainer.style.flex = '1';
                     }
 
-                    // Reset columns
                     columns.forEach(column => {
                         column.style.overflow = 'auto';
                         column.style.maxHeight = '';
                     });
 
-                    // Reset footer
                     if (footer) {
                         footer.style.display = 'flex';
                         footer.style.position = '';
@@ -1024,38 +1079,29 @@
             }
         }
 
-        // 6. Action Buttons Module
+        // 7. Action Buttons Module
         class ActionButtons {
             constructor() {
                 this.tryAgainButton = document.getElementById('tryAgainButton');
                 this.replyInsteadButton = document.getElementById('replyInsteadButton');
-                this.openResultButton = document.getElementById('openResultButton');
                 this.contextarea = document.getElementById('contextarea');
 
                 this.setupEventListeners();
             }
 
             setupEventListeners() {
-                // Try again functionality
                 this.tryAgainButton.setAttribute('title', 'Click or press Shift+Enter');
                 this.tryAgainButton.addEventListener('click', () => this.handleTryAgain());
-
-                // Reply Instead button functionality
                 this.replyInsteadButton.addEventListener('click', () => this.handleReplyInstead());
 
-                // Open Result button functionality
-                this.openResultButton.addEventListener('click', () => this.handleOpenResult());
-
-                // Keyboard shortcut for try again
                 this.contextarea.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' && event.shiftKey) {
-                        event.preventDefault(); // Prevent default behavior (new line)
-                        this.tryAgainButton.click(); // Trigger the try again button
+                        event.preventDefault();
+                        this.tryAgainButton.click();
                     }
                 });
             }
 
-            // Slugify function
             slugify(text) {
                 return text
                     .toLowerCase()
@@ -1065,7 +1111,6 @@
                     .replace(/^-+|-+$/g, '');
             }
 
-            // Simple hash function for 7-character SHA-like string
             simpleHash(str) {
                 let hash = 0;
                 for (let i = 0; i < str.length; i++) {
@@ -1080,27 +1125,20 @@
                 const promptText = this.contextarea.value.trim();
                 if (!promptText) return;
                 const model = window.localStorage.getItem('model');
-                // Generate slug from first 20 characters
                 const first20 = promptText.substring(0, 20);
                 const slug = this.slugify(first20);
                 const hash = this.simpleHash(model + ":" + promptText);
-
-                // Create the URL path
                 const path = `/${slug}-${hash}`;
 
-
-                // Create form data
                 const formData = new FormData();
                 formData.append('prompt', promptText);
                 formData.append('model', model);
 
-                // Create a form and submit it
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = path;
                 form.style.display = 'none';
 
-                // Add all form data as hidden inputs
                 for (const [key, value] of formData.entries()) {
                     const input = document.createElement('input');
                     input.type = 'hidden';
@@ -1120,29 +1158,25 @@
                     window.location.href = `/?q=${encodeURIComponent(`Previous Prompt:\n\n${window.location.origin + currentPath + ".md"}\n\n------\n\n`)}`;
                 }
             }
-
-            handleOpenResult() {
-                const subdomain = window.location.pathname.slice(1)
-                window.open(`https://${subdomain}.gptideas.com`, '_blank');
-            }
         }
 
         // Main application initialization
         const data = JSON.parse(document.getElementById('server-data').textContent);
 
         if (data.ratelimited) {
-            // ugly; timeout to open it after it exists
             setTimeout(() => window.openModelModal(), 400)
         }
 
-
         // Initialize modules
         const uiManager = new UIManager();
+        const resultButtonsManager = new ResultButtonsManager();
         const copyManager = new CopyManager();
         const tokenCounter = new TokenCounter();
-        const twitterLink = new TwitterLink();
         const mobileResponsiveness = new MobileResponsiveness();
         const actionButtons = new ActionButtons();
+
+        // Make result buttons manager available globally for SSE handler
+        window.resultButtonsManager = resultButtonsManager;
 
         // Initialize SSE if needed
         if (data.streaming && data.status === "pending") {
@@ -1156,7 +1190,6 @@
 
             sseHandler.initialize();
 
-            // Clean up on page unload
             window.addEventListener('beforeunload', () => {
                 sseHandler.close();
             });
@@ -1164,6 +1197,7 @@
 
         // Initial UI update
         uiManager.updateUI(data, true);
+        resultButtonsManager.initializeButtonVisibility();
         setTimeout(() => uiManager.adjustTextareaHeight(), 0);
     </script>
 </body>
