@@ -22,6 +22,17 @@
         /* Enhanced mobile styles with removed padding and borders */
         @media (max-width: 768px) {
 
+            .footer-copy-button {
+                padding: 8px 12px !important;
+                font-size: 14px !important;
+                min-height: auto !important;
+            }
+
+            .footer-copy-button svg {
+                width: 16px !important;
+                height: 16px !important;
+            }
+
             /* Remove body padding and adjust container */
             body {
                 padding: 0;
@@ -140,8 +151,7 @@
             }
 
             /* Button adjustments for better touch targets but less padding */
-            button,
-            .footer-copy-button {
+            button {
                 min-height: 36px;
                 padding: 6px 8px;
                 border-radius: 4px;

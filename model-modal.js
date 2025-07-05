@@ -7,7 +7,7 @@
     vision:
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
     globe:
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
     doc: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
     settings:
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6m0 6v6m-3.5-5.5L4 8m12.5 7.5L21 20M1 12h6m6 0h6M4 20l4.5-4.5M16.5 7.5L20 4"/></svg>',
@@ -285,67 +285,6 @@
               color: #e5e5e5;
           }
   
-          .model-modal-footer {
-              padding: 20px;
-              border-top: 1px solid #3a3a3a;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-          }
-  
-          .model-modal-footer-left {
-              display: flex;
-              gap: 16px;
-              align-items: center;
-          }
-  
-          .model-modal-show-all {
-              background: transparent;
-              border: none;
-              color: #e5e5e5;
-              font-size: 16px;
-              cursor: pointer;
-              padding: 8px 16px;
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              transition: background-color 0.2s ease;
-              border-radius: 8px;
-          }
-  
-          .model-modal-show-all:hover {
-              background-color: #3a3a3a;
-          }
-  
-          .model-modal-show-all svg {
-              transform: rotate(0deg);
-              transition: transform 0.2s ease;
-          }
-  
-          .model-modal-show-all.expanded svg {
-              transform: rotate(180deg);
-          }
-  
-          .model-modal-icon-button {
-              background: transparent;
-              border: none;
-              padding: 8px;
-              cursor: pointer;
-              color: #8a8a8a;
-              transition: color 0.2s ease;
-              border-radius: 8px;
-          }
-  
-          .model-modal-icon-button:hover {
-              color: #e5e5e5;
-          }
-  
-          .model-modal-footer-right {
-              display: flex;
-              gap: 12px;
-              align-items: center;
-          }
-  
           .model-modal-search-container {
               position: relative;
           }
@@ -428,28 +367,6 @@
                           </ul>
                       </div>
   
-                      <div class="model-modal-footer">
-                          <div class="model-modal-footer-left">
-                              <button class="model-modal-show-all" id="modelModalShowAll">
-                                  <span>Show all</span>
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                      <polyline points="6 9 12 15 18 9"/>
-                                  </svg>
-                              </button>
-                          </div>
-                          <div class="model-modal-footer-right">
-                              <span id="modelModalSelectedName">${
-                                selectedModelId
-                                  ? models.find(
-                                      (m) => m.model === selectedModelId,
-                                    )?.name
-                                  : "Select a model"
-                              }</span>
-                              <button class="model-modal-icon-button" id="modelModalSearchButton">
-                                  ${ICONS.search}
-                              </button>
-                          </div>
-                      </div>
                   </div>
               </div>
           `;
@@ -470,7 +387,9 @@
               <li class="model-modal-item ${isSelected ? "selected" : ""} ${
       isDisabled ? "disabled" : ""
     }" data-model-id="${model.model}">
-                  <div class="model-modal-item-icon">${model.icon}</div>
+                  <div class="model-modal-item-icon"><img src="${
+                    model.icon
+                  }" width="32" height="32" style="border-radius:16px;" /></div>
                   <div class="model-modal-item-info">
                       <span class="model-modal-item-name">${model.name}</span>
                       ${
@@ -592,6 +511,13 @@
                       font-size: 12px;
                       margin-left: 4px;
                   }
+
+                  /* Hide model name on mobile */
+                  @media (max-width: 768px) {
+                      .model-modal-trigger-text {
+                          display: none;
+                      }
+                  }
               `;
 
       // Add button styles
@@ -611,7 +537,7 @@
       //needed to not submit forms it appears in
       button.setAttribute("type", "button");
       button.innerHTML = `
-                  <span class="model-modal-trigger-icon">${selectedModel.icon}</span>
+                  <span class="model-modal-trigger-icon"><img src="${selectedModel.icon}" width="16" height="16"  style="border-radius:8px;" /></span>
                   <span class="model-modal-trigger-text">${selectedModel.name}</span>
                   <span class="model-modal-trigger-tag">AI</span>
               `;
@@ -664,12 +590,6 @@
       const searchInput = document.getElementById("modelModalSearch");
       searchInput.addEventListener("input", (e) => {
         this.filterModels(e.target.value);
-      });
-
-      // Show all button
-      const showAllBtn = document.getElementById("modelModalShowAll");
-      showAllBtn.addEventListener("click", () => {
-        this.toggleShowAll();
       });
 
       // Escape key
@@ -728,7 +648,7 @@
       // Update trigger button
       if (this.triggerButton) {
         this.triggerButton.innerHTML = `
-                      <span class="model-modal-trigger-icon">${model.icon}</span>
+                      <span class="model-modal-trigger-icon"><img src="${model.icon}" width="16" height="16" style="border-radius:8px;" /></span>
                       <span class="model-modal-trigger-text">${model.name}</span>
                       <span class="model-modal-trigger-tag">AI</span>
                   `;
@@ -756,15 +676,6 @@
 
         item.style.display = matches ? "flex" : "none";
       });
-    }
-
-    toggleShowAll() {
-      this.showingAll = !this.showingAll;
-      const showAllBtn = document.getElementById("modelModalShowAll");
-      showAllBtn.classList.toggle("expanded", this.showingAll);
-
-      // In a real implementation, this would show/hide certain models
-      // For now, we'll just toggle the button state
     }
 
     open(onSelect) {

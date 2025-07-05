@@ -87,7 +87,7 @@ class MarkdownHighlighter {
 
     // Override inline code rendering
     this.renderer.codespan = (code) => {
-      return `<span class="hljs-inline">\`${this.escapeHTML(code)}\`</span>`;
+      return `<span class="hljs-inline">\`${code}\`</span>`;
     };
 
     // Override other elements to add custom classes
@@ -104,24 +104,59 @@ class MarkdownHighlighter {
       return `<span class="md-heading">${hashes} ${text}</span>\n`;
     };
 
+    this.renderer.list = (body, ordered, start) => {
+      const type = ordered ? "ol" : "ul";
+      const startatt = ordered && start !== 1 ? ` start="${start}"` : "";
+      // Remove the extra newlines that are causing whitespace issues
+      return `<${type}${startatt} class="md-list md-list-${
+        ordered ? "ordered" : "unordered"
+      }">${body.trim()}</${type}>`;
+    };
+
     this.renderer.listitem = (text) => {
-      return `<span class="md-list-item">- ${text}</span>\n`;
+      // Remove trailing newlines from list items
+      return `<li class="md-list-item">${text.trim()}</li>`;
     };
 
     this.renderer.link = (href, title, text) => {
-      const titleAttr = title ? ` title="${this.escapeHTML(title)}"` : "";
-      return `<a href="${this.escapeHTML(
+      const titleAttr = title ? ` title="${title}"` : "";
+      return `<span class="md-italic">[${text}](</span><a href="${this.escapeHTML(
         href,
       )}" class="md-link" target="_blank" rel="noopener noreferrer"${titleAttr}>${
-        text === href ? text : `[${text}](${href})`
-      }</a>`;
+        text === href ? text : `${href}`
+      }</a><span class="md-italic">)</span>`;
+    };
+
+    this.renderer.image = (href, title, text) => {
+      const titlePart = title ? ` "${title}"` : "";
+      const altText = text || "";
+      return `<span class="md-italic">![${altText}](</span><a href="${this.escapeHTML(
+        href,
+      )}" class="md-link md-image-link" target="_blank" rel="noopener noreferrer">${href}${titlePart}</a><span class="md-italic">)</span>`;
     };
 
     this.renderer.blockquote = (quote) => {
-      return `<span class="md-blockquote">> ${quote}</span>\n`;
+      // Clean up the quote content by removing any existing HTML tags
+      const cleanedQuote = quote
+        .replace(/<\/?p>/g, "") // Remove paragraph tags
+        .replace(/<br\s*\/?>/g, "\n") // Convert br tags to newlines
+        .trim();
+
+      // Split into lines and add > prefix to each line
+      const lines = cleanedQuote.split("\n");
+      const quotedLines = lines
+        .map((line) => {
+          const trimmedLine = line.trim();
+          if (trimmedLine) {
+            return `<span style="color: #74b9ff; font-weight: bold;">&gt;</span> <span style="color: #e5e5e5;">${trimmedLine}</span>`;
+          }
+          return "";
+        })
+        .filter((line) => line); // Remove empty lines
+
+      return quotedLines.join("\n") + "\n";
     };
 
-    // Configure marked options
     marked.setOptions({
       renderer: this.renderer,
       highlight: null, // We'll handle highlighting ourselves
@@ -142,6 +177,16 @@ class MarkdownHighlighter {
     styleElement.textContent = `
         /* Code block container styles */
 
+        .md-image-link {
+          color: #4a9eff;
+          text-decoration: underline;
+          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+          font-size: 0.9em;
+        }
+
+        .md-image-link:hover {
+          color: #2980d9;
+        }
         .md-link {
           color: #4a9eff;
           text-decoration: underline;
@@ -306,11 +351,6 @@ class MarkdownHighlighter {
           color: #4a9eff;
         }
   
-        /* Style for list items */
-        .md-list-item {
-          color: #e5e5e5;
-        }
-  
         /* Style for blockquotes */
         .md-blockquote {
           color: #b5b5b5;
@@ -361,6 +401,52 @@ class MarkdownHighlighter {
             word-break: break-word;
           }
         }
+
+.md-list {
+  margin: 0.5em 0; /* Reduced margin */
+  padding-left: 2em;
+  color: #e5e5e5;
+}
+
+.md-list-ordered {
+  list-style-type: decimal;
+}
+
+.md-list-unordered {
+  list-style-type: disc;
+}
+
+.md-list-item {
+  margin: 0.2em 0; /* Reduced margin between items */
+  color: #e5e5e5;
+}
+
+/* Nested lists - reduce spacing */
+.md-list .md-list {
+  margin: 0.1em 0; /* Much smaller margin for nested lists */
+}
+
+.md-list .md-list-unordered {
+  list-style-type: circle;
+}
+
+.md-list .md-list .md-list-unordered {
+  list-style-type: square;
+}
+
+/* Ensure proper spacing for lists with blank lines */
+.md-list-item p {
+  margin: 0;
+}
+
+/* Additional fix: control spacing between lists and other elements */
+.md-list + * {
+  margin-top: 0.5em;
+}
+
+* + .md-list {
+  margin-top: 0.5em;
+}
       `;
 
     document.head.appendChild(styleElement);

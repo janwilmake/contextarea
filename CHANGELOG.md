@@ -161,9 +161,12 @@ DONE 🎉
 
 ✅ Ensure variable `{{prompt_id}}` is filled into context if directly present in prompt. This is happening at execution, the variable stays variable.
 
-# QUICK WINS = 2025-07-04
+# QUICK WINS = 2025-07-04/05
 
 - ✅ Routes aren't immediately active, which causes it to cache the 404. let's just wait...
 - ✅ Ensure assets directory `./` also works when specified in wrangler.
 - ✅ Upon download, assets that aren't there should not crash, `errors.json` should show this.
 - ✅ Put download and deploy button on letmeprompt.com
+- ✅ weird `&quot;` stuff in md and images shouldn't be rendering!
+- ✅ Big ugly copy button on mobile
+- ✅ Added company icons (replacing emojis)

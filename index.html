@@ -54,6 +54,8 @@
             background-color: #2a2a2a;
             color: #e5e5e5;
             min-height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -68,6 +70,8 @@
             flex-direction: column;
             align-items: center;
             gap: 40px;
+            max-height: 100vh;
+            overflow: hidden;
         }
 
         h1 {
@@ -76,6 +80,50 @@
             color: #e5e5e5;
             text-align: center;
             margin-bottom: 0;
+            line-height: 1.1;
+        }
+
+        /* Mobile optimization for headline */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+            }
+
+            .container {
+                gap: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+                line-height: 1.2;
+            }
+
+            h1 img {
+                width: 24px !important;
+                height: 24px !important;
+                margin-right: 12px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                gap: 15px;
+            }
+
+            h1 {
+                font-size: 20px;
+                line-height: 1.2;
+            }
+
+            h1 img {
+                width: 20px !important;
+                height: 20px !important;
+                margin-right: 10px !important;
+            }
         }
 
         .icon {
@@ -91,10 +139,17 @@
         .form-container {
             width: 100%;
             position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-height: 60vh;
         }
 
         form {
             width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .textarea-container {
@@ -106,6 +161,9 @@
             border: 1px solid #4a4a4a;
             border-radius: 24px;
             padding-bottom: 10px;
+            flex: 1;
+            max-height: 100%;
+            overflow: hidden;
         }
 
         textarea {
@@ -123,6 +181,25 @@
             max-height: 400px;
             overflow-y: auto;
             transition: border-color 0.2s ease;
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            textarea {
+                font-size: 16px;
+                padding: 15px 12px;
+                min-height: 80px;
+                max-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            textarea {
+                font-size: 16px;
+                padding: 12px 10px;
+                min-height: 70px;
+                max-height: 250px;
+            }
         }
 
         textarea:focus {
@@ -139,6 +216,7 @@
             align-items: center;
             padding: 0 12px;
             margin-top: 8px;
+            flex-shrink: 0;
         }
 
         .left-buttons {
@@ -227,6 +305,40 @@
         textarea::-webkit-scrollbar-thumb:hover {
             background-color: #6a6a6a;
         }
+
+        #link {
+            position: fixed;
+            background-color: #3a3a3a;
+            color: #e5e5e5;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: background-color 0.2s ease;
+            z-index: 1000;
+        }
+
+        #link:hover {
+            background-color: #4a4a4a;
+            color: #fff;
+        }
+
+        /* Mobile optimization for fixed links */
+        @media (max-width: 768px) {
+            #link {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #link {
+                font-size: 11px;
+                padding: 5px 8px;
+            }
+        }
     </style>
 </head>
 
@@ -270,26 +382,7 @@
         </div>
     </div>
 
-    <style>
-        #link {
-            position: fixed;
-            background-color: #3a3a3a;
-            color: #e5e5e5;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-            transition: background-color 0.2s ease;
-            z-index: 1000;
-        }
 
-        #link:hover {
-            background-color: #4a4a4a;
-            color: #fff;
-        }
-    </style>
 
     <a href="https://github.com/janwilmake/lmpify-docs/blob/main/README.md" target="_blank" id="link"
         style="top:20px;right:100px;" title="Docs">Docs</a>
