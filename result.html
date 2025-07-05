@@ -17,85 +17,16 @@
     <link rel="stylesheet" href="https://contextarea.com/style.css">
     <script src="https://contextarea.com/lib.js" defer></script>
 
-
     <style>
-        /* Enhanced mobile styles with removed padding and borders */
-        @media (max-width: 768px) {
+        @media (max-width: 1200px) {
 
-            .footer-copy-button {
-                padding: 8px 12px !important;
-                font-size: 14px !important;
-                min-height: auto !important;
-            }
-
-            .footer-copy-button svg {
-                width: 16px !important;
-                height: 16px !important;
-            }
-
-            /* Remove body padding and adjust container */
-            body {
-                padding: 0;
-                margin: 0;
-                overflow-x: hidden;
-            }
-
-            .container {
-                height: auto;
-                display: block;
-                gap: 8px;
-                padding: 8px;
-                max-width: 100%;
-                margin: 0;
-            }
-
-            /* Adjust header size */
-            h1 {
-                font-size: 18px;
-                margin: 8px 0;
-            }
-
-            /* Make content container not flex and auto height */
-            .content-container {
-                display: block;
-                height: auto;
-                min-height: auto;
-                gap: 8px;
-                margin-bottom: 8px;
-            }
-
-            /* Adjust column default styling - remove rounded corners on mobile */
-            .column {
-                overflow: visible;
-                height: auto;
-                margin-bottom: 8px;
-                padding: 10px;
-                border-radius: 8px;
-                border: 1px solid #4a4a4a;
-            }
-
-            /* Column header less space */
-            .column-header {
-                font-size: 16px;
-                margin-bottom: 8px;
-                padding-bottom: 8px;
-            }
-
-            /* Make sure the prompt textarea doesn't grow excessively */
-            .prompt-textarea {
-                max-height: 150px;
-                min-height: 100px;
-                overflow-y: auto;
-                padding: 8px;
-                font-size: 14px;
-                border-radius: 6px;
-            }
-
-            /* Ensure result content flows naturally */
+            /* Result content mobile adjustments */
             .result-content {
-                overflow: visible;
+                overflow: visible !important;
+                max-height: none !important;
                 word-break: break-word;
                 font-size: 14px;
+                padding-bottom: 80px;
             }
 
             /* Result buttons container for mobile */
@@ -117,57 +48,139 @@
                 border-radius: 6px !important;
                 min-width: auto !important;
             }
+        }
 
-            /* Footer with less spacing and removed border radius */
-            .footer {
-                flex-direction: column;
-                align-items: stretch;
+        @media (max-width: 768px) {
+
+            /* Remove body padding and adjust container */
+            body {
+                padding: 0;
+                margin: 0;
+                overflow-x: hidden;
+                /* Remove height: 100vh constraint on mobile */
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .container {
+                /* Override desktop flex layout */
+                height: auto !important;
+                min-height: auto !important;
+                display: block;
                 gap: 8px;
-                padding: 10px;
-                border-radius: 8px;
+                padding: 8px;
+                max-width: 100%;
+                margin: 0;
+            }
+
+            /* Adjust header */
+            h1 {
+                font-size: 18px;
+                margin: 8px 0;
+            }
+
+            /* Make content container stack vertically with auto height */
+            .content-container {
+                display: block !important;
+                height: auto !important;
+                min-height: auto !important;
+                flex: none !important;
+                gap: 8px;
                 margin-bottom: 8px;
             }
 
-            .share-container {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 6px;
+            /* Column mobile adjustments */
+            .column {
+                /* Override desktop flex and overflow behavior */
+                overflow: visible !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+                flex: none !important;
+
+                margin-bottom: 8px;
+                padding: 10px;
+                border-radius: 8px;
+                border: 1px solid #4a4a4a;
             }
 
-            .share-label {
-                font-size: 13px;
+            /* Column header adjustments */
+            .column-header {
+                font-size: 16px;
+                margin-bottom: 8px;
+                padding-bottom: 8px;
+            }
+
+            /* Textarea auto-resize with CSS only */
+            .prompt-textarea {
+                /* Remove fixed height constraints */
+                max-height: 150px;
+                min-height: 80px;
+                height: auto;
+                overflow-y: auto;
+                padding: 8px;
+                font-size: 14px;
+                border-radius: 6px;
+
+                /* CSS-only auto-resize using field-sizing when supported */
+                field-sizing: content;
+                resize: vertical;
+            }
+
+            /* Fallback for browsers without field-sizing */
+            @supports not (field-sizing: content) {
+                .prompt-textarea {
+                    /* Use a reasonable fixed height as fallback */
+                    height: 120px;
+                }
+            }
+
+            .submit-button {
+                padding: 8px 16px !important;
+                font-size: 14px !important;
+                width: 100% !important;
+                justify-content: center !important;
+            }
+
+            /* Share section for mobile */
+            .share-section {
+                position: static !important;
+                bottom: auto !important;
+                margin-top: 8px !important;
+                padding: 8px !important;
+                border-radius: 6px !important;
             }
 
             .share-input {
-                width: 100%;
-                font-size: 13px;
-                padding: 6px 8px;
-                border-radius: 4px;
+                font-size: 13px !important;
+                padding: 6px 8px !important;
             }
 
-            .footer-actions {
-                justify-content: space-between;
-                flex-wrap: wrap;
+            /* Footer copy button */
+            .footer-copy-button {
+                padding: 8px 12px !important;
+                font-size: 14px !important;
+                min-height: auto !important;
             }
 
-            /* Button adjustments for better touch targets but less padding */
+            .footer-copy-button svg {
+                width: 16px !important;
+                height: 16px !important;
+            }
+
+            /* Button adjustments for better touch targets */
             button {
                 min-height: 36px;
                 padding: 6px 8px;
                 border-radius: 4px;
             }
 
-            .try-again-button {
-                min-height: 36px;
-                padding: 6px 12px;
-                border-radius: 6px;
-                margin-top: 4px;
-            }
-
-            /* Fix the share section visibility */
-            .footer {
-                position: static;
-                display: block;
+            /* Token counter mobile styling */
+            #tokenCounter {
+                position: static !important;
+                font-size: 12px !important;
+                margin-top: 4px !important;
+                margin-bottom: 8px !important;
             }
         }
 
@@ -186,19 +199,28 @@
                 margin-bottom: 6px;
             }
 
-            .try-again-button {
-                width: 100%;
-                justify-content: center;
+            .prompt-textarea {
+                font-size: 13px;
+                padding: 6px;
+            }
+        }
+
+        /* Modern browsers with container queries support */
+        @supports (container-type: inline-size) {
+            .container {
+                container-type: inline-size;
             }
 
-            /* Make buttons in footer better suited for small screens */
-            #model-modal {
-                width: 100%;
-            }
+            /* Use container queries for even better responsive behavior */
+            @container (max-width: 768px) {
+                .content-container {
+                    display: block !important;
+                }
 
-            /* Remove extra space at bottom of page */
-            body {
-                padding-bottom: 0;
+                .column {
+                    overflow: visible !important;
+                    height: auto !important;
+                }
             }
         }
 
@@ -295,12 +317,64 @@
             border-color: #6a6a6a;
         }
 
+        /* Prompt actions container */
+        .prompt-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            gap: 12px;
+        }
+
+        .model-modal-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .submit-button {
+            background: linear-gradient(135deg, #ff8800 0%, #FF7D1F 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(234, 177, 102, 0.3);
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(234, 177, 102, 0.4);
+        }
+
+        .submit-button:active {
+            transform: translateY(0);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
         .result-content {
             color: #e5e5e5;
             white-space: pre-wrap;
             word-wrap: break-word;
             overflow-wrap: break-word;
             max-width: 100%;
+            flex: 1;
+            padding-bottom: 80px;
         }
 
         .pending {
@@ -389,19 +463,20 @@
             display: none;
         }
 
-        /* Footer styles */
-        .footer {
+        /* Share section - sticky at bottom of result panel */
+        .share-section {
+            position: sticky;
+            bottom: 0;
             background-color: #3a3a3a;
             border: 1px solid #4a4a4a;
-            border-radius: 24px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
+            border-radius: 16px;
+            padding: 16px;
+            margin-top: 16px;
+            backdrop-filter: blur(10px);
+            background-color: rgba(58, 58, 58, 0.9);
         }
 
         .share-container {
-            flex: 1;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -410,6 +485,7 @@
         .share-label {
             font-size: 14px;
             color: #b5b5b5;
+            white-space: nowrap;
         }
 
         .share-input {
@@ -426,10 +502,28 @@
             user-select: all;
         }
 
-        .footer-actions {
+        .footer-copy-button {
+            background-color: transparent;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: #e5e5e5;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
             display: flex;
-            gap: 12px;
             align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .footer-copy-button:hover {
+            background-color: #4a4a4a;
+        }
+
+        .footer-copy-button.copied {
+            background-color: #4a9eff;
+            border-color: #4a9eff;
         }
 
         button {
@@ -447,54 +541,6 @@
 
         button:hover {
             background-color: #4a4a4a;
-        }
-
-        .try-again-button {
-            background-color: #e5e5e5;
-            color: #2a2a2a;
-            font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .try-again-button:hover {
-            background-color: #d5d5d5;
-        }
-
-        .try-again-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .try-again-button:disabled:hover {
-            background-color: #e5e5e5;
-        }
-
-        .footer-copy-button {
-            background-color: transparent;
-            border: 1px solid #4a4a4a;
-            border-radius: 8px;
-            color: #e5e5e5;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 14px;
-        }
-
-        .footer-copy-button:hover {
-            background-color: #4a4a4a;
-        }
-
-        .footer-copy-button.copied {
-            background-color: #4a9eff;
-            border-color: #4a9eff;
         }
 
         /* Scrollbar styling */
@@ -533,27 +579,13 @@
                 width: 28px;
                 height: 28px;
             }
-
-            .footer {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .share-container {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .footer-actions {
-                justify-content: center;
-            }
         }
     </style>
 
 </head>
 
 <body>
-    <script src="/sidebar.js"></script>
+    <!-- <script src="/sidebar.js"></script> -->
 
     <style>
         #link {
@@ -597,6 +629,20 @@
                     style="position:absolute;right:25px;font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
 
                 <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
+
+                <div class="prompt-actions">
+                    <div class="model-modal-container">
+                        <div id="model-modal"></div>
+                    </div>
+                    <button type="button" class="submit-button" id="tryAgainButton"
+                        title="Shortcut to submit: Shift + Enter">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M7 17l9.5-9.5M17 17V7.5h-9.5" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span>Submit</span>
+                    </button>
+                </div>
             </div>
 
             <div class="column" style="position: relative;">
@@ -604,8 +650,6 @@
 
                 <!-- Result buttons container -->
                 <div class="result-buttons-container" id="resultButtonsContainer">
-
-
                     <!-- Download button (hidden initially) -->
                     <button class="result-button hidden" id="downloadButton" title="Download">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -628,7 +672,6 @@
                         <span>Deploy</span>
                     </button>
 
-
                     <!-- visible immediately -->
                     <button type="button" class="result-button" id="replyInsteadButton">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -636,7 +679,6 @@
                             <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round"></path>
                         </svg>
                         <span>Reply</span>
-
                     </button>
 
                     <!-- Preview button (visible immediately) -->
@@ -661,33 +703,21 @@
                 </div>
 
                 <pre class="result-content" id="resultContent">Loading...</pre>
-            </div>
-        </div>
 
-        <div class="footer">
-            <div class="footer-actions">
-                <div id="model-modal"></div>
-                <button type="button" class="try-again-button" id="tryAgainButton">
-                    <span>Submit</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="share-container">
-                <span class="share-label">Share:</span>
-                <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
-                <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                    <span>Copy</span>
-                </button>
+                <!-- Share section - sticky at bottom -->
+                <div class="share-section">
+                    <div class="share-container">
+                        <span class="share-label">Share:</span>
+                        <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
+                        <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span>Copy</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -936,7 +966,7 @@
             }
         }
 
-        // 4. Copy Functionality Module (for footer)
+        // 4. Copy Functionality Module (for share section)
         class CopyManager {
             constructor() {
                 this.footerCopyButton = document.getElementById('footerCopyButton');
@@ -1001,99 +1031,8 @@
             }
         }
 
-        // 6. Mobile Responsiveness Module
-        class MobileResponsiveness {
-            constructor() {
-                this.contextarea = document.getElementById('contextarea');
-                this.setupMobileScrolling();
-                this.setupEventListeners();
-            }
 
-            setupEventListeners() {
-                window.addEventListener('load', () => this.setupMobileScrolling());
-                window.addEventListener('resize', () => this.setupMobileScrolling());
-                window.addEventListener('orientationchange', () => this.setupMobileScrolling());
-            }
-
-            setupMobileScrolling() {
-                const isMobile = window.innerWidth <= 768;
-
-                if (isMobile) {
-                    const container = document.querySelector('.container');
-                    const columns = document.querySelectorAll('.column');
-                    const footer = document.querySelector('.footer');
-                    const contentContainer = document.querySelector('.content-container');
-
-                    const resizeTextarea = () => {
-                        this.contextarea.style.height = 'auto';
-                        this.contextarea.style.height = Math.min(this.contextarea.scrollHeight, 150) + 'px';
-                    };
-
-                    if (container) {
-                        container.style.height = 'auto';
-                        container.style.minHeight = 'unset';
-                    }
-
-                    if (this.contextarea) {
-                        resizeTextarea();
-                        this.contextarea.removeEventListener('input', resizeTextarea);
-                        this.contextarea.addEventListener('input', resizeTextarea);
-                    }
-
-                    columns.forEach(column => {
-                        column.style.overflow = 'visible';
-                        column.style.maxHeight = 'none';
-                        column.style.minHeight = 'unset';
-                    });
-
-                    if (contentContainer) {
-                        contentContainer.style.display = 'block';
-                        contentContainer.style.height = 'auto';
-                        contentContainer.style.minHeight = 'unset';
-                        contentContainer.style.flex = 'unset';
-                        contentContainer.style.overflow = 'visible';
-                    }
-
-                    if (footer) {
-                        footer.style.position = 'relative';
-                        footer.style.display = 'block';
-                        footer.style.marginTop = '8px';
-                        footer.style.zIndex = '1';
-                    }
-
-                    document.body.style.overflow = 'auto';
-                    document.documentElement.style.overflow = 'auto';
-                    document.body.offsetHeight;
-                } else {
-                    const container = document.querySelector('.container');
-                    const contentContainer = document.querySelector('.content-container');
-                    const columns = document.querySelectorAll('.column');
-                    const footer = document.querySelector('.footer');
-
-                    if (container) {
-                        container.style.height = '100%';
-                        container.style.display = 'flex';
-                    }
-
-                    if (contentContainer) {
-                        contentContainer.style.display = 'flex';
-                        contentContainer.style.flex = '1';
-                    }
-
-                    columns.forEach(column => {
-                        column.style.overflow = 'auto';
-                        column.style.maxHeight = '';
-                    });
-
-                    if (footer) {
-                        footer.style.display = 'flex';
-                        footer.style.position = '';
-                    }
-                }
-            }
-        }
-
-        // 7. Action Buttons Module
+        // 6. Action Buttons Module
         class ActionButtons {
             constructor() {
                 this.tryAgainButton = document.getElementById('tryAgainButton');
@@ -1104,7 +1043,6 @@
             }
 
             setupEventListeners() {
-                this.tryAgainButton.setAttribute('title', 'Click or press Shift+Enter');
                 this.tryAgainButton.addEventListener('click', () => this.handleTryAgain());
                 this.replyInsteadButton.addEventListener('click', () => this.handleReplyInstead());
 
@@ -1186,7 +1124,6 @@
         const resultButtonsManager = new ResultButtonsManager();
         const copyManager = new CopyManager();
         const tokenCounter = new TokenCounter();
-        const mobileResponsiveness = new MobileResponsiveness();
         const actionButtons = new ActionButtons();
 
         // Make result buttons manager available globally for SSE handler
