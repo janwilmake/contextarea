@@ -230,5 +230,16 @@
     "icon": "/providers/cerebras.png",
     "description": "Ultra-fast inference ~2100 tokens/s",
     "features": []
+  },
+  {
+    "model": "speed",
+    "basePath": "https://beta.parallel.ai",
+    "providerSlug": "parallel",
+    "pricePerMillionInput": 0.4,
+    "pricePerMillionOutput": 5,
+    "maxTokens": 64000,
+    "name": "Parallel Web Search",
+    "icon": "/providers/parallel.svg",
+    "features": ["search"]
   }
 ]

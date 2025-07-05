@@ -1,3 +1,60 @@
+# Images as context, videos as context
+
+HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
+
+Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
+
+Video urls should be inserted as video context to the model (if the model supports it)
+
+Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
+
+# Variables
+
+What if:
+
+- If you prompt something with `{{var1}}` and `{{var2}}` it is required to be filled. This can be part of URLs too!
+- https://letmeprompt.com/[id]/{{var1}}/{{var2}} is where you first get your result. Without variables, it should prompt to pass them.
+- `https://[id].gptideas.com/{{var1}}/{{var2}}` is static results with routing (basepath being after variables; this now functions as API!)
+- https://[id].chatcompletions.com/chat/completions would allow using the prompt + context as system prompt with additional variables in the headers in `variables:Object`. These would be required if they are present.
+
+These are all GREAT primitives to allow making prompts more flexible
+
+https://letmeprompt.com/httpsmarkdownfeed-jqin4k0 would be able to be done with variable. Imagine we could also choose a name: `xcategories`.
+
+Now, https://xcategories.gptideas.com/janwilmake/categories.yaml should magically trigger prompting the same for me, IF I authorized it (either lazy with auth token, or predone with scope). We can now use this as some sort of API
+
+Imagine now that we could also configure the scope and max-age. This would make this API truly valuable. It's a lot of extra complexity, and can be made more generically for URLs too, so maybe should be separated from letmeprompt itself, however, I could definitely see this as a quick way to prototype APIs. The API in-browser could then also immediately be the place where you find all results in one place.
+
+I think a great place to start is:
+
+- Establish as OAuth provider (login with letmeprompt)
+- Ability to name prompts to replace, configure, budget for them later
+- Named prompts should get history/versions and a DO as storage for all versions, including with variables.
+- Variables in prompts should become indexes in the SQLite DB.
+
+## Patchlink Plugin
+
+IDEA: Help the idea guys with making their content more actionable
+
+I basically created a 'mirror thread' and this could possibly be automated if lmpify had an MCP: https://x.com/janwilmake/status/1925218363774570938. But even if it's not automated it could be a great way to make ideas more actionable right away.
+
+To truly optimise for actionability, it'd make a ton of sense to add 'patch for github' as a button, which would send the repo + result to the patch-api, which would basically be an independent glue. I can even charge a dollar for this instead since a lot of people don't know git, nor MCP.
+
+The button should lead to this, and this should request permission to github oauth, then fork and patch, then redirect there! https://patch.forgithub.com/prepare?markdown={URL}&sourceOwner={OWNER}&sourceRepo={REPO}&sourceBranch={BRANCH}
+
+This patch could also add the original lmpify that lead to the fork into the README, creating another viral loop! Besides, based on which boilerplate it is, it should add buttons to deploy (deploy to vercel, deploy to cloudflare, etc) so it's just one more click away from deployment.
+
+The way the plugin system could work is by creating a **simple URL regex** that gets applied on the URLs in the prompt. For this patchlink to appear, the input prompt should have https://uithub.com/janwilmake/gists/tree/main/named-codeblocks.md
+
+Add transformation to patcher:
+
+- Ability inject HTML scripts
+- Ability to inject buttons into README
+
+Dream it --> Prompt it --> Ship it; flaredream!
+
+**🤯 Brainstorm**: what if I had a generic worker that rendered HTML that executes a js-only worker script in-browser to then write the resulting HTML to the browser? This would be a way to achieve instant backends, safely. All that'd be needed would be to serve the right script on the right subdomain (proper separation), and write env secrets to localStorage with a wrapper script, before running the script. Now it basically allows eval! https://github.com/janwilmake/metaworker
+
 # BACKLOG
 
 - **Large Asset Buckets** Test for large files. Overcome `letmeprompt.download` limitations of max 128MB ram by streaming. Would be very cool to test if i can upload a huge music library or something.
@@ -27,9 +84,15 @@ This can also be combined with lookup of information. What if you could specify 
 
 If a link contains `{var}` or `?var=` (not filled in) it is assumed to require parameters and submission. Let's only support public GET
 
-# QOL:
+# Improved OG
 
-- Add 💡 logo to og-image **didn't work last time. figure out what is wrong with the png format**
+Add logo of used model to og-image.
+
+Also, use a nicer-looking background image for the og
+
+Also the LMPIFY logo needs to be somewhere, and logo of primary context used, if any.
+
+**didn't work last time. figure out what is wrong with the png format**
 
 # Layers on top of lmpify: `context.json` or code generator
 
@@ -53,21 +116,7 @@ If a link contains `{var}` or `?var=` (not filled in) it is assumed to require p
 
 # High Impact Improvements
 
-We can embed images as images into chat/completions.
-
-Add support for videos too by doing a model update, adding gemini. which should return an error if the model doesnt support video
-
-Make `?prompt&query&model` work from homepage (prompt insta-submits, is this safe?). Improve the widget making it very well documented and turn that into a README.
-
 Add easily embeddable link that links to result. It's now just clickable but not insertable.
-
-New footer. Footer Real Estate:
-
-- ✔️ copy link
-- ✔️ change model
-- ✔️ try again or reply
-- if output has codeblocks: patch button
-- markdown for prompt-it button
 
 # `/chat/completions`
 
@@ -137,10 +186,12 @@ Revshare with the creators is super epic. Can be done directly to client_referen
 
 It's interesting ways to make the 'prompt it' button more appealing
 
+**Different reasoning**: people linked to LMPIFY should ALWAYS HAVE AN ANSWER, NEVER HIT PAY WALL IMMEDIATELY, ALSO NOT FOR VERY GOOD MODELS.
+
 # BUGS/Problems
 
-- 🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
-
 - 🟠 Resultpage loads somewhat slow now some times, due to stripe middleware as the DO is being relocated. Could've been a temporary bug! It was supposed to be fast, so let's figure out why it is NOT fast. in private window, the DO is super fast. in current safari https://letmeprompt.com is slow (500+ms). figure out where it's located and how this is possible!? https://x.com/janwilmake/status/1922592298904219859 - potential solution; refresh access token after 24h so the DO doesn't stay slow, but gets refreshed; but need a proper transfer method for this too. It'd also be good to understand the problem better: log DO response time in `stripeflare` package with warning if its over 100ms?
+
+- 🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
 
 - Problem: re-rendering entire text for every output token makes it slow, especially when doing so many calculations. Idea: seal markdown output after every section. Before beginning a codeblock, and after ending acodeblock, these are moments which we would be able to seal it up to there and create a new 'block'. This way only the latest block is being re-rendered, making it a lot faster. This would allow making complete codeblocks interactive already. Incomplete codeblocks can now also made interactive, especially if can figure out how to skip updating the UI for 95% of tokens, just update it everh 20th token. Besides, if I can do this, it'd be possible to render the unfinished html incrementally as it gets created, creating a magical experience.

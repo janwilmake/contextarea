@@ -604,6 +604,8 @@
 
                 <!-- Result buttons container -->
                 <div class="result-buttons-container" id="resultButtonsContainer">
+
+
                     <!-- Download button (hidden initially) -->
                     <button class="result-button hidden" id="downloadButton" title="Download">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -624,6 +626,17 @@
                             <path d="M21 12h-6m-6 0H3"></path>
                         </svg>
                         <span>Deploy</span>
+                    </button>
+
+
+                    <!-- visible immediately -->
+                    <button type="button" class="result-button" id="replyInsteadButton">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="margin-left: 4px;">
+                            <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round"></path>
+                        </svg>
+                        <span>Reply</span>
+
                     </button>
 
                     <!-- Preview button (visible immediately) -->
@@ -655,21 +668,12 @@
             <div class="footer-actions">
                 <div id="model-modal"></div>
                 <button type="button" class="try-again-button" id="tryAgainButton">
-                    <span>Try again</span>
+                    <span>Submit</span>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                         <path d="M21 12a9 9 0 11-9-9c2.52 0 4.93 1 6.74 2.74L21 8" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         <path d="M21 3v5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                             stroke-linejoin="round" />
-                    </svg>
-                </button>
-
-                <button type="button" class="reply-instead-button" id="replyInsteadButton"
-                    style="background-color: transparent; border: 0.5px solid #e5e5e575; color: #e5e5e5; font-size: 14px; border-radius: 8px; padding: 8px 12px; margin-left: 8px; display: flex; align-items: center; cursor: pointer;">
-                    <span>Reply Instead</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        style="margin-left: 4px;">
-                        <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
                 </button>
             </div>

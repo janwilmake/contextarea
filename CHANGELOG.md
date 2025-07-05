@@ -170,3 +170,9 @@ DONE 🎉
 - ✅ weird `&quot;` stuff in md and images shouldn't be rendering!
 - ✅ Big ugly copy button on mobile
 - ✅ Added company icons (replacing emojis)
+
+Test parallel:
+
+```
+curl -X POST "https://beta.parallel.ai/chat/completions" -H "Content-Type: application/json" -H "Authorization: Bearer X" -d '{"model": "speed","messages": [{"role": "user","content": "What does Parallel Web Systems do?"}],"stream": true}'
+```
