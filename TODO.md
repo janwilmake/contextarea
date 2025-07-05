@@ -2,16 +2,21 @@
 
 ![](modules.drawio.png)
 
+TODAY
+
+- ✅ Rename deployment to flaredream!
+- weird `&quot;` stuff in md and images shouldn't be rendering!
+- Big ugly copy button on mobile
+- Use https://oapis.org/openapi/cloudflare/zones-get in flaredream to attach zone-id to route and do not SKIP THAT STEP.
+- Create a nice prompt for how to use `wrangler.toml` and what is NOT supported (and to omit binding anything unless ID is provided). It should also instruct to put failsaves around if bindings are not available to bind them.
+- Ensure to return the urls deployed at including all zones.
+- **Charge broken** - Just log it and see what's up, fix on stripeflare. Might even be DORM problem. MESSY!
+
 CRITICAL
 
-- **Charge broken** - Just log it and see what's up, fix on stripeflare. Might even be DORM problem. MESSY!
-- Rename deployment to flaredream!
 - Turn payment system into XMoney so people can pay each other.
 - Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
 - Turn `{subdomain}.letmeprompt.com/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt. Results would not show the systemprompt, and would only be available with that model, but would still get their own new subdomain.
-- Use https://oapis.org/openapi/cloudflare/zones-get in claudeflair to attach zone-id to route and do not SKIP THAT STEP.
-- Create a nice prompt for how to use `wrangler.toml` and what is NOT supported (and to omit binding anything unless ID is provided). It should also instruct to put failsaves around if bindings are not available to bind them.
-- Ensure to return the urls deployed at including all zones.
 
 Ultimately I'd want to be able to set worker-name, repo-name, branch, and have these deployments happen automatically, instantly. For this to work, I require `Login with Cloudflare` and `Login with GitHub` to be a part of letmeprompt.com, and allow for generation-configs (name, repo, branch, worker-name). It's not clear to me yet if this should be a completely new app that uses letmeprompt.com? Maybe better; niched towards easy workers: flaredream!
 
