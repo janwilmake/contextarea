@@ -1237,56 +1237,72 @@ const getResult = async (
 
   // For OG image
   if (format === "image/png") {
-    const promptTokens = Math.round(data.prompt.length / 5);
-    const contextTokens = Math.round((data.context?.length || 0) / 5);
-    const resultTokens = Math.round((data.result?.length || 0) / 5);
+    const provider = providers.find((x) => x.model === data.model);
 
+    const promptWithoutUrls = removeUrlsFromText(data.prompt);
     // Extract a preview of the prompt - display first 40 chars
     const headline =
       data.headline ||
-      (data.prompt.length > 40
-        ? data.prompt.substring(0, 40) + "..."
-        : data.prompt);
+      (promptWithoutUrls.length > 32
+        ? promptWithoutUrls.substring(0, 30) + "..."
+        : promptWithoutUrls);
 
-    // Ensure all divs have display: flex and only using inline styles
-    const ogHtml = `<div style="display: flex; width: 1200px; height: 630px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif">
-    <div style="display: flex; flex-direction: column; background-color: #2a2a2a; width: 100%; height: 100%; padding-left: 40px; padding-right: 40px; padding-top: 10px; padding-bottom: 100px;">
+    // Ensure all divs have display: flex and only using inline styles. also, img must have width and height props
+    const ogHtml = `<div style="display: flex; width: 1200px; height: 630px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background-color: #2a2a2a;">
+    
+    <!-- Top orange section -->
+    <div style="position: absolute; top: 0; left: 0; display:flex; width: 100%; height: 80px; background-color: ${
+      provider.color
+    };"></div>
+    
+    <!-- Bottom orange section -->
+    <div style="position: absolute; bottom: 0; left: 0; display:flex; width: 100%; height: 80px; background-color: ${
+      provider.color
+    };"></div>
+    
+    <!-- Main content container -->
+    <div style="display: flex; flex-direction: column; width: 100%; height: 100%; padding: 100px 60px; justify-content: center; align-items: center; position: relative; z-index: 1;">
       
-      <!-- Header row -->
-      <div style="display: flex; width:100%; justify-content: flex-end; margin-bottom: 15px;">
-        <!--<div style="display: flex; width: 36px; height: 36px; background-color: #feca57; border-radius: 18px; margin-right: 12px;"></div>-->
-        <div style="display: flex;"><p style="display: flex; flex-direction: column; margin: 0; font-size: 42px; color: #ffffff; font-weight: 300; letter-spacing: 0.02em; font-family: sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial;">let me prompt it for you</p></div>
+      <!-- Title -->
+      <div style="display: flex; margin-bottom: 40px;">
+        <h1 style="color: #ffffff; font-size: 72px; font-weight: 600; margin: 0; text-align: center; line-height: 1.2;">${headline}</h1>
       </div>
       
-      <!-- Main content area -->
-      <div style="display: flex; flex-direction: column; justify-content: center; flex: 1;">
-        <!-- Prompt container -->
-        <div style="display: flex; padding: 30px; margin-bottom: 20px; border-left: 6px solid #feca57;">
-          <div style="display: flex; width: 100%;">
-            <p style="display: flex; flex-direction: column; color: #e5e5e5; font-size: 64px; margin: 0; font-family: sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial; width: 100%;">${headline}</p>
-          </div>
-        </div>
-      </div>
-      
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; flex-direction: column; align-items: flex-start;">
-          <div style="display: flex; font-size: 80px; font-weight: bold; color: #feca57;">${promptTokens.toLocaleString()}</div>
-          <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">PROMPT TOKENS</div>
-        </div>
-  
-         <div style="display: flex; flex-direction: column; align-items: flex-start;">
-          <div style="display: flex; font-size: 80px; font-weight: bold; color: #4a9eff;">${contextTokens.toLocaleString()}</div>
-          <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">CONTEXT TOKENS</div>
-        </div>
-  
-         <div style="display: flex; flex-direction: column; align-items: flex-start;">
-          <div style="display: flex; font-size: 80px; font-weight: bold; color: #e5e5e5;">${resultTokens.toLocaleString()}</div>
-          <div style="display: flex; font-size: 28px; color: #b5b5b5; opacity: 0.8;">RESULT TOKENS</div>
-        </div>
+      <!-- Subtitle with provider info and signature -->
+      <div style="display: flex; align-items: center; gap: 20px;">
+        
+        <!-- Provider icon -->
+        ${
+          provider?.icon
+            ? `<img src="https://raw.githubusercontent.com/janwilmake/flaredream.providers/refs/heads/main/public${
+                provider.icon
+              }" alt="${
+                provider?.name || "Provider"
+              }" width="120" height="120" style="width: 120px; height: 120px; border-radius: 24px;" />`
+            : ""
+        }
+        
+        <!-- Provider name -->
+        <span style="color: #e5e5e5; font-size: 36px; font-weight: 400;">${
+          provider?.name || "AI"
+        } Generation</span>
+        
+       
         
       </div>
+      
     </div>
   </div>`;
+
+    /* 
+  
+  TODO: Add back after we have login
+  
+  <span style="color: #b5b5b5; font-size: 36px; font-weight: 300;">by Jan</span>
+        
+        <!-- Profile picture -->
+        <img src="https://pbs.twimg.com/profile_images/1904848783290019841/1duyf2SK_400x400.jpg" width="120" height="120" alt="Jan Wilmake" style="width: 120px; height: 120px; border-radius: 24px;" />*/
+
     // Generate the image using ImageResponse from workers-og
     try {
       console.log("Generating OG image");
