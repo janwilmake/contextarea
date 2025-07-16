@@ -292,12 +292,15 @@
         /* Sticky header styles */
         .sticky-header {
             position: sticky;
+            display: flex;
+            align-items: center;
             top: 0;
             background-color: rgba(58, 58, 58, 0.95);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid #4a4a4a;
-            padding: 24px 24px 16px 24px;
+            padding: 12px 24px 12px 24px;
             z-index: 10;
+            height: 60px;
         }
 
         .column-header {
@@ -305,6 +308,7 @@
             font-weight: 500;
             display: flex;
             align-items: center;
+            width: 100%;
             justify-content: space-between;
         }
 
@@ -324,6 +328,7 @@
             border-top: 1px solid #4a4a4a;
             padding: 16px 24px 24px 24px;
             z-index: 10;
+            height: 60px;
         }
 
         a {
@@ -362,7 +367,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 16px;
             gap: 12px;
         }
 
@@ -376,7 +380,7 @@
             color: white;
             border: none;
             border-radius: 12px;
-            padding: 12px 20px;
+            padding: 8px 20px;
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
@@ -384,12 +388,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            box-shadow: 0 4px 15px rgba(234, 177, 102, 0.3);
         }
 
         .submit-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(234, 177, 102, 0.4);
+            box-shadow: 0 6px 20px rgba(234, 177, 102, 0.1);
         }
 
         .submit-button:active {
