@@ -196,6 +196,21 @@
   },
 
   {
+    "model": "moonshotai/kimi-k2-instruct",
+    "basePath": "https://api.groq.com/openai/v1",
+    "providerSlug": "groq",
+    "pricePerMillionInput": 1,
+    "pricePerMillionOutput": 3,
+    "maxTokens": 16384,
+    "color": "#f54f35",
+    "name": "Groq - Kimi K2",
+    "icon": "/providers/groq.png",
+    "description": "Great speeds, low ratelimits",
+    "features": [],
+    "premium": true
+  },
+
+  {
     "model": "llama-3.3-70b-versatile",
     "basePath": "https://api.groq.com/openai/v1",
     "providerSlug": "groq",

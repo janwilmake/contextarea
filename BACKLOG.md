@@ -85,16 +85,6 @@ This can also be combined with lookup of information. What if you could specify 
 
 If a link contains `{var}` or `?var=` (not filled in) it is assumed to require parameters and submission. Let's only support public GET
 
-# Improved OG
-
-Add logo of used model to og-image.
-
-Also, use a nicer-looking background image for the og
-
-Also the LMPIFY logo needs to be somewhere, and logo of primary context used, if any.
-
-**didn't work last time. figure out what is wrong with the png format**
-
 # Layers on top of lmpify: `context.json` or code generator
 
 - A JS-based embed (`<div id="lmpify"></div><script src="https://letmeprompt.com/widget.js?query=a&b=c&d=e"></script>`) which renders it into a div, as a widget, in several sizes/ways (Could be separate files too) **the problem here is i need more than just the input. I need the result page and build around that**
@@ -114,33 +104,6 @@ Also the LMPIFY logo needs to be somewhere, and logo of primary context used, if
 - IDEA: `/from/{url}` could be what shows up in address bar, may make it easier to learn that convention, or at least show it in the interface, if it was the source.
 
 - IDEA: User-based DO that collects all history and keeps a live connection with any active browser session of that user, such that it is broadcastable from https://letmeprompt.com/{userslug} and a history is also collected there. A good MVP would be to first make websocket-markdown editor DO like bruna almost did
-
-# High Impact Improvements
-
-Add easily embeddable link that links to result. It's now just clickable but not insertable.
-
-# `/chat/completions`
-
-Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily.
-
-Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
-
-Generally its a good idea to allow for programmatic access and give people an API for this!!!!!!!! Imagine if people could earn money by easily creating new stripeflare workers that allow access to this API? You could set any price and it'd be super easy to setup via a lmpify.
-
-TODO:
-
-1. Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now. Can still use all other values.
-
-2. In the UI, show 'Use Context' in footer which shows how to use the API.
-
-After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
-
-Ultimately, also get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
-
-- give access_token
-- simple api with ?query&parameters that streams as well
-- /chat/completions api
-- /responses api (openai new standard)
 
 # IDEA: Make prompt button more appealing
 

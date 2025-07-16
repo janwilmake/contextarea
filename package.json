@@ -1,8 +1,9 @@
 {
   "dependencies": {
+    "dormroom": "^1.0.0-next.100",
     "marked": "^16.0.0",
-    "stripeflare": "^0.0.32",
-    "workers-og": "^0.0.25"
+    "stripeflare": "^0.0.40",
+    "workers-og": "^0.0.27"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250204.0"

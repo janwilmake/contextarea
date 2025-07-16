@@ -9,8 +9,8 @@ import {
   Env as StripeflareEnv,
   stripeBalanceMiddleware,
   type StripeUser,
+  DORM,
 } from "stripeflare";
-export { DORM } from "stripeflare";
 import { createClient } from "dormroom";
 import { DurableObject } from "cloudflare:workers";
 //@ts-ignore
@@ -19,12 +19,13 @@ import { RatelimitDO } from "./ratelimiter.js";
 export { RatelimitDO };
 import { Token, lexer } from "marked";
 
+export { DORM };
 /**
  * Recursively flatten a marked token and return something if a find function is met
  */
 export const flattenMarkedTokenRecursive = (
   token: Token,
-  findFunction: (token: any) => boolean,
+  findFunction: (token: any) => boolean
 ): Token[] => {
   if (findFunction(token)) {
     return [token];
@@ -97,7 +98,7 @@ export const flattenMarkedTokenRecursive = (
  */
 export const flattenMarkdownString = (
   markdownString: string,
-  findFunction: (token: Token) => boolean,
+  findFunction: (token: Token) => boolean
 ): Token[] => {
   const tokenList = lexer(markdownString);
   const result = tokenList
@@ -118,7 +119,7 @@ export const flattenMarkdownString = (
  * ```
  */
 export const findCodeblocks = (
-  markdownString: string,
+  markdownString: string
 ): {
   text: string;
   lang?: string;
@@ -126,7 +127,7 @@ export const findCodeblocks = (
 }[] => {
   const result = flattenMarkdownString(
     markdownString,
-    (token) => token.type === "code",
+    (token) => token.type === "code"
   );
 
   const codesblocks = result
@@ -147,7 +148,7 @@ export const findCodeblocks = (
           const value = isQuoted ? value0.slice(1, value0.length - 1) : value0;
 
           return [key, value];
-        }),
+        })
       );
 
       return { text, lang: ext, parameters };
@@ -160,37 +161,13 @@ export const findCodeblocks = (
 
 const DORM_VERSION = "bare-stripeflare";
 
-const migrations = {
-  // can add any other info here
-  1: [
-    `CREATE TABLE users (
-      access_token TEXT PRIMARY KEY,
-      balance INTEGER DEFAULT 0,
-      name TEXT,
-      email TEXT,
-      verified_email TEXT,
-      verified_user_access_token TEXT,
-      card_fingerprint TEXT,
-      client_reference_id TEXT
-    )`,
-    `CREATE INDEX idx_users_balance ON users(balance)`,
-    `CREATE INDEX idx_users_name ON users(name)`,
-    `CREATE INDEX idx_users_email ON users(email)`,
-    `CREATE INDEX idx_users_verified_email ON users(verified_email)`,
-    `CREATE INDEX idx_users_card_fingerprint ON users(card_fingerprint)`,
-    `CREATE INDEX idx_users_client_reference_id ON users(client_reference_id)`,
-  ],
-  // TODO: let's add other columns here like free_model_uses
-  // 2: []
-};
-
 /**
  * Generates a catchy title for an AI interaction using OpenAI's GPT-4.1 Mini
  * Silently falls back to a default title if any errors occur
  */
 async function generateTitleWithAI(
   contextContent,
-  apiKey,
+  apiKey
 ): Promise<{ title: string; description: string }> {
   // Default response in case of any errors
   const defaultResponse = {
@@ -235,7 +212,7 @@ async function generateTitleWithAI(
     if (!response.ok) {
       const errorData: any = await response.json().catch(() => ({}));
       console.warn(
-        `OpenAI API error: ${errorData.error?.message || response.statusText}`,
+        `OpenAI API error: ${errorData.error?.message || response.statusText}`
       );
       return defaultResponse;
     }
@@ -250,7 +227,7 @@ async function generateTitleWithAI(
     if (!jsonMatch) {
       // Try to find any code block if json-specific one isn't found
       const codeBlockMatch = aiResponse.match(
-        /```(?:\w*\s*)?\s*([\s\S]*?)\s*```/,
+        /```(?:\w*\s*)?\s*([\s\S]*?)\s*```/
       );
 
       if (!codeBlockMatch) {
@@ -379,7 +356,7 @@ const generateContext = async (prompt: string) => {
           failed: true,
         };
       }
-    }),
+    })
   );
 
   // Construct context
@@ -388,7 +365,7 @@ const generateContext = async (prompt: string) => {
       `${previous}\n${url} (${tokens} tokens) \n${
         previous.length > 1024 * 1024 ? "Omitted due to context length." : text
       }\n`,
-    "",
+    ""
   );
 
   if (hasHtml || hasError) {
@@ -433,7 +410,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.sql.exec(
       `INSERT OR REPLACE INTO _kv (key, value) VALUES (?, ?)`,
       key,
-      jsonValue,
+      jsonValue
     );
   }
 
@@ -505,7 +482,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       "Starting SSE stream for:",
       pathname,
       prompt,
-      modelConfig?.model,
+      modelConfig?.model
     );
 
     // Create SSE stream
@@ -617,7 +594,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async processRequest(
     user: User | undefined,
-    isFirstRequest: boolean | undefined,
+    isFirstRequest: boolean | undefined
   ) {
     try {
       // Get stored state
@@ -632,7 +609,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const apiKey = this.env[envVariableName];
       if (!apiKey) {
         throw new Error(
-          `Missing API Key for ${modelConfig.model}: ${envVariableName}`,
+          `Missing API Key for ${modelConfig.model}: ${envVariableName}`
         );
       }
 
@@ -653,7 +630,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
           console.log("GOT HEADLINE", data.title);
           this.set("headline", data.title);
-        }),
+        })
       );
 
       // Fetch all URLs in parallel
@@ -705,13 +682,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           headers: {
             "Content-Type": "application/json",
             ...(isAnthropic
-              ? {
-                  "x-api-key": apiKey,
-                  "anthropic-version": "2023-06-01",
-                }
-              : {
-                  Authorization: `Bearer ${apiKey}`,
-                }),
+              ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
+              : { Authorization: `Bearer ${apiKey}` }),
           },
           body: JSON.stringify({
             model: modelConfig.model,
@@ -727,12 +699,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             ...(isAnthropic && context && { system: context }),
             ...(!isAnthropic && { stream_options: { include_usage: true } }),
           }),
-        },
+        }
       );
 
       if (!llmResponse.ok) {
         throw new Error(
-          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`,
+          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`
         );
       }
 
@@ -772,7 +744,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                 if (parsed.usage?.output_tokens) {
                   console.log(
                     "anthropic output tokens",
-                    parsed.usage.output_tokens,
+                    parsed.usage.output_tokens
                   );
                   priceAtOutput =
                     parsed.usage.output_tokens *
@@ -786,7 +758,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                 if (parsed.usage?.completion_tokens) {
                   console.log(
                     "chatgpt output tokens",
-                    parsed.usage.completion_tokens,
+                    parsed.usage.completion_tokens
                   );
 
                   priceAtOutput =
@@ -865,7 +837,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async handleStreamComplete(
     user: User | undefined,
-    totalCost: number,
+    totalCost: number
   ) {
     this.set("streamComplete", true);
 
@@ -886,27 +858,28 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       totalCost,
       "access_token",
       user?.access_token,
+      user?.client_reference_id,
       "model config",
-      modelConfig,
+      modelConfig
     );
 
     if (user?.access_token) {
       const client = createClient({
-        doNamespace: this.env.DORM_NAMESPACE,
-        version: DORM_VERSION,
-        migrations,
+        // NB: need to wrap because of the this reference
         //@ts-ignore
         ctx: {
-          // NB: need to wrap because of the this reference
           waitUntil: (promise: Promise<void>) => this.ctx.waitUntil(promise),
         },
-        name: user?.client_reference_id,
-        mirrorName: "aggregate",
+        configs: [
+          { name: `${DORM_VERSION}-user-${user.client_reference_id}` },
+          { name: `${DORM_VERSION}-aggregate` },
+        ],
+        doNamespace: this.env.DORM_NAMESPACE,
       });
-      client.exec(
+      await client.exec(
         "UPDATE users SET balance = balance - ? WHERE access_token = ?",
         totalCost * 100,
-        user?.access_token,
+        user?.access_token
       );
     } else {
       console.log("WARN; NO USER ACCESS TOKEN");
@@ -938,7 +911,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   private async sendEvent(
     controller: ReadableStreamDefaultController<Uint8Array>,
     type: string,
-    data: any,
+    data: any
   ) {
     const event: SSEEvent = {
       type: type as any,
@@ -1094,7 +1067,7 @@ const getCrawler = (userAgent: string | null) => {
     { name: "Bing", userAgentRegex: /bingbot/ },
   ];
   const crawler = crawlers.find((item) =>
-    item.userAgentRegex.test(userAgent || ""),
+    item.userAgentRegex.test(userAgent || "")
   )?.name;
 
   return crawler;
@@ -1123,7 +1096,7 @@ export const getFormat = (request: Request): AllowedFormat | null => {
   if (ext && Object.keys(allowedFormats).includes(ext)) {
     // allow path to determine format. comes before crawler since this allows easy changing
     return Object.entries(allowedFormats).find(
-      (entry) => entry[0] === ext,
+      (entry) => entry[0] === ext
     )?.[1]!;
   }
 
@@ -1140,7 +1113,7 @@ export const getFormat = (request: Request): AllowedFormat | null => {
     .split(",")
     .map((f) => f.trim().split(";")[0].trim());
   const allowedFomat = acceptedFormats.find((format) =>
-    Object.values(allowedFormats).includes(format as AllowedFormat),
+    Object.values(allowedFormats).includes(format as AllowedFormat)
   ) as AllowedFormat | undefined;
 
   return allowedFomat || null;
@@ -1150,7 +1123,7 @@ const getMarkdownResponse = (
   pathname: string,
   data: KVData,
   key?: string | null,
-  codeblock?: string | null,
+  codeblock?: string | null
 ) => {
   if (key) {
     // allow returning a specific key
@@ -1230,7 +1203,7 @@ const getResult = async (
   publicUser: Omit<User, "access_token" | "verified_user_access_token"> | {},
   data: KVData,
   status: string,
-  headers: any,
+  headers: any
 ) => {
   const format = getFormat(request);
   const url = new URL(request.url);
@@ -1344,9 +1317,9 @@ const getResult = async (
         url.pathname,
         data,
         url.searchParams.get("key"),
-        url.searchParams.get("codeblock"),
+        url.searchParams.get("codeblock")
       ),
-      { headers },
+      { headers }
     );
   }
 
@@ -1372,7 +1345,7 @@ const getResultHTML = async (
   env: Env,
   data: any,
   headers: Headers,
-  requestUrl: string,
+  requestUrl: string
 ) => {
   const url = new URL(requestUrl);
 
@@ -1397,7 +1370,7 @@ const getResultHTML = async (
 const requestHandler = async (
   request: Request,
   env: Env,
-  ctx: ExecutionContext,
+  ctx: ExecutionContext
 ): Promise<Response> => {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -1411,8 +1384,7 @@ const requestHandler = async (
     request,
     env,
     ctx,
-    migrations,
-    DORM_VERSION,
+    DORM_VERSION
   );
 
   console.log({ stripeMiddlewareMs: Date.now() - t });
@@ -1432,6 +1404,21 @@ const requestHandler = async (
     return new Response("Method not allowed", { status: 405, headers });
   }
 
+  if (url.pathname === "/chat/completions" && request.method === "POST") {
+  } else if (
+    url.pathname.startsWith("/chat/completions/") &&
+    request.method === "GET"
+  ) {
+    const id = url.pathname.split("/").pop();
+    const existingData = (await env.RESULTS.get(id, "json")) as KVData | null;
+    if (existingData) {
+      return new Response(JSON.stringify(existingData), {
+        headers: { "content-type": "application/json" },
+      });
+    }
+    return new Response("Not found", { status: 404 });
+  }
+
   const pathnameWithoutExt = pathname.split(".")[0];
 
   try {
@@ -1439,7 +1426,7 @@ const requestHandler = async (
     // Check if result already exists in KV
     const existingData = (await env.RESULTS.get(
       pathnameWithoutExt,
-      "json",
+      "json"
     )) as KVData | null;
     console.log({ kvRequestMs: Date.now() - t });
 
@@ -1450,7 +1437,7 @@ const requestHandler = async (
         publicUser,
         existingData,
         existingData.error ? "error" : "complete",
-        headers,
+        headers
       );
     }
 
@@ -1522,7 +1509,7 @@ const requestHandler = async (
         "127.0.0.1";
 
       const ratelimited = await env.RATELIMIT_DO.get(
-        env.RATELIMIT_DO.idFromName("v2." + clientIp),
+        env.RATELIMIT_DO.idFromName("v2." + clientIp)
       ).checkRateLimit({
         requestLimit,
         resetIntervalMs: 3600 * 1000,
@@ -1560,7 +1547,7 @@ const requestHandler = async (
             env,
             scriptData,
             new Headers({ ...newHeaders, ...ratelimited.headers }),
-            request.url,
+            request.url
           );
         }
 
@@ -1578,7 +1565,7 @@ const requestHandler = async (
                 'error="rate_limit_exceeded",' +
                 'error_description="Rate limit exceeded. Please purchase credit at https://letmeprompt.com for higher limits"',
             },
-          },
+          }
         );
       }
 
@@ -1661,14 +1648,14 @@ export default {
             body: formData,
           }),
           env,
-          ctx,
+          ctx
         );
         const result = await postResponse.text();
         console.log(
           "result from ",
           postResponse.status,
           contextUrl.toString(),
-          result?.length,
+          result?.length
         );
 
         return new Response("Redirect", {

@@ -27,6 +27,18 @@ Launch:
 - Uploads
 - Tools
 
+# LOGIN TO DB
+
+Aggregate: https://letmeprompt.com/db/admin-readonly
+
+- Username: admin
+- Password: DB_SECRET
+
+User DB: https://letmeprompt.com/db/user-{client_reference_id}
+
+- Username: admin
+- Password: access_token
+
 # Why lmpify vs claude?
 
 I'd say if you wanna make this a real product, you gotta nail the answer to the question how is it better than going to claude.com very nice

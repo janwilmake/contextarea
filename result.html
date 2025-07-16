@@ -48,6 +48,23 @@
                 border-radius: 6px !important;
                 min-width: auto !important;
             }
+
+            .result-button svg {
+                width: 16px;
+                height: 16px;
+                transition: transform 0.3s ease;
+            }
+
+            .result-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            .result-button.clicked {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
         }
 
         @media (max-width: 768px) {
@@ -57,13 +74,11 @@
                 padding: 0;
                 margin: 0;
                 overflow-x: hidden;
-                /* Remove height: 100vh constraint on mobile */
                 height: auto;
                 min-height: 100vh;
             }
 
             .container {
-                /* Override desktop flex layout */
                 height: auto !important;
                 min-height: auto !important;
                 display: block;
@@ -91,13 +106,11 @@
 
             /* Column mobile adjustments */
             .column {
-                /* Override desktop flex and overflow behavior */
                 overflow: visible !important;
                 height: auto !important;
                 min-height: auto !important;
                 max-height: none !important;
                 flex: none !important;
-
                 margin-bottom: 8px;
                 padding: 10px;
                 border-radius: 8px;
@@ -111,9 +124,18 @@
                 padding-bottom: 8px;
             }
 
-            /* Textarea auto-resize with CSS only */
+            /* Mobile sticky adjustments */
+            .sticky-header,
+            .sticky-bottom {
+                position: relative !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 8px 0 !important;
+            }
+
             .prompt-textarea {
-                /* Remove fixed height constraints */
                 max-height: 150px;
                 min-height: 80px;
                 height: auto;
@@ -121,16 +143,12 @@
                 padding: 8px;
                 font-size: 14px;
                 border-radius: 6px;
-
-                /* CSS-only auto-resize using field-sizing when supported */
                 field-sizing: content;
                 resize: vertical;
             }
 
-            /* Fallback for browsers without field-sizing */
             @supports not (field-sizing: content) {
                 .prompt-textarea {
-                    /* Use a reasonable fixed height as fallback */
                     height: 120px;
                 }
             }
@@ -142,7 +160,6 @@
                 justify-content: center !important;
             }
 
-            /* Share section for mobile */
             .share-section {
                 position: static !important;
                 bottom: auto !important;
@@ -156,7 +173,6 @@
                 padding: 6px 8px !important;
             }
 
-            /* Footer copy button */
             .footer-copy-button {
                 padding: 8px 12px !important;
                 font-size: 14px !important;
@@ -168,14 +184,12 @@
                 height: 16px !important;
             }
 
-            /* Button adjustments for better touch targets */
             button {
                 min-height: 36px;
                 padding: 6px 8px;
                 border-radius: 4px;
             }
 
-            /* Token counter mobile styling */
             #tokenCounter {
                 position: static !important;
                 font-size: 12px !important;
@@ -184,7 +198,6 @@
             }
         }
 
-        /* Additional responsive styles for very small screens */
         @media (max-width: 480px) {
             .container {
                 padding: 5px;
@@ -205,13 +218,11 @@
             }
         }
 
-        /* Modern browsers with container queries support */
         @supports (container-type: inline-size) {
             .container {
                 container-type: inline-size;
             }
 
-            /* Use container queries for even better responsive behavior */
             @container (max-width: 768px) {
                 .content-container {
                     display: block !important;
@@ -224,7 +235,7 @@
             }
         }
 
-        /* Other style */
+        /* Base styles */
         * {
             margin: 0;
             padding: 0;
@@ -266,23 +277,53 @@
             min-height: 0;
         }
 
+        /* Updated column styles with sticky headers and bottoms */
         .column {
             flex: 1;
             background-color: #3a3a3a;
             border: 1px solid #4a4a4a;
             border-radius: 24px;
-            padding: 24px;
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sticky header styles */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(58, 58, 58, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #4a4a4a;
+            padding: 24px 24px 16px 24px;
+            z-index: 10;
         }
 
         .column-header {
             font-size: 18px;
             font-weight: 500;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #4a4a4a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Scrollable content area */
+        .column-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 24px;
+        }
+
+        /* Sticky bottom styles */
+        .sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            background-color: rgba(58, 58, 58, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #4a4a4a;
+            padding: 16px 24px 24px 24px;
+            z-index: 10;
         }
 
         a {
@@ -309,7 +350,6 @@
             font-family: inherit;
             line-height: 1.6;
             min-height: 200px;
-            flex: 1;
             transition: border-color 0.2s ease;
         }
 
@@ -374,7 +414,6 @@
             overflow-wrap: break-word;
             max-width: 100%;
             flex: 1;
-            padding-bottom: 80px;
         }
 
         .pending {
@@ -416,15 +455,11 @@
             }
         }
 
-        /* Result buttons container */
+        /* Result buttons container - now in sticky header */
         .result-buttons-container {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             display: flex;
             align-items: center;
             gap: 8px;
-            z-index: 10;
         }
 
         .result-button {
@@ -463,17 +498,15 @@
             display: none;
         }
 
-        /* Share section - sticky at bottom of result panel */
+        /* Token counter in prompt header */
+        #tokenCounter {
+            font-size: 14px;
+            color: #b5b5b5;
+        }
+
+        /* Share section - now in sticky bottom */
         .share-section {
-            position: sticky;
-            bottom: 0;
-            background-color: #3a3a3a;
-            border: 1px solid #4a4a4a;
-            border-radius: 16px;
-            padding: 16px;
-            margin-top: 16px;
-            backdrop-filter: blur(10px);
-            background-color: rgba(58, 58, 58, 0.9);
+            /* No additional styles needed, inherits from sticky-bottom */
         }
 
         .share-container {
@@ -545,23 +578,23 @@
 
         /* Scrollbar styling */
         textarea::-webkit-scrollbar,
-        .column::-webkit-scrollbar {
+        .column-content::-webkit-scrollbar {
             width: 8px;
         }
 
         textarea::-webkit-scrollbar-track,
-        .column::-webkit-scrollbar-track {
+        .column-content::-webkit-scrollbar-track {
             background: transparent;
         }
 
         textarea::-webkit-scrollbar-thumb,
-        .column::-webkit-scrollbar-thumb {
+        .column-content::-webkit-scrollbar-thumb {
             background-color: #5a5a5a;
             border-radius: 4px;
         }
 
         textarea::-webkit-scrollbar-thumb:hover,
-        .column::-webkit-scrollbar-thumb:hover {
+        .column-content::-webkit-scrollbar-thumb:hover {
             background-color: #6a6a6a;
         }
 
@@ -585,8 +618,6 @@
 </head>
 
 <body>
-    <!-- <script src="/sidebar.js"></script> -->
-
     <style>
         #link {
             position: fixed;
@@ -615,107 +646,125 @@
 
     <div class="container">
         <a href="/">
-            <h1><img src="/logo.png" width="32" height="32"
-                    style="width:32px;height:32px;margin-right:12px;" /></span>let me prompt it for you</h1>
+            <h1><img src="/logo.png" width="32" height="32" style="width:32px;height:32px;margin-right:12px;" />let me
+                prompt it for you</h1>
         </a>
 
         <div class="content-container">
-            <div class="column" style="position:relative;">
-                <div class="column-header">
-                    <span>Prompt</span>
+            <!-- Prompt Column -->
+            <div class="column">
+                <!-- Sticky Header -->
+                <div class="sticky-header">
+                    <div class="column-header">
+                        <span>Prompt</span>
+                        <span id="tokenCounter"></span>
+                    </div>
                 </div>
 
-                <span id="tokenCounter"
-                    style="position:absolute;right:25px;font-size: 14px; color: #b5b5b5; margin-left: 6px;"></span>
+                <!-- Scrollable Content -->
+                <div class="column-content">
+                    <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
+                </div>
 
-                <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
-
-                <div class="prompt-actions">
-                    <div class="model-modal-container">
-                        <div id="model-modal"></div>
+                <!-- Sticky Bottom -->
+                <div class="sticky-bottom">
+                    <div class="prompt-actions">
+                        <div class="model-modal-container">
+                            <div id="model-modal"></div>
+                        </div>
+                        <button type="button" class="submit-button" id="tryAgainButton"
+                            title="Shortcut to submit: Shift + Enter">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M7 17l9.5-9.5M17 17V7.5h-9.5" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <span>Submit</span>
+                        </button>
                     </div>
-                    <button type="button" class="submit-button" id="tryAgainButton"
-                        title="Shortcut to submit: Shift + Enter">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M7 17l9.5-9.5M17 17V7.5h-9.5" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        <span>Submit</span>
-                    </button>
                 </div>
             </div>
 
-            <div class="column" style="position: relative;">
-                <div class="column-header">Result</div>
+            <!-- Result Column -->
+            <div class="column">
+                <!-- Sticky Header -->
+                <div class="sticky-header">
+                    <div class="column-header">
+                        <span>Result</span>
+                        <div class="result-buttons-container" id="resultButtonsContainer">
+                            <!-- Download button (hidden initially) -->
+                            <button class="result-button hidden" id="downloadButton" title="Download">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                                    <polyline points="7,10 12,15 17,10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>Download</span>
+                            </button>
 
-                <!-- Result buttons container -->
-                <div class="result-buttons-container" id="resultButtonsContainer">
-                    <!-- Download button (hidden initially) -->
-                    <button class="result-button hidden" id="downloadButton" title="Download">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
-                            <polyline points="7,10 12,15 17,10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        <span>Download</span>
-                    </button>
+                            <!-- Deploy button (hidden initially) -->
+                            <button class="result-button hidden" id="deployButton" title="Deploy">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M12 1v6m0 6v6"></path>
+                                    <path d="M21 12h-6m-6 0H3"></path>
+                                </svg>
+                                <span>Deploy</span>
+                            </button>
 
-                    <!-- Deploy button (hidden initially) -->
-                    <button class="result-button hidden" id="deployButton" title="Deploy">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v6m0 6v6"></path>
-                            <path d="M21 12h-6m-6 0H3"></path>
-                        </svg>
-                        <span>Deploy</span>
-                    </button>
+                            <!-- Reply button (visible immediately) -->
+                            <button type="button" class="result-button" id="replyInsteadButton">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-left: 4px;">
+                                    <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round">
+                                    </path>
+                                </svg>
+                                <span>Reply</span>
+                            </button>
 
-                    <!-- visible immediately -->
-                    <button type="button" class="result-button" id="replyInsteadButton">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" style="margin-left: 4px;">
-                            <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round"></path>
-                        </svg>
-                        <span>Reply</span>
-                    </button>
+                            <!-- Preview button (visible immediately) -->
+                            <button class="result-button" id="previewButton" title="Preview">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                                    <path d="M15 3h6v6"></path>
+                                    <path d="M10 14L21 3"></path>
+                                </svg>
+                                <span>Preview</span>
+                            </button>
 
-                    <!-- Preview button (visible immediately) -->
-                    <button class="result-button" id="previewButton" title="Preview">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
-                            <path d="M15 3h6v6"></path>
-                            <path d="M10 14L21 3"></path>
-                        </svg>
-                        <span>Preview</span>
-                    </button>
-
-                    <!-- Copy button (visible immediately) -->
-                    <button class="result-button" id="copyButton" title="Copy result">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                        <span>Copy</span>
-                    </button>
+                            <!-- Copy button (visible immediately) -->
+                            <button class="result-button" id="copyButton" title="Copy result">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <pre class="result-content" id="resultContent">Loading...</pre>
+                <!-- Scrollable Content -->
+                <div class="column-content">
+                    <pre class="result-content" id="resultContent">Loading...</pre>
+                </div>
 
-                <!-- Share section - sticky at bottom -->
-                <div class="share-section">
-                    <div class="share-container">
-                        <span class="share-label">Share:</span>
-                        <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
-                        <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                            <span>Copy</span>
-                        </button>
+                <!-- Sticky Bottom -->
+                <div class="sticky-bottom">
+                    <div class="share-section">
+                        <div class="share-container">
+                            <span class="share-label">Share:</span>
+                            <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
+                            <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1032,13 +1081,13 @@
             }
         }
 
-
         // 6. Action Buttons Module
         class ActionButtons {
             constructor() {
                 this.tryAgainButton = document.getElementById('tryAgainButton');
                 this.replyInsteadButton = document.getElementById('replyInsteadButton');
                 this.contextarea = document.getElementById('contextarea');
+                this.replyClicked = false; // Track if reply was clicked
 
                 this.setupEventListeners();
             }
@@ -1105,10 +1154,45 @@
             }
 
             handleReplyInstead() {
-                const promptText = this.contextarea.value.trim();
-                if (promptText) {
-                    const currentPath = window.location.pathname;
-                    window.location.href = `/?q=${encodeURIComponent(`Previous Prompt:\n\n${window.location.origin + currentPath + ".md"}\n\n------\n\n`)}`;
+                // Check if already clicked
+                if (this.replyClicked) {
+                    return;
+                }
+
+                // Mark as clicked
+                this.replyClicked = true;
+
+                // Get the SVG icon and animate it
+                const svg = this.replyInsteadButton.querySelector('svg');
+                if (svg) {
+                    svg.style.transition = 'transform 0.6s ease';
+                    svg.style.transform = 'rotate(180deg)';
+                }
+
+                // Disable the button visually
+                this.replyInsteadButton.style.opacity = '0.6';
+                this.replyInsteadButton.style.cursor = 'not-allowed';
+
+                // Get current pathname and construct the answer URL
+                const currentPath = window.location.pathname;
+                const answerText = `\n\nANSWER: https://letmeprompt.com${currentPath}.md?key=result\n\n`;
+
+                // Append to textarea and focus at the end
+                const currentValue = this.contextarea.value;
+                this.contextarea.value = currentValue + answerText;
+
+                // Focus and set cursor to end
+                this.contextarea.focus();
+                this.contextarea.setSelectionRange(this.contextarea.value.length, this.contextarea.value.length);
+
+                // Adjust textarea height if needed
+                if (uiManager && uiManager.adjustTextareaHeight) {
+                    uiManager.adjustTextareaHeight();
+                }
+
+                // Update token count if available
+                if (window.tokenCounter && window.tokenCounter.updateTokenCount) {
+                    window.tokenCounter.updateTokenCount();
                 }
             }
         }
