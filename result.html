@@ -82,8 +82,10 @@
                 height: auto !important;
                 min-height: auto !important;
                 display: block;
-                gap: 8px;
-                padding: 8px;
+                gap: 0;
+                /* Remove gap between columns */
+                padding: 0;
+                /* Remove container padding */
                 max-width: 100%;
                 margin: 0;
             }
@@ -92,6 +94,8 @@
             h1 {
                 font-size: 18px;
                 margin: 8px 0;
+                padding: 0 16px;
+                /* Add some padding to header only */
             }
 
             /* Make content container stack vertically with auto height */
@@ -100,39 +104,72 @@
                 height: auto !important;
                 min-height: auto !important;
                 flex: none !important;
-                gap: 8px;
-                margin-bottom: 8px;
+                gap: 0;
+                /* Remove gap between columns */
+                margin-bottom: 0;
             }
 
-            /* Column mobile adjustments */
+            /* Column mobile adjustments - remove all styling */
             .column {
                 overflow: visible !important;
                 height: auto !important;
                 min-height: auto !important;
                 max-height: none !important;
                 flex: none !important;
-                margin-bottom: 8px;
-                padding: 10px;
-                border-radius: 8px;
-                border: 1px solid #4a4a4a;
+                margin-bottom: 0;
+                padding: 0;
+                /* Remove padding */
+                border-radius: 0;
+                /* Remove roundedness */
+                border: none !important;
+                /* Remove border */
+                background-color: transparent;
+                /* Remove background color */
             }
 
             /* Column header adjustments */
             .column-header {
                 font-size: 16px;
                 margin-bottom: 8px;
-                padding-bottom: 8px;
+                padding: 16px;
+                /* Add padding to header content */
+                border-bottom: 1px solid #4a4a4a;
+                /* Keep some separation */
             }
 
-            /* Mobile sticky adjustments */
+            /* Column content adjustments */
+            .column-content {
+                padding: 16px;
+                /* Add padding to content */
+            }
+
+            /* Mobile sticky adjustments - remove background styling */
             .sticky-header,
             .sticky-bottom {
                 position: relative !important;
                 background: transparent !important;
                 backdrop-filter: none !important;
                 border: none !important;
+                height: 100% !important;
                 margin: 0 !important;
-                padding: 8px 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Sticky header content */
+            .sticky-header .column-header {
+                background-color: #2a2a2a;
+                /* Match body background */
+                padding: 16px;
+                border-bottom: 1px solid #4a4a4a;
+            }
+
+            /* Sticky bottom content */
+            .sticky-bottom .share-section,
+            .sticky-bottom .prompt-actions {
+                background-color: #2a2a2a;
+                /* Match body background */
+                padding: 16px;
+                border-top: 1px solid #4a4a4a;
             }
 
             .prompt-textarea {
@@ -158,14 +195,6 @@
                 font-size: 14px !important;
                 width: 100% !important;
                 justify-content: center !important;
-            }
-
-            .share-section {
-                position: static !important;
-                bottom: auto !important;
-                margin-top: 8px !important;
-                padding: 8px !important;
-                border-radius: 6px !important;
             }
 
             .share-input {
@@ -195,6 +224,52 @@
                 font-size: 12px !important;
                 margin-top: 4px !important;
                 margin-bottom: 8px !important;
+            }
+
+            /* Result content mobile adjustments */
+            .result-content {
+                overflow: visible !important;
+                max-height: none !important;
+                word-break: break-word;
+                font-size: 14px;
+                padding-bottom: 80px;
+            }
+
+            /* Result buttons container for mobile */
+            .result-buttons-container {
+                position: relative !important;
+                top: auto !important;
+                right: auto !important;
+                margin-top: 8px !important;
+                margin-bottom: 8px !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                justify-content: flex-end !important;
+            }
+
+            .result-button {
+                padding: 6px 8px !important;
+                font-size: 12px !important;
+                border-radius: 6px !important;
+                min-width: auto !important;
+            }
+
+            .result-button svg {
+                width: 16px;
+                height: 16px;
+                transition: transform 0.3s ease;
+            }
+
+            .result-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            .result-button.clicked {
+                opacity: 0.6;
+                cursor: not-allowed;
             }
         }
 

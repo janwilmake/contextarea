@@ -24,7 +24,7 @@
 
   // CSS styles
   const STYLES = `
-          .model-modal-backdrop {
+            .model-modal-backdrop {
               position: fixed;
               top: 0;
               left: 0;
@@ -39,14 +39,20 @@
               visibility: hidden;
               pointer-events: none;
               transition: opacity 0.3s ease, visibility 0.3s ease;
+              
+              /* These are crucial for fullscreen behavior */
+              width: 100vw;
+              height: 100vh;
+              margin: 0;
+              padding: 0;
           }
-  
+
           .model-modal-backdrop.active {
               opacity: 1;
               visibility: visible;
               pointer-events: auto;
           }
-  
+
           .model-modal {
               background-color: #2a2a2a;
               color: #e5e5e5;
@@ -60,8 +66,12 @@
               box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
               transform: scale(0.9);
               opacity: 0;
-              z-index:10;
               transition: all 0.3s ease;
+              
+              /* Ensure modal is centered and doesn't inherit parent constraints */
+              position: relative;
+              z-index: 10001;
+              margin: auto;
           }
   
           .model-modal-backdrop.active .model-modal {
@@ -362,7 +372,7 @@
                           <ul class="model-modal-list" id="modelModalList">
                               ${models
                                 .map((model) =>
-                                  createModelItem(model, selectedModelId, me),
+                                  createModelItem(model, selectedModelId, me)
                                 )
                                 .join("")}
                           </ul>
@@ -549,16 +559,23 @@
     }
 
     createModal(container) {
-      container.innerHTML = createModalHTML(
+      // Create modal HTML
+      const modalHTML = createModalHTML(
         this.models,
         this.selectedModelId,
-        this.me,
+        this.me
       );
 
-      //const textContent = document.getElementById("server-data").textContent;
+      // Instead of putting it in the container, append to body
+      const modalContainer = document.createElement("div");
+      modalContainer.innerHTML = modalHTML;
 
+      // Append to body to ensure it's not constrained by parent containers
+      document.body.appendChild(modalContainer.firstElementChild);
+
+      // Set payment link
       document.getElementById(
-        "paymentLink",
+        "paymentLink"
       ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${this.me?.client_reference_id}`;
 
       this.modalElement = document.getElementById("modelModalBackdrop");
@@ -625,7 +642,7 @@
       });
 
       const selectedItem = document.querySelector(
-        `[data-model-id="${modelId}"]`,
+        `[data-model-id="${modelId}"]`
       );
       if (selectedItem) {
         selectedItem.classList.add("selected");
@@ -635,7 +652,7 @@
         checkDiv.innerHTML = ICONS.check;
         selectedItem.insertBefore(
           checkDiv,
-          selectedItem.querySelector(".model-modal-item-actions"),
+          selectedItem.querySelector(".model-modal-item-actions")
         );
       }
 
@@ -688,6 +705,12 @@
     close() {
       this.modalElement.classList.remove("active");
       document.body.style.overflow = "";
+    }
+
+    destroy() {
+      if (this.modalElement && this.modalElement.parentNode) {
+        this.modalElement.parentNode.removeChild(this.modalElement);
+      }
     }
   }
 

@@ -10,7 +10,6 @@ Then, `agent-architecture.drawio.png`
 
 # Lay-out
 
-- Both sides (prompt & result) must have sticky headers and bottoms of equal size and style (mirroring each other)
 - Instead of contextarea, i want monaco in the left one, with intellisense on URLs, autocomplete when writing new urls, and squiggly lines appearing dynamically to make suggestions, while editing.
 
 Nailing this interface is key!!!
