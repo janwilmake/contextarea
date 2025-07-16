@@ -8,6 +8,13 @@ deterministic from input isn't even needed per se. what's important is that you 
 
 ---
 
-also how does the Agent library fit into all of this?
+Also how does the Agent library fit into all of this?
 
-also the hierarchical markdown output from mcp use in /chat/completions
+Also the hierarchical markdown output from mcp use in /chat/completions
+
+DOES `[/id]/chat/completions` need to be addressable, and even stored, for that matter? Maybe, all that's important is the payments, and we can just proxy things. There seems no need for direct addressability here, and should probably only store if `store:true`. All that matters is:
+
+- get system prompt and mcp from ID if provided
+- url expansion
+- charging
+- if MCP provided, either return 401 or attach MCP actually

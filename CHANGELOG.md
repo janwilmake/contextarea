@@ -177,7 +177,7 @@ Test parallel:
 curl -X POST "https://beta.parallel.ai/chat/completions" -H "Content-Type: application/json" -H "Authorization: Bearer X" -d '{"model": "speed","messages": [{"role": "user","content": "What does Parallel Web Systems do?"}],"stream": true}'
 ```
 
-# Fix payments, improve layout
+# Fix payments, improve layout (2025-07-16)
 
 - ✅ Fixed dorm and stripeflare and applied breaking changes
 - ✅ Both sides (prompt & result) must have sticky headers and bottoms of equal size and style (mirroring each other)
