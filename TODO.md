@@ -1,25 +1,41 @@
-# Priority lmpify:
+# `/chat/completions` and `/mcp`
 
-- `/chat/completions` as main interface <-- do first
-- Then add x.stripeflare.com oauth
-- customizable `/chat/completions` endpoint with system prompt
-- add mcp tools capability (requires passing through auth too)
-- after that, focus on a `/chat/completions` endpoint (and MCP server) for making cloudflare apps
+- ✅ Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
+- ✅ Turn `letmeprompt.com/{id}/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt
+- ✅ Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now.
+- Look up `store:true` behavior in openai and x-ai. is it useful to leave it?
+- Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
+- Incase of `store:true` ensure the response id is the URL we store it at, and add `resultUrl` in the same objects
+- Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
+- In the UI, show 'Use Context' in footer which shows how to use the API.
+- Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool
 
-Then, `agent-architecture.drawio.png`
+First MCPs I want: on a `/chat/completions` endpoint (and MCP server) for Flaredreams initial generation
 
-# Lay-out
+# MCP Use
+
+- Look how openai `/responses` responds with MCP stuff in stream and in normal. We probably need to turn the MCP into tools and call them ourselves
+- Ability to configure MCP URL and perform OAuth from within UI where it stores auth on a per-url basis into localStorage. This requires making a POC first (possibly with dynamic client registration etc)
+- Ability to configure mcp tools in /chat/completions with X-MCP-Authorization in header
+- Do MCP run results get public too even for authenticated tools? I think it'd be great!
+
+This is gonna be the single biggest useful usecase!
+
+# New Monaco-based Contextarea
 
 Instead of contextarea, i want monaco in the left one, with intellisense on URLs, autocomplete when writing new urls, and squiggly lines appearing dynamically to make suggestions, while editing.
 
-Nailing this interface is key!!!
+# UX
 
-# CRITICAL
+It seems that the UI doesn't always properly handle errors. E.g. when claude is down sometimes, I'm getting just a blank screen, rather than a red error.
 
-- Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
-- Turn `{subdomain}.letmeprompt.com/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt. Results would not show the systemprompt, and would only be available with that model, but would still get their own new subdomain.
+The model is always selected on whatever we had in localStorage, but it's better to set it to the configured value.
 
-Ultimately I'd want to be able to set worker-name, repo-name, branch, and have these deployments happen automatically, instantly. For this to work, I require `Login with Cloudflare` and `Login with GitHub` to be a part of letmeprompt.com, and allow for generation-configs (name, repo, branch, worker-name). It's not clear to me yet if this should be a completely new app that uses letmeprompt.com? Maybe better; niched towards easy workers: flaredream!
+# Priority lmpify:
+
+Check `withMoney` again and see what context would be needed to do a drop-in replacement with that from what i have now
+
+Then, `agent-architecture.drawio.png`
 
 # Improved Usability & Benchmark For Workers
 
@@ -43,43 +59,9 @@ Ensure it doesn't logout quickly.
 
 This would also allow getting an API KEY and more securely deposit lots of cash. To easily to build against LMPIFY with XYTEXT. also will allow closed-loop monetary system between creators and generations of these prompts, etc.
 
-# `/chat/completions`
-
-Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily.
-
-Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
-
-Generally its a good idea to allow for programmatic access and give people an API for this!!!!!!!! Imagine if people could earn money by easily creating new stripeflare workers that allow access to this API? You could set any price and it'd be super easy to setup via a lmpify.
-
-TODO:
-
-1. Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now. Can still use all other values.
-
-2. In the UI, show 'Use Context' in footer which shows how to use the API.
-
-After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
-
-Ultimately, also get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
-
-- give access_token
-- simple api with ?query&parameters that streams as well
-- /chat/completions api
-- /responses api (openai new standard)
-
-# OG
-
-✅ Model logo should be big in the OG.
-
-- ✅ Title (Generated)
-- ✅ Subtitle: '[logo] GROK 4 Generation by Jan Wilmake [pfp]'
-
-TODO: after X login works, add profile picture of creator. Maybe: add logo
-
-# Error handling
-
-It seems that the UI doesn't always properly handle errors. E.g. when claude is down sometimes, I'm getting just a blank screen, rather than a red error.
-
 # Proper way to let REPO-OWNERS pay for generations, not users.
+
+🤔 Ultimately I'd want to be able to set worker-name, repo-name, branch, and have these deployments happen automatically, instantly. For this to work, I require `Login with Cloudflare` and `Login with GitHub` to be a part of letmeprompt.com, and allow for generation-configs (name, repo, branch, worker-name). It's not clear to me yet if this should be a completely new app that uses letmeprompt.com? Maybe better; niched towards easy workers: flaredream!
 
 The UI here is not nice: https://github.com/eastlondoner/vibe-tools
 

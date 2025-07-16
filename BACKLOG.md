@@ -1,3 +1,8 @@
+# Make /chat/completions with cache making it intelligently cheaper
+
+- Later: Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily. Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
+- Later: After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
+
 # Images as context, videos as context
 
 HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.

@@ -791,14 +791,14 @@
                                 <span>Deploy</span>
                             </button>
 
-                            <!-- Reply button (visible immediately) -->
-                            <button type="button" class="result-button" id="replyInsteadButton">
+                            <!-- Iterate button (visible immediately) -->
+                            <button type="button" class="result-button" id="iterateButton">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" style="margin-left: 4px;">
                                     <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round">
                                     </path>
                                 </svg>
-                                <span>Reply</span>
+                                <span>Iterate</span>
                             </button>
 
                             <!-- Preview button (visible immediately) -->
@@ -1163,16 +1163,16 @@
         class ActionButtons {
             constructor() {
                 this.tryAgainButton = document.getElementById('tryAgainButton');
-                this.replyInsteadButton = document.getElementById('replyInsteadButton');
+                this.iterateButton = document.getElementById('iterateButton');
                 this.contextarea = document.getElementById('contextarea');
-                this.replyClicked = false; // Track if reply was clicked
+                this.iterateClicked = false; // Track if iterate was clicked
 
                 this.setupEventListeners();
             }
 
             setupEventListeners() {
                 this.tryAgainButton.addEventListener('click', () => this.handleTryAgain());
-                this.replyInsteadButton.addEventListener('click', () => this.handleReplyInstead());
+                this.iterateButton.addEventListener('click', () => this.handleIterate());
 
                 this.contextarea.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' && event.shiftKey) {
@@ -1231,25 +1231,25 @@
                 form.submit();
             }
 
-            handleReplyInstead() {
+            handleIterate() {
                 // Check if already clicked
-                if (this.replyClicked) {
+                if (this.iterateClicked) {
                     return;
                 }
 
                 // Mark as clicked
-                this.replyClicked = true;
+                this.iterateClicked = true;
 
                 // Get the SVG icon and animate it
-                const svg = this.replyInsteadButton.querySelector('svg');
+                const svg = this.iterateButton.querySelector('svg');
                 if (svg) {
                     svg.style.transition = 'transform 0.6s ease';
                     svg.style.transform = 'rotate(180deg)';
                 }
 
                 // Disable the button visually
-                this.replyInsteadButton.style.opacity = '0.6';
-                this.replyInsteadButton.style.cursor = 'not-allowed';
+                this.iterateButton.style.opacity = '0.6';
+                this.iterateButton.style.cursor = 'not-allowed';
 
                 // Get current pathname and construct the answer URL
                 const currentPath = window.location.pathname;

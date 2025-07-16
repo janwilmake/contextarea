@@ -177,6 +177,13 @@ Test parallel:
 curl -X POST "https://beta.parallel.ai/chat/completions" -H "Content-Type: application/json" -H "Authorization: Bearer X" -d '{"model": "speed","messages": [{"role": "user","content": "What does Parallel Web Systems do?"}],"stream": true}'
 ```
 
+# OG (2025-07-04)
+
+✅ Model logo should be big in the OG.
+
+- ✅ Title (Generated)
+- ✅ Subtitle: '[logo] GROK 4 Generation by Jan Wilmake [pfp]'
+
 # Fix payments, improve layout (2025-07-16)
 
 - ✅ Fixed dorm and stripeflare and applied breaking changes
