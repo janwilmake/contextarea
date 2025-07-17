@@ -271,7 +271,7 @@ interface Env extends StripeflareEnv {
  * Extended user interface that includes stripeflare user properties
  */
 interface User extends StripeUser {
-  free_model_uses: number;
+  // free_model_uses: number;
   // Add any additional user properties here
 }
 
@@ -288,13 +288,53 @@ interface KVData {
   timestamp?: number;
 }
 
-/**
- * SSE Event types
- */
-interface SSEEvent {
+export interface SSEEvent {
   type: "init" | "token" | "update" | "complete" | "error";
-  data: any;
+  data:
+    | SSEInitData
+    | SSETokenData
+    | SSEUpdateData
+    | SSECompleteData
+    | SSEErrorData;
   timestamp: number;
+}
+
+// Init event - sent when streaming starts
+export interface SSEInitData {
+  type: "init";
+  prompt: string;
+  model: string;
+  context?: string | null;
+  status: "pending" | "streaming" | "complete" | "error";
+  result: string;
+  error?: string | null;
+}
+
+// Token event - sent for each new token/chunk
+export interface SSETokenData {
+  type: "token";
+  text: string;
+  position: number;
+}
+
+// Update event - sent when fields are updated
+export interface SSEUpdateData {
+  type: "update";
+  field: string;
+  value: string;
+}
+
+// Complete event - sent when processing finishes
+export interface SSECompleteData {
+  type: "complete";
+  result: string;
+}
+
+// Error event - sent when an error occurs
+export interface SSEErrorData {
+  type: "error";
+  message: string;
+  stack?: string;
 }
 
 /**

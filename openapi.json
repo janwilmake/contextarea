@@ -493,10 +493,6 @@
           "balance": {
             "type": "number",
             "description": "User's current balance in cents"
-          },
-          "free_model_uses": {
-            "type": "integer",
-            "description": "Number of free model uses remaining"
           }
         }
       },
