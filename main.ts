@@ -1850,9 +1850,9 @@ You can also use this prompt as an MCP (Model Context Protocol) server. The MCP 
 https://letmeprompt.com/${id}/mcp
 \`\`\`
 
-**Using with Claude Desktop:**
+**Using with Cursor:**
 
-Add this to your Claude Desktop MCP configuration:
+Add this to your Cursor MCP configuration:
 
 \`\`\`json
 {

@@ -10,7 +10,7 @@
 - ✅ Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
 - ✅ Test anthropic model via https://docs.anthropic.com/en/api/openai-sdk - got model not found error
 - ✅ In the UI, show 'Use as API' in footer which shows how to use the API.
-- Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool.
+- ✅ Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool.
 
 I can now already turn https://flaredream.com/system.md into an MCP. It MUST OAuth the user in via Stripe. WORTH A HUGE POST.
 
