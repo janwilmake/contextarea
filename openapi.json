@@ -648,6 +648,10 @@
       "SSEInitData": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["init"]
+          },
           "prompt": {
             "type": "string",
             "description": "The original prompt text"
@@ -681,6 +685,10 @@
       "SSETokenData": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["token"]
+          },
           "text": {
             "type": "string",
             "description": "The new token/text chunk received"
@@ -695,6 +703,10 @@
       "SSEUpdateData": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["update"]
+          },
           "field": {
             "type": "string",
             "description": "The field being updated (e.g., 'context')"
@@ -709,6 +721,10 @@
       "SSECompleteData": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["complete"]
+          },
           "result": {
             "type": "string",
             "description": "The final complete result"
@@ -719,6 +735,10 @@
       "SSEErrorData": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["error"]
+          },
           "message": {
             "type": "string",
             "description": "Error message describing what went wrong"

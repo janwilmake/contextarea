@@ -875,6 +875,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
         // Send initial state
         await this.sendEvent(controller, "init", {
+          type: "init",
           prompt,
           model: modelConfig!.model,
           context,
@@ -1022,6 +1023,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         this.set("prompt", prompt.slice(0, 1024 * 1024));
         // Send context update
         this.broadcastEvent("update", {
+          type: "update",
           field: "context",
           value: context,
         });
@@ -1153,6 +1155,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
               if (token) {
                 this.accumulatedData += token;
                 this.broadcastEvent("token", {
+                  type: "token",
                   text: token,
                   position: position++,
                 });
@@ -1184,6 +1187,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       // Send error to all connected clients
       this.broadcastEvent("error", {
+        type: "error",
         message: error.message,
         stack: error.stack,
       });
@@ -1226,6 +1230,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
     // Send complete event
     this.broadcastEvent("complete", {
+      type: "complete",
       result: this.accumulatedData,
     });
 
