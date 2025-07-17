@@ -175,3 +175,8 @@ Expand and foreach are in the input prompt and therefore unlikely to be unsafe. 
 For-each implementation: https://letmeprompt.com/httpspastebincon-1nej5v0
 
 Seeing this now, i notice it's also interesting to try and figure it out the other way around as in, providing a file to a URL and post it there, e.g. referring to a codeblock. however, i don't know if that's feasible. the foreach protocol is quite elegant!
+
+# incremental markdown parser
+
+https://x.com/__morse/status/1945589927820902562
+https://github.com/remorses/fumabase/blob/main/contesto/src/lib/incremental-markdown-parser.ts

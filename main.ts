@@ -483,6 +483,7 @@ export async function handleChatCompletions(
     const llmRequestBody = {
       ...body,
       messages: expandedMessages,
+      ...(body.store && { store: undefined }),
       ...(body.stream && { stream_options: { include_usage: true } }),
     };
 
@@ -513,10 +514,10 @@ export async function handleChatCompletions(
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
-          ...(modelConfig.providerSlug === "anthropic" && {
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-          }),
+          // ...(modelConfig.providerSlug === "anthropic" && {
+          //   "x-api-key": apiKey,
+          //   "anthropic-version": "2023-06-01",
+          // }),
         },
         body: JSON.stringify(llmRequestBody),
       }
@@ -542,8 +543,9 @@ export async function handleChatCompletions(
     // Handle streaming response
     if (body.stream) {
       let outputTokens = 0;
+      let fullMessage = "";
       let totalCost = 0;
-
+      let id = undefined;
       const transformStream = new TransformStream({
         transform(chunk, controller) {
           // Clone the chunk to count tokens
@@ -558,11 +560,15 @@ export async function handleChatCompletions(
               try {
                 const parsed = JSON.parse(data);
 
+                if (parsed.id) {
+                  id = parsed.id;
+                }
                 // Count tokens from streaming response
                 if (parsed.choices?.[0]?.delta?.content) {
                   const tokenCount = Math.round(
                     parsed.choices[0].delta.content.length / 5
                   );
+                  fullMessage += parsed.choices[0].delta.content;
                   outputTokens += tokenCount;
                 }
 
@@ -584,17 +590,31 @@ export async function handleChatCompletions(
             outputTokens * (modelConfig.pricePerMillionOutput / 1000000);
           totalCost = (inputPrice + outputPrice) * PRICE_MARKUP_FACTOR;
 
-          // Charge user asynchronously
-          ctx.waitUntil(
-            chargeUser(
+          const final = async () => {
+            // Charge user asynchronously
+            await chargeUser(
               env,
               ctx,
               user.access_token,
               DORM_VERSION,
               totalCost,
               true
-            )
-          );
+            );
+
+            if (body.store) {
+              const kvData: KVData = {
+                prompt: JSON.stringify(llmRequestBody.messages),
+                model: modelConfig.model,
+                context: undefined,
+                result: fullMessage,
+                timestamp: Date.now(),
+                headline: undefined,
+              };
+              await this.env.RESULTS.put(id, JSON.stringify(kvData));
+            }
+          };
+
+          ctx.waitUntil(final());
         },
       });
 
@@ -619,15 +639,33 @@ export async function handleChatCompletions(
       outputTokens * (modelConfig.pricePerMillionOutput / 1000000);
     const totalCost = (inputPrice + outputPrice) * PRICE_MARKUP_FACTOR;
 
-    // Charge user
-    await chargeUser(
-      env,
-      ctx,
-      user.access_token,
-      DORM_VERSION,
-      totalCost,
-      true
-    );
+    const final = async () => {
+      // Charge user asynchronously
+
+      // Charge user
+      await chargeUser(
+        env,
+        ctx,
+        user.access_token,
+        DORM_VERSION,
+        totalCost,
+        true
+      );
+
+      if (body.store) {
+        const kvData: KVData = {
+          prompt: JSON.stringify(llmRequestBody.messages),
+          model: modelConfig.model,
+          context: undefined,
+          result: responseData.choices?.[0]?.message?.content,
+          timestamp: Date.now(),
+          headline: undefined,
+        };
+        await this.env.RESULTS.put(responseData.id, JSON.stringify(kvData));
+      }
+    };
+
+    ctx.waitUntil(final());
 
     // Return the response
     return new Response(JSON.stringify(responseData), {

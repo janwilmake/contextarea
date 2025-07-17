@@ -3,14 +3,14 @@
 - ✅ Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
 - ✅ Turn `letmeprompt.com/{id}/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt
 - ✅ Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now.
-- Look up `store:true` behavior in openai and x-ai. is it useful to leave it?
+- ✅ Look up `store:true` behavior in openai and x-ai. is it useful to leave it? (NO)
 - Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
 - Incase of `store:true` ensure the response id is the URL we store it at, and add `resultUrl` in the same objects
 - Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
 - In the UI, show 'Use Context' in footer which shows how to use the API.
 - Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool
 
-First MCPs I want: on a `/chat/completions` endpoint (and MCP server) for Flaredreams initial generation
+I can now already turn https://flaredream.com/system.md into an MCP. It MUST OAuth the user in via Stripe. WORTH A HUGE POST.
 
 # MCP Use
 
@@ -21,6 +21,17 @@ First MCPs I want: on a `/chat/completions` endpoint (and MCP server) for Flared
 
 This is gonna be the single biggest useful usecase!
 
+First MCPs I want:
+
+- **Iterate Agent** `deploy` tool at the end: `deploy.flaredream.com/download.flaredream.com/id` for Flaredreams initial generation, using `deploy` tool after it's done (deploy tool must have access to intermediate result)
+- **Feedback agent** for Testing a flaredream deployment (`test(evaloncloudID,request,criteria)=>feedback` tool that processes request into feedback, and `final_feedback(feedback, replace_feedback:boolean, status: "ok"|"fail"|"retry")` will end the agent)
+
+This is a great first milestone having the 2 MCPs separately. With this I can verify manually if this works. After that, a looping agent can use both in a loop!
+
+# Dmitry
+
+Building Agent-Friendly Monetization layer on HTTP level.
+
 # New Monaco-based Contextarea
 
 Instead of contextarea, i want monaco in the left one, with intellisense on URLs, autocomplete when writing new urls, and squiggly lines appearing dynamically to make suggestions, while editing.
@@ -30,12 +41,6 @@ Instead of contextarea, i want monaco in the left one, with intellisense on URLs
 It seems that the UI doesn't always properly handle errors. E.g. when claude is down sometimes, I'm getting just a blank screen, rather than a red error.
 
 The model is always selected on whatever we had in localStorage, but it's better to set it to the configured value.
-
-# Priority lmpify:
-
-Check `withMoney` again and see what context would be needed to do a drop-in replacement with that from what i have now
-
-Then, `agent-architecture.drawio.png`
 
 # Improved Usability & Benchmark For Workers
 
@@ -49,6 +54,8 @@ Landingpage flaredream.com should retrieve all `featured:true` from benchmark an
 
 # With-money refactor (Dependency)
 
+Check `withMoney` again and see what context would be needed to do a drop-in replacement with that from what i have now
+
 Replace Stripeflare with X Money (more reliable for all users, allows to see who created something with nice X profile pic, etc)
 
 https://github.com/janwilmake/with-money
@@ -58,6 +65,8 @@ To simplify, let's also just require login; ideally after filling first prompt (
 Ensure it doesn't logout quickly.
 
 This would also allow getting an API KEY and more securely deposit lots of cash. To easily to build against LMPIFY with XYTEXT. also will allow closed-loop monetary system between creators and generations of these prompts, etc.
+
+Then, `agent-architecture.drawio.png`
 
 # Proper way to let REPO-OWNERS pay for generations, not users.
 
