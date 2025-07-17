@@ -582,11 +582,6 @@
             color: #b5b5b5;
         }
 
-        /* Share section - now in sticky bottom */
-        .share-section {
-            /* No additional styles needed, inherits from sticky-bottom */
-        }
-
         .share-container {
             display: flex;
             align-items: center;
@@ -690,6 +685,37 @@
                 width: 28px;
                 height: 28px;
             }
+        }
+
+        .chat-api-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .chat-api-button {
+            background-color: transparent;
+            border: 1px solid #4a4a4a;
+            border-radius: 8px;
+            color: #e5e5e5;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .chat-api-button:hover {
+            background-color: #4a4a4a;
+            color: #fff;
+        }
+
+        .chat-api-button svg {
+            width: 16px;
+            height: 16px;
         }
     </style>
 
@@ -833,6 +859,18 @@
                 <div class="sticky-bottom">
                     <div class="share-section">
                         <div class="share-container">
+
+                            <div class="chat-api-container">
+                                <button class="chat-api-button" id="chatApiButton" title="Get Chat API endpoint">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                        <path d="M10 7.5h4M10 12h4"></path>
+                                    </svg>
+                                    <span>Get Chat API</span>
+                                </button>
+                            </div>
+
                             <span class="share-label">Share:</span>
                             <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
                             <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
@@ -1101,6 +1139,13 @@
                 this.shareInput = document.getElementById('shareInput');
                 this.currentUrl = window.location.href;
 
+                // Add this to the CopyManager class constructor or create a separate handler
+                document.getElementById('chatApiButton').addEventListener('click', () => {
+                    const currentPath = window.location.pathname;
+                    const chatApiUrl = `${currentPath}/chat/completions`;
+                    window.open(chatApiUrl, '_blank');
+                });
+
                 this.setupEventListeners();
             }
 
@@ -1112,6 +1157,8 @@
                 this.footerCopyButton.addEventListener('click', async () => {
                     await this.copyToClipboard(this.currentUrl, this.footerCopyButton);
                 });
+
+
             }
 
             async copyToClipboard(text, button) {
@@ -1276,7 +1323,7 @@
         }
 
         // Main application initialization
-        const data = JSON.parse(document.getElementById('server-data').textContent);
+        const data = JSON.parse(document.getElementById('server-data').textContent || '{}');
 
         if (data.ratelimited) {
             setTimeout(() => window.openModelModal(), 400)

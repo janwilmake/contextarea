@@ -488,7 +488,7 @@ export async function handleChatCompletions(
         pathname,
         "json"
       )) as KVData | null;
-      console.log({ id, exist: !!existingData });
+
       if (existingData?.prompt) {
         // Expand URLs in the stored prompt
         const { context } = await generateContext(existingData.prompt);
@@ -1846,6 +1846,60 @@ const requestHandler = async (
       return await handleChatCompletions(request, env, ctx, user, headers);
     } else if (request.method === "GET") {
       // TODO: return instructions
+      const url = new URL(request.url);
+
+      // Extract ID from pathname if provided (e.g., /abc123/chat/completions)
+      const pathParts = url.pathname.split("/");
+      const id =
+        pathParts.length > 2 && pathParts[1] !== "chat"
+          ? pathParts[1]
+          : undefined;
+      const pathname = `/${id}`;
+      const existingData = (await env.RESULTS.get(
+        pathname,
+        "json"
+      )) as KVData | null;
+
+      if (!existingData) {
+        return new Response("Not found", { status: 404 });
+      }
+      //existingData.model
+      return new Response(`You can use this prompt as system prompt using the following endpoint:
+
+curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${access_token}" \
+  -d '{
+    "model": "${existingData.model}",
+    "stream":true,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Who are you?"
+      }
+    ]
+  }'
+  
+This is a fully OpenAI Compatible API:
+\`\`\`
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+    apiKey: "${user.access_token}",   // Your LMPIFY API key
+    baseURL: "https://letmeprompt.com/${id}",
+});
+
+const response = await openai.chat.completions.create({
+    messages: [
+        { role: "user", content: "Who are you?" }
+    ],
+    model: "${existingData.model}",
+});
+
+console.log(response.choices[0].message.content);
+\`\`\`
+
+`);
     }
   }
 
