@@ -562,10 +562,6 @@ export async function handleChatCompletions(
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${apiKey}`,
-          // ...(modelConfig.providerSlug === "anthropic" && {
-          //   "x-api-key": apiKey,
-          //   "anthropic-version": "2023-06-01",
-          // }),
         },
         body: JSON.stringify(llmRequestBody),
       }
@@ -640,7 +636,8 @@ export async function handleChatCompletions(
 
           const final = async () => {
             // Charge user asynchronously
-            await chargeUser(
+
+            const charged = await chargeUser(
               env,
               ctx,
               user.access_token,
@@ -648,6 +645,7 @@ export async function handleChatCompletions(
               totalCost,
               true
             );
+            console.log({ charged, totalCost });
 
             if (body.store) {
               const kvData: KVData = {
@@ -692,7 +690,7 @@ export async function handleChatCompletions(
       // Charge user asynchronously
 
       // Charge user
-      await chargeUser(
+      const charged = await chargeUser(
         env,
         ctx,
         user.access_token,
@@ -700,6 +698,8 @@ export async function handleChatCompletions(
         totalCost,
         true
       );
+
+      console.log({ charged, totalCost });
 
       if (body.store) {
         const kvData: KVData = {
@@ -1890,6 +1890,7 @@ curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
   }'
 \`\`\`
 
+
 This is a fully OpenAI Compatible API:
 
 \`\`\`
@@ -1909,6 +1910,8 @@ const response = await openai.chat.completions.create({
 
 console.log(response.choices[0].message.content);
 \`\`\`
+
+Optionally, it's possible to provide "store:true". This will store the final result in our cache, making it available at https://letmeprompt.com/{id}. The ID is part of the response JSON like normal.
 
 `);
     }
