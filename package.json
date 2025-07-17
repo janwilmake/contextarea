@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "chat-completions-mcp": "^0.0.1",
+    "chat-completions-mcp": "^0.0.2",
     "dormroom": "^1.0.0-next.100",
     "marked": "^16.0.0",
     "stripeflare": "^0.0.40",

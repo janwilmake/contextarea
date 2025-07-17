@@ -1872,7 +1872,12 @@ const getResultHTML = async (
   return new Response(resultHTML.body, { headers });
 };
 
-const handleMcp = async (request: Request, env: Env, user: User) => {
+const handleMcp = async (
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  user: User
+) => {
   const url = new URL(request.url);
   const pathname =
     url.pathname === "/mcp" ? undefined : "/" + url.pathname.split("/")[1];
@@ -1884,10 +1889,18 @@ const handleMcp = async (request: Request, env: Env, user: User) => {
     return new Response("Not found", { status: 404 });
   }
 
+  const basePath = url.origin + url.pathname.slice(0, -4);
+
   return handleChatMcp(request, {
     apiKey: user.access_token,
-    basePath: url.origin + url.pathname.slice(0, -4),
+    basePath,
     model: existingData.model,
+    fetcher: {
+      //@ts-ignore
+      connect: () => {},
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        requestHandler(new Request(input, init), env, ctx),
+    },
   });
 };
 
@@ -1930,7 +1943,7 @@ const requestHandler = async (
 
   if (url.pathname.endsWith("/mcp")) {
     if (request.method === "POST") {
-      return handleMcp(request, env, user);
+      return handleMcp(request, env, ctx, user);
     } else if (request.method === "GET") {
       return new Response(null, {
         status: 302,
