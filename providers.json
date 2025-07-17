@@ -18,6 +18,7 @@
     "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
+    "mcp": true,
     "pricePerMillionInput": 3,
     "pricePerMillionOutput": 15,
     "maxTokens": 64000,

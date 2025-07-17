@@ -967,13 +967,260 @@
             }
         }
 
-        // 2. UI Manager Module
+        // Title Management Module
+        class TitleManager {
+            constructor() {
+                this.originalTitle = document.title;
+                this.isTabVisible = !document.hidden;
+                this.loadingInterval = null;
+                this.loadingState = 0;
+                this.loadingStates = ['Generating.', 'Generating..', 'Generating...', 'Generating'];
+                this.wasStreamingWhenHidden = false;
+                this.streamingCompleted = false;
+
+                this.setupVisibilityListener();
+            }
+
+            setupVisibilityListener() {
+                document.addEventListener('visibilitychange', () => {
+                    this.isTabVisible = !document.hidden;
+
+                    if (this.isTabVisible) {
+                        this.handleTabActive();
+                    } else {
+                        this.handleTabInactive();
+                    }
+                });
+            }
+
+            async fetchOwnTitle() {
+                try {
+                    const response = await fetch(window.location.href);
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const title = doc.querySelector('title')?.textContent || this.originalTitle;
+                    console.log({ title })
+                    return title;
+                } catch (error) {
+                    console.error('Failed to fetch own title:', error);
+                    return this.originalTitle;
+                }
+            }
+
+            handleTabActive() {
+
+                console.log('active')
+                this.stopLoadingAnimation();
+
+                if (this.wasStreamingWhenHidden) {
+                    if (this.streamingCompleted) {
+                        // If streaming completed while tab was hidden, keep the completion state
+                        this.setCompletionState();
+                    } else {
+                        this.fetchOwnTitle().then(title => {
+                            // If still streaming, fetch and update title
+                            document.title = title;
+                        });
+                    }
+                }
+            }
+
+            handleTabInactive() {
+                // Only start loading animation if currently streaming
+                if (uiManager && uiManager.isStreaming) {
+                    this.wasStreamingWhenHidden = true;
+                    this.startLoadingAnimation();
+                }
+            }
+
+            startLoadingAnimation() {
+                if (this.loadingInterval) return; // Already running
+
+                this.loadingState = 0;
+                this.loadingInterval = setInterval(() => {
+                    document.title = this.loadingStates[this.loadingState];
+                    this.loadingState = (this.loadingState + 1) % this.loadingStates.length;
+                }, 750);
+            }
+
+            stopLoadingAnimation() {
+                if (this.loadingInterval) {
+                    clearInterval(this.loadingInterval);
+                    this.loadingInterval = null;
+                }
+            }
+
+            setCompletionState() {
+                this.stopLoadingAnimation();
+                document.title = '✅ Generated';
+
+                // Set favicon to checkmark
+                this.setFavicon('data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12l2 2 4-4" stroke="green" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="green" fill="none"/>
+            </svg>
+        `));
+            }
+
+            setFavicon(href) {
+                const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+                link.type = 'image/svg+xml';
+                link.rel = 'shortcut icon';
+                link.href = href;
+                document.getElementsByTagName('head')[0].appendChild(link);
+            }
+
+            onStreamingComplete() {
+                this.streamingCompleted = true;
+
+                if (!this.isTabVisible) {
+                    // Tab is inactive, set completion state
+                    this.setCompletionState();
+                } else {
+                    // Tab is active, fetch and update title normally
+                    this.fetchOwnTitle().then(title => {
+                        document.title = title;
+                    });
+                }
+
+                this.wasStreamingWhenHidden = false;
+            }
+
+            onStreamingStart() {
+                this.streamingCompleted = false;
+                this.wasStreamingWhenHidden = false;
+
+                if (!this.isTabVisible) {
+                    this.startLoadingAnimation();
+                }
+            }
+        }
+
+        // Add this to your UIManager class
         class UIManager {
             constructor() {
                 this.contextarea = document.getElementById('contextarea');
                 this.resultContent = document.getElementById('resultContent');
                 this.currentResult = "";
                 this.isStreaming = false;
+                this.userHasScrolled = false; // Track if user has manually scrolled
+                this.lastScrollTop = 0; // Track last scroll position
+                this.initialLoad = true;
+                // Add scroll listener to detect user scrolling
+                this.setupScrollListener();
+            }
+
+            setupScrollListener() {
+                const scrollContainer = this.resultContent.parentElement; // .column-content
+
+                scrollContainer.addEventListener('scroll', () => {
+                    const currentScrollTop = scrollContainer.scrollTop;
+                    const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+                    // If user scrolled up from bottom, mark as manually scrolled
+                    if (currentScrollTop < maxScroll - 50) { // 50px threshold
+                        this.userHasScrolled = true;
+                    } else if (currentScrollTop >= maxScroll - 10) { // Near bottom
+                        this.userHasScrolled = false;
+                    }
+
+                    this.lastScrollTop = currentScrollTop;
+                });
+            }
+
+            scrollToBottom() {
+                const scrollContainer = this.resultContent.parentElement;
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }
+
+            preserveScrollPosition() {
+                const scrollContainer = this.resultContent.parentElement;
+                return {
+                    scrollTop: scrollContainer?.scrollTop,
+                    scrollHeight: scrollContainer?.scrollHeight
+                };
+            }
+
+            restoreScrollPosition(savedPosition) {
+                const scrollContainer = this.resultContent.parentElement;
+                // Restore relative position
+                const heightDiff = scrollContainer.scrollHeight - savedPosition.scrollHeight;
+                scrollContainer.scrollTop = savedPosition.scrollTop + heightDiff;
+            }
+
+            handleSSEMessage(message) {
+                switch (message.type) {
+                    case 'init':
+                        if (message.data.status === "pending") {
+                            this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                            this.currentResult = message.data.result || "";
+                        } else {
+                            this.updateUI(message.data);
+                        }
+                        break;
+
+                    case 'token':
+                        if (!this.isStreaming) {
+                            this.isStreaming = true;
+                            this.resultContent.textContent = "";
+                            this.userHasScrolled = false; // Reset on new stream
+                            if (window.titleManager) {
+                                window.titleManager.onStreamingStart();
+                            }
+                        }
+
+
+                        this.currentResult += message.data.text;
+                        const loading = true;
+                        markdownHighlighter.processContent(
+                            this.resultContent,
+                            this.currentResult,
+                            loading);
+
+                        // Auto-scroll to bottom only if user hasn't scrolled away
+                        if (!this.userHasScrolled) {
+                            this.scrollToBottom();
+                        }
+                        break;
+
+                    case 'update':
+                        if (message.data.field === 'context') {
+                            console.log('Context updated');
+                        }
+                        break;
+
+                    case 'complete':
+                        // Preserve scroll position when completing
+                        const savedPosition = this.preserveScrollPosition();
+
+                        this.currentResult = message.data.result;
+                        this.isStreaming = false;
+
+                        markdownHighlighter.processContent(this.resultContent, this.currentResult);
+
+                        // Restore scroll position to prevent jumping to top
+                        requestAnimationFrame(() => {
+                            this.restoreScrollPosition(savedPosition);
+                        });
+
+                        // Notify result buttons that result is complete
+                        if (window.resultButtonsManager) {
+                            window.resultButtonsManager.onResultComplete();
+                        }
+
+                        // Notify title manager that streaming completed
+                        if (window.titleManager) {
+                            window.titleManager.onStreamingComplete();
+                        }
+                        break;
+
+                    case 'error':
+                        this.resultContent.innerHTML = `<span class="error">Error: ${message.data.message}</span>`;
+                        this.isStreaming = false;
+                        break;
+                }
             }
 
             updateUI(state, isEscaped) {
@@ -999,6 +1246,10 @@
                 } else if (state.status === "error" || state.error) {
                     this.resultContent.innerHTML = `<span class="error">Error: ${state.error || 'Unknown error'}</span>`;
                 } else if (content) {
+                    // Preserve scroll position when updating existing content
+                    const savedPosition = this.initialLoad ? null : this.preserveScrollPosition();
+
+
                     if (isEscaped) {
                         this.currentResult = content?.replace(/&lt;/g, '<')
                             .replace(/&gt;/g, '>')
@@ -1010,57 +1261,18 @@
                     }
 
                     markdownHighlighter.processContent(this.resultContent, this.currentResult);
+
+                    // Restore scroll position
+                    requestAnimationFrame(() => {
+                        this.restoreScrollPosition(savedPosition);
+                    });
+                    this.initialLoad = false;
                 }
             }
 
             adjustTextareaHeight() {
                 this.contextarea.style.height = 'auto';
                 this.contextarea.style.height = this.contextarea.scrollHeight + 'px';
-            }
-
-            handleSSEMessage(message) {
-                switch (message.type) {
-                    case 'init':
-                        if (message.data.status === "pending") {
-                            this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
-                            this.currentResult = message.data.result || "";
-                        } else {
-                            this.updateUI(message.data);
-                        }
-                        break;
-
-                    case 'token':
-                        if (!this.isStreaming) {
-                            this.isStreaming = true;
-                            this.resultContent.textContent = "";
-                        }
-                        this.currentResult += message.data.text;
-                        const loading = true;
-                        markdownHighlighter.processContent(
-                            this.resultContent,
-                            this.currentResult,
-                            loading);
-                        break;
-
-                    case 'update':
-                        if (message.data.field === 'context') {
-                            console.log('Context updated');
-                        }
-                        break;
-
-                    case 'complete':
-                        this.currentResult = message.data.result;
-                        markdownHighlighter.processContent(this.resultContent, this.currentResult);
-                        // Notify result buttons that result is complete
-                        if (window.resultButtonsManager) {
-                            window.resultButtonsManager.onResultComplete();
-                        }
-                        break;
-
-                    case 'error':
-                        this.resultContent.innerHTML = `<span class="error">Error: ${message.data.message}</span>`;
-                        break;
-                }
             }
         }
 
@@ -1335,6 +1547,8 @@
         const copyManager = new CopyManager();
         const tokenCounter = new TokenCounter();
         const actionButtons = new ActionButtons();
+        const titleManager = new TitleManager();
+        window.titleManager = titleManager; // Make it globally available
 
         // Make result buttons manager available globally for SSE handler
         window.resultButtonsManager = resultButtonsManager;

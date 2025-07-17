@@ -189,3 +189,17 @@ curl -X POST "https://beta.parallel.ai/chat/completions" -H "Content-Type: appli
 - ✅ Fixed dorm and stripeflare and applied breaking changes
 - ✅ Both sides (prompt & result) must have sticky headers and bottoms of equal size and style (mirroring each other)
 - ✅ Improve mobile layout to be less space consuming
+
+# `/chat/completions` and `/mcp` (2025-07-17)
+
+- ✅ Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
+- ✅ Turn `letmeprompt.com/{id}/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt
+- ✅ Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now.
+- ✅ Look up `store:true` behavior in openai and x-ai. is it useful to leave it? (NO)
+- ✅ Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
+- ✅ Incase of `store:true` ensure the response id is the URL we store it at
+- ❌ Optional: add `resultUrl` in the same objects
+- ✅ Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
+- ✅ Test anthropic model via https://docs.anthropic.com/en/api/openai-sdk - got model not found error
+- ✅ In the UI, show 'Use as API' in footer which shows how to use the API.
+- ✅ Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool.

@@ -1,27 +1,6 @@
-# `/chat/completions` and `/mcp`
-
-- ✅ Turn letmeprompt into oauth-provided `/chat/completion` endpoint with models (chance to not niche down too much and build flaredream chat with little complexity!)
-- ✅ Turn `letmeprompt.com/{id}/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt
-- ✅ Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now.
-- ✅ Look up `store:true` behavior in openai and x-ai. is it useful to leave it? (NO)
-- ✅ Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
-- ✅ Incase of `store:true` ensure the response id is the URL we store it at
-- ❌ Optional: add `resultUrl` in the same objects
-- ✅ Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
-- ✅ Test anthropic model via https://docs.anthropic.com/en/api/openai-sdk - got model not found error
-- ✅ In the UI, show 'Use as API' in footer which shows how to use the API.
-- ✅ Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool.
-
-I can now already turn https://flaredream.com/system.md into an MCP. It MUST OAuth the user in via Stripe. WORTH A HUGE POST.
-
 # MCP Use
 
-- Look how openai `/responses` responds with MCP stuff in stream and in normal. We probably need to turn the MCP into tools and call them ourselves
-- Ability to configure MCP URL and perform OAuth from within UI where it stores auth on a per-url basis into localStorage. This requires making a POC first (possibly with dynamic client registration etc)
-- Ability to configure mcp tools in /chat/completions with X-MCP-Authorization in header
-- Do MCP run results get public too even for authenticated tools? I think it'd be great!
-
-This is gonna be the single biggest useful usecase!
+I can now already turn https://flaredream.com/system.md into an MCP, albeit with manual auth. Post about it?
 
 First MCPs I want:
 
@@ -29,6 +8,74 @@ First MCPs I want:
 - **Feedback agent** for Testing a flaredream deployment (`test(evaloncloudID,request,criteria)=>feedback` tool that processes request into feedback, and `final_feedback(feedback, replace_feedback:boolean, status: "ok"|"fail"|"retry")` will end the agent)
 
 This is a great first milestone having the 2 MCPs separately. With this I can verify manually if this works. After that, a looping agent can use both in a loop!
+
+Tools:
+
+```ts
+type Tool = {
+  /**The type of the MCP tool. Always mcp.*/
+  type: "mcp";
+  /** A label for this MCP server, used to identify it in tool calls. */
+  server_label: string;
+  /** The URL for the MCP server. */
+  server_url: string;
+  allowed_tools?: { tool_names: string[] };
+  /** Optional HTTP headers to send to the MCP server. Use for authentication or other purposes.*/
+  headers?: { [key: string]: string };
+  require_approval?:
+    | "always"
+    | "never"
+    | { always?: { tool_names?: string[] }; never?: { tool_names?: string[] } };
+  server_description?: string;
+};
+```
+
+MCP implementations that are already there:
+
+- https://docs.anthropic.com/en/api/messages#body-mcp-servers
+- https://platform.openai.com/docs/api-reference/responses/create#responses-create-tools
+
+This means in order to add MCP support to LMPIFY, I could choose to do it for just the models that support it, rather than making my own tools to MCP adaptor. Another important question is: are generations always stored publicly, even if you use authenticated MCPs? This might be problematic.
+
+It is assumable that there will be other aggregators that allow mcp execution for any provider. It is also assumable that more providers like groq and xai will follow with MCP as tool, and it's possible that openai will add mcp tools to /chat/completions.
+
+However, I COULD also choose to implement the ability to pass MCP server(s) in a config, pass them as tools to the chat-completion endpoint, and execute them myself. This would need to be done for both /chat/completions as well as for the StreamDO.
+
+Other scenarios that need work:
+
+- Ability to configure MCP URL and perform OAuth from within UI where it stores auth on a per-url basis into localStorage. This requires making a POC first (possibly with dynamic client registration etc)
+- Ability to configure MCP tools in /chat/completions with X-MCP-Authorization in header
+- Ability to create a /chat/completions AND /mcp endpoint that uses an MCP as tools. The OAuth of it should perform 2 steps, gathering both the downstream MCP OAuth as well as the user itself
+
+For now I decide to go for the simplest approach that directly allows for creating my agent without complex mappings, and use things just in Anthropic.
+
+**[STEP 1]** Allow using Anthropic MCP functionality everywhere:
+
+- Create `handleAnthropicAsChatCompletion` (maybe take from what I made before and add `tools[].type=mcp`)
+- Create conversion from tools [type:mcp] property to the format of anthropic (https://docs.anthropic.com/en/api/messages#body-mcp-servers)
+- Make sure `handleChatCompletions` uses the above for anthropic.
+- Do not support any `require_approval` other than `never`
+- Do not support for any provider that does not have `mcp:true`
+- Use `handleChatCompletions` inside of the `StreamDO` to avoid code duplication.
+- Do not support mcp tools icm with `store:true`
+
+Now, I should be able to use an MCP server in the `/{id}/chat/completions` endpoint by passing mcp configs as tools. Test this first!
+
+**[STEP 2]** MCP in Streamer
+
+- Add `mcp_url` and `mcp_authorization` to POST FormData to allow a single MCP tool from there too.
+- Ensure to properly handle MCP use responses in the StreamDO so it can be formatted into nice-looking markdown (using `>`)
+
+**[STEP 3]** Deployment MCP
+
+- Make deploy.flaredream.com an MCP
+- Use deploy.flaredream.com/mcp as MCP tool with flaredream LMPIFY FormData stream, from within flaredreams landingpage. This requires login with Cloudflare as well as my personal API key for LMPIFY (for now)
+
+I should now be able to start the entire request from flaredream.com, and let users look into the response if they want to (but not require that). I can now just add XMoney to flaredream and use XYText as interface.
+
+# Idea of simplification of the text/event-stream
+
+Why don't I just make an endpoint `POST|GET /{id}/simple` that just returns a plain/markdown ReadableStream? This is much easier to use and stack, and could eventually replace the `text/event-stream` which should not be needed.
 
 # Dmitry
 
@@ -54,7 +101,7 @@ Lot of generated things return errors. Tail worker often gets exception
 
 Landingpage flaredream.com should retrieve all `featured:true` from benchmark and render them with 'view'
 
-# With-money refactor (Dependency)
+# With-money refactor
 
 Check `withMoney` again and see what context would be needed to do a drop-in replacement with that from what i have now
 
