@@ -3,7 +3,7 @@
 /// <reference lib="esnext" />
 
 const PRICE_MARKUP_FACTOR = 1.5;
-
+import { handleChatMcp } from "chat-completions-mcp";
 import { ImageResponse } from "workers-og";
 import {
   Env as StripeflareEnv,
@@ -491,17 +491,24 @@ export async function handleChatCompletions(
 
       if (existingData?.prompt) {
         // Expand URLs in the stored prompt
-        const { context } = await generateContext(existingData.prompt);
-        if (context) {
-          console.log("added system context", context.length);
-          // Add context as system message
+        const systemIndex = expandedMessages.findIndex(
+          (x) => x.role === "system"
+        );
+        if (systemIndex === -1) {
           expandedMessages = [
-            { role: "system", content: context },
+            { role: "system", content: existingData.prompt },
             ...expandedMessages,
           ];
+        } else {
+          expandedMessages[systemIndex] = {
+            ...expandedMessages[systemIndex],
+            content: `${existingData.prompt}${expandedMessages[systemIndex].content}`,
+          };
         }
       }
     }
+
+    console.log("before adding context", { expandedMessages });
 
     // Expand URLs in all messages (in parallel)
     const expandPromises = expandedMessages.map(async (message) => {
@@ -612,7 +619,7 @@ export async function handleChatCompletions(
                   const tokenCount = Math.round(
                     parsed.choices[0].delta.content.length / 5
                   );
-                  fullMessage += parsed.choices[0].delta.content;
+                  fullMessage = fullMessage + parsed.choices[0].delta.content;
                   outputTokens += tokenCount;
                 }
 
@@ -634,6 +641,10 @@ export async function handleChatCompletions(
             outputTokens * (modelConfig.pricePerMillionOutput / 1000000);
           totalCost = (inputPrice + outputPrice) * PRICE_MARKUP_FACTOR;
 
+          const prompt = llmRequestBody.messages
+            .map((x) => `${x.role}:\n\n${x.content}`)
+            .join("\n\n");
+
           const final = async () => {
             // Charge user asynchronously
 
@@ -649,7 +660,7 @@ export async function handleChatCompletions(
 
             if (body.store) {
               const kvData: KVData = {
-                prompt: JSON.stringify(llmRequestBody.messages),
+                prompt,
                 model: modelConfig.model,
                 context: undefined,
                 result: fullMessage,
@@ -657,7 +668,7 @@ export async function handleChatCompletions(
                 headline: undefined,
               };
               const pathname = `/${id}`;
-              await this.env.RESULTS.put(pathname, JSON.stringify(kvData));
+              await env.RESULTS.put(pathname, JSON.stringify(kvData));
             }
           };
 
@@ -685,6 +696,9 @@ export async function handleChatCompletions(
     const outputPrice =
       outputTokens * (modelConfig.pricePerMillionOutput / 1000000);
     const totalCost = (inputPrice + outputPrice) * PRICE_MARKUP_FACTOR;
+    const prompt = llmRequestBody.messages
+      .map((x) => `${x.role}:\n\n${x.content}`)
+      .join("\n\n");
 
     const final = async () => {
       // Charge user asynchronously
@@ -703,14 +717,14 @@ export async function handleChatCompletions(
 
       if (body.store) {
         const kvData: KVData = {
-          prompt: JSON.stringify(llmRequestBody.messages),
+          prompt,
           model: modelConfig.model,
           context: undefined,
           result: responseData.choices?.[0]?.message?.content,
           timestamp: Date.now(),
           headline: undefined,
         };
-        await this.env.RESULTS.put(responseData.id, JSON.stringify(kvData));
+        await env.RESULTS.put("/" + responseData.id, JSON.stringify(kvData));
       }
     };
 
@@ -1778,6 +1792,59 @@ const getResult = async (
   return getResultHTML(env, scriptData, headers, request.url);
 };
 
+const getInstructions = (id: string, data: KVData, access_token: string) => {
+  return `You can use this prompt as system prompt using the following endpoint:
+
+System Prompt:
+
+\`\`\`
+${data.prompt}
+\`\`\`
+
+The prompt will be URL-expanded and used as system prompt for the generation. URLs never get cached by us, so its content can be dynamic if desired.
+
+\`\`\`sh
+curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer ${access_token}" \
+  -d '{
+    "model": "${data.model}",
+    "stream":true,
+    "messages": [
+      {
+        "role": "user",
+        "content": "Who are you?"
+      }
+    ]
+  }'
+\`\`\`
+
+
+This is a fully OpenAI Compatible API:
+
+\`\`\`
+import OpenAI from 'openai';
+
+const openai = new OpenAI({
+    apiKey: "${access_token}",   // Your LMPIFY API key
+    baseURL: "https://letmeprompt.com/${id}",
+});
+
+const response = await openai.chat.completions.create({
+    messages: [
+        { role: "user", content: "Who are you?" }
+    ],
+    model: "${data.model}",
+});
+
+console.log(response.choices[0].message.content);
+\`\`\`
+
+Optionally, it's possible to provide "store:true". This will store the final result in our cache, making it available at https://letmeprompt.com/{id}. The ID is part of the response JSON like normal.
+
+`;
+};
+
 const getResultHTML = async (
   env: Env,
   data: any,
@@ -1804,6 +1871,26 @@ const getResultHTML = async (
   headers.set("Content-Type", "text/html");
   return new Response(resultHTML.body, { headers });
 };
+
+const handleMcp = async (request: Request, env: Env, user: User) => {
+  const url = new URL(request.url);
+  const pathname =
+    url.pathname === "/mcp" ? undefined : "/" + url.pathname.split("/")[1];
+  const existingData = (
+    pathname ? await env.RESULTS.get(pathname, "json") : null
+  ) as KVData | null;
+
+  if (!existingData) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  return handleChatMcp(request, {
+    apiKey: user.access_token,
+    basePath: url.origin + url.pathname.slice(0, -4),
+    model: existingData.model,
+  });
+};
+
 const requestHandler = async (
   request: Request,
   env: Env,
@@ -1841,11 +1928,23 @@ const requestHandler = async (
     return new Response("Method not allowed", { status: 405, headers });
   }
 
+  if (url.pathname.endsWith("/mcp")) {
+    if (request.method === "POST") {
+      return handleMcp(request, env, user);
+    } else if (request.method === "GET") {
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: url.pathname.slice(0, -4) + "/chat/completions",
+        },
+      });
+    }
+  }
+
   if (url.pathname.endsWith("/chat/completions")) {
     if (request.method === "POST") {
       return await handleChatCompletions(request, env, ctx, user, headers);
     } else if (request.method === "GET") {
-      // TODO: return instructions
       const url = new URL(request.url);
 
       // Extract ID from pathname if provided (e.g., /abc123/chat/completions)
@@ -1863,57 +1962,7 @@ const requestHandler = async (
       if (!existingData) {
         return new Response("Not found", { status: 404 });
       }
-      //existingData.model
-      return new Response(`You can use this prompt as system prompt using the following endpoint:
-
-System Prompt:
-
-\`\`\`
-${existingData.prompt}
-\`\`\`
-
-The prompt will be URL-expanded and used as system prompt for the generation. URLs never get cached by us, so its content can be dynamic if desired.
-
-\`\`\`sh
-curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${access_token}" \
-  -d '{
-    "model": "${existingData.model}",
-    "stream":true,
-    "messages": [
-      {
-        "role": "user",
-        "content": "Who are you?"
-      }
-    ]
-  }'
-\`\`\`
-
-
-This is a fully OpenAI Compatible API:
-
-\`\`\`
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-    apiKey: "${user.access_token}",   // Your LMPIFY API key
-    baseURL: "https://letmeprompt.com/${id}",
-});
-
-const response = await openai.chat.completions.create({
-    messages: [
-        { role: "user", content: "Who are you?" }
-    ],
-    model: "${existingData.model}",
-});
-
-console.log(response.choices[0].message.content);
-\`\`\`
-
-Optionally, it's possible to provide "store:true". This will store the final result in our cache, making it available at https://letmeprompt.com/{id}. The ID is part of the response JSON like normal.
-
-`);
+      return new Response(getInstructions(id, existingData, access_token));
     }
   }
 
