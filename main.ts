@@ -1858,13 +1858,9 @@ Add this to your Claude Desktop MCP configuration:
 {
   "mcpServers": {
     "lmpify-${id}": {
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-fetch",
-        "https://letmeprompt.com/${id}/mcp"
-      ],
-      "env": {
-        "BEARER_TOKEN": "${access_token}"
+      "url": "https://letmeprompt.com/${id}/mcp",
+      "headers": {
+        "Authorization": "Bearer ${access_token}"
       }
     }
   }
