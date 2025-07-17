@@ -1803,6 +1803,8 @@ ${data.prompt}
 
 The prompt will be URL-expanded and used as system prompt for the generation. URLs never get cached by us, so its content can be dynamic if desired.
 
+## OpenAI Compatible API
+
 \`\`\`sh
 curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
   -H "Content-Type: application/json" \
@@ -1819,10 +1821,9 @@ curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
   }'
 \`\`\`
 
-
 This is a fully OpenAI Compatible API:
 
-\`\`\`
+\`\`\`javascript
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -1840,7 +1841,43 @@ const response = await openai.chat.completions.create({
 console.log(response.choices[0].message.content);
 \`\`\`
 
-Optionally, it's possible to provide "store:true". This will store the final result in our cache, making it available at https://letmeprompt.com/{id}. The ID is part of the response JSON like normal.
+## MCP Server
+
+You can also use this prompt as an MCP (Model Context Protocol) server. The MCP server provides the same functionality through the standardized MCP protocol.
+
+**MCP Server Address:**
+\`\`\`
+https://letmeprompt.com/${id}/mcp
+\`\`\`
+
+**Using with Claude Desktop:**
+
+Add this to your Claude Desktop MCP configuration:
+
+\`\`\`json
+{
+  "mcpServers": {
+    "lmpify-${id}": {
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-fetch",
+        "https://letmeprompt.com/${id}/mcp"
+      ],
+      "env": {
+        "BEARER_TOKEN": "${access_token}"
+      }
+    }
+  }
+}
+\`\`\`
+
+**Using with other MCP clients:**
+
+The MCP server implements the standard Model Context Protocol and can be used with any MCP-compatible client by connecting to the server URL above with your bearer token for authentication.
+
+## Additional Options
+
+Optionally, it's possible to provide "store:true" in your API requests. This will store the final result in our cache, making it available at https://letmeprompt.com/{id}. The ID is part of the response JSON like normal.
 
 `;
 };
