@@ -1832,8 +1832,12 @@ const requestHandler = async (
     return new Response("Method not allowed", { status: 405, headers });
   }
 
-  if (url.pathname.endsWith("/chat/completions") && request.method === "POST") {
-    return await handleChatCompletions(request, env, ctx, user, headers);
+  if (url.pathname.endsWith("/chat/completions")) {
+    if (request.method === "POST") {
+      return await handleChatCompletions(request, env, ctx, user, headers);
+    } else if (request.method === "GET") {
+      // TODO: return instructions
+    }
   }
 
   const pathnameWithoutExt = pathname.split(".")[0];

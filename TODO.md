@@ -7,7 +7,7 @@
 - ✅ Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
 - ✅ Incase of `store:true` ensure the response id is the URL we store it at
 - ❌ Optional: add `resultUrl` in the same objects
-- Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
+- ✅ Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
 - In the UI, show 'Use Context' in footer which shows how to use the API.
 - Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool
 
