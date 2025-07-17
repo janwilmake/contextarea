@@ -1866,6 +1866,15 @@ const requestHandler = async (
       //existingData.model
       return new Response(`You can use this prompt as system prompt using the following endpoint:
 
+System Prompt:
+
+\`\`\`
+${existingData.prompt}
+\`\`\`
+
+The prompt will be URL-expanded and used as system prompt for the generation. URLs never get cached by us, so its content can be dynamic if desired.
+
+\`\`\`sh
 curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${access_token}" \
@@ -1879,8 +1888,10 @@ curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
       }
     ]
   }'
-  
+\`\`\`
+
 This is a fully OpenAI Compatible API:
+
 \`\`\`
 import OpenAI from 'openai';
 
