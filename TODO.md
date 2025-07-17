@@ -4,8 +4,9 @@
 - ✅ Turn `letmeprompt.com/{id}/chat/completions` into the same thing, but with predetermined system prompt that is someone elses prompt
 - ✅ Every url can be a basePath for the OpenAI SDK (as long as POST `*/chat/completions` is given, proxy with system prompt being set to context + prompt). Model value should follow the same allowed values as what I have now.
 - ✅ Look up `store:true` behavior in openai and x-ai. is it useful to leave it? (NO)
-- Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
-- Incase of `store:true` ensure the response id is the URL we store it at, and add `resultUrl` in the same objects
+- ✅ Add `store:true` behavior, removing that parameter from body, and storing the result in lmpify
+- ✅ Incase of `store:true` ensure the response id is the URL we store it at
+- ❌ Optional: add `resultUrl` in the same objects
 - Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
 - In the UI, show 'Use Context' in footer which shows how to use the API.
 - Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool

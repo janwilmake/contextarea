@@ -1,0 +1,886 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "LLM Prompt API",
+    "description": "API for generating AI responses with multiple models, streaming capabilities, and content format negotiation",
+    "version": "1.0.0",
+    "contact": {
+      "name": "API Support",
+      "url": "https://letmeprompt.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://letmeprompt.com",
+      "description": "Production server"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Get homepage",
+        "description": "Returns the homepage in the requested format",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/AcceptHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Homepage content",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{id}": {
+      "get": {
+        "summary": "Get prompt result",
+        "description": "Retrieve a prompt result by ID in various formats (HTML, JSON, Markdown, PNG, YAML)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          },
+          {
+            "$ref": "#/components/parameters/AcceptHeader"
+          },
+          {
+            "$ref": "#/components/parameters/KeyQuery"
+          },
+          {
+            "$ref": "#/components/parameters/CodeblockQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prompt result in requested format",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "<!DOCTYPE html><html>...</html>"
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptResult"
+                }
+              },
+              "text/markdown": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "# Prompt Result\n\n## Prompt\n\n```md\nWhat is the meaning of life?\n```\n\n## Result\n\n```md\nThe meaning of life is a philosophical question...\n```"
+              },
+              "text/yaml": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "prompt: What is the meaning of life?\nmodel: gpt-4\nresult: The meaning of life is a philosophical question..."
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                },
+                "description": "OG image for social media sharing"
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create new prompt",
+        "description": "Submit a new prompt for AI processing",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "The prompt text to process",
+                    "example": "Explain quantum computing in simple terms"
+                  },
+                  "model": {
+                    "type": "string",
+                    "description": "The AI model to use",
+                    "example": "gpt-4",
+                    "enum": [
+                      "gpt-4",
+                      "gpt-3.5-turbo",
+                      "claude-3-opus",
+                      "claude-3-sonnet",
+                      "claude-3-haiku"
+                    ]
+                  }
+                },
+                "required": ["prompt"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prompt submitted successfully",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromptResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          }
+        }
+      }
+    },
+    "/{id}/stream": {
+      "get": {
+        "summary": "Stream prompt result",
+        "description": "Get real-time streaming updates for a prompt result using Server-Sent Events",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          },
+          {
+            "name": "Accept",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["text/event-stream"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Server-Sent Events stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "init": {
+                    "summary": "Initial event",
+                    "value": "data: {\"type\":\"init\",\"data\":{\"prompt\":\"What is AI?\",\"model\":\"gpt-4\",\"status\":\"pending\"},\"timestamp\":1234567890}\n\n"
+                  },
+                  "token": {
+                    "summary": "Token event",
+                    "value": "data: {\"type\":\"token\",\"data\":{\"text\":\"AI\",\"position\":0},\"timestamp\":1234567890}\n\n"
+                  },
+                  "complete": {
+                    "summary": "Complete event",
+                    "value": "data: {\"type\":\"complete\",\"data\":{\"result\":\"AI stands for Artificial Intelligence...\"},\"timestamp\":1234567890}\n\n"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "no-cache"
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "keep-alive"
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string"
+                },
+                "example": "*"
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/chat/completions": {
+      "post": {
+        "summary": "Chat completions API",
+        "description": "OpenAI-compatible chat completions endpoint with streaming support",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionsResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Streaming response when stream=true"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimit"
+          }
+        }
+      }
+    },
+    "/{id}/chat/completions": {
+      "post": {
+        "summary": "Chat completions with context",
+        "description": "Chat completions endpoint that includes context from a specific prompt ID",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatCompletionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat completion response with context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatCompletionsResponse"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          }
+        }
+      }
+    },
+    "/from/{url}": {
+      "get": {
+        "summary": "Create prompt from URL",
+        "description": "Fetch content from a URL and create a prompt from it",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "path",
+            "required": true,
+            "description": "URL-encoded URL to fetch content from",
+            "schema": {
+              "type": "string",
+              "format": "url"
+            },
+            "example": "https%3A%2F%2Fexample.com%2Fapi%2Fdata"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to created prompt",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "Path to the created prompt"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Bearer token for authentication"
+      }
+    },
+    "parameters": {
+      "IdPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Unique identifier for the prompt",
+        "schema": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9-_]+$"
+        },
+        "example": "explain-quantum-computing-abc123"
+      },
+      "AcceptHeader": {
+        "name": "Accept",
+        "in": "header",
+        "description": "Content type preference",
+        "schema": {
+          "type": "string",
+          "enum": [
+            "text/html",
+            "application/json",
+            "text/markdown",
+            "text/yaml",
+            "image/png",
+            "text/event-stream",
+            "*/*"
+          ]
+        },
+        "example": "application/json"
+      },
+      "KeyQuery": {
+        "name": "key",
+        "in": "query",
+        "description": "Specific field to return (prompt, result, or context)",
+        "schema": {
+          "type": "string",
+          "enum": ["prompt", "result", "context"]
+        }
+      },
+      "CodeblockQuery": {
+        "name": "codeblock",
+        "in": "query",
+        "description": "Specific codeblock to return (by index or filename)",
+        "schema": {
+          "type": "string"
+        },
+        "example": "0"
+      }
+    },
+    "schemas": {
+      "PromptResult": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The original prompt text",
+            "example": "Explain quantum computing in simple terms"
+          },
+          "model": {
+            "type": "string",
+            "description": "The AI model used",
+            "example": "gpt-4"
+          },
+          "context": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional context from URLs or other sources",
+            "example": "Additional context from referenced URLs..."
+          },
+          "result": {
+            "type": "string",
+            "description": "The AI-generated response",
+            "example": "Quantum computing is a revolutionary approach to computation..."
+          },
+          "headline": {
+            "type": "string",
+            "description": "Generated headline for the prompt",
+            "example": "Quantum Computing Explanation"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp of creation",
+            "example": 1234567890
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message if processing failed"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "streaming", "complete", "error"],
+            "description": "Current status of the prompt processing"
+          },
+          "user": {
+            "$ref": "#/components/schemas/PublicUser"
+          }
+        },
+        "required": ["prompt", "model"]
+      },
+      "PublicUser": {
+        "type": "object",
+        "properties": {
+          "client_reference_id": {
+            "type": "string",
+            "description": "User's client reference ID"
+          },
+          "balance": {
+            "type": "number",
+            "description": "User's current balance in cents"
+          },
+          "free_model_uses": {
+            "type": "integer",
+            "description": "Number of free model uses remaining"
+          }
+        }
+      },
+      "ChatCompletionsRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "The model to use for completion",
+            "example": "gpt-4"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessage"
+            },
+            "description": "List of messages in the conversation"
+          },
+          "stream": {
+            "type": "boolean",
+            "description": "Whether to stream the response",
+            "default": false
+          },
+          "store": {
+            "type": "boolean",
+            "description": "Whether to store the result",
+            "default": false
+          },
+          "max_tokens": {
+            "type": "integer",
+            "description": "Maximum number of tokens to generate",
+            "minimum": 1
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Sampling temperature",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 1
+          },
+          "top_p": {
+            "type": "number",
+            "description": "Nucleus sampling parameter",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1
+          }
+        },
+        "required": ["model", "messages"]
+      },
+      "ChatMessage": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": ["system", "user", "assistant"],
+            "description": "The role of the message sender"
+          },
+          "content": {
+            "type": "string",
+            "description": "The content of the message"
+          }
+        },
+        "required": ["role", "content"]
+      },
+      "ChatCompletionsResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the completion"
+          },
+          "object": {
+            "type": "string",
+            "enum": ["chat.completion"],
+            "description": "Object type"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Unix timestamp of creation"
+          },
+          "model": {
+            "type": "string",
+            "description": "The model used for completion"
+          },
+          "choices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatChoice"
+            },
+            "description": "List of completion choices"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/Usage"
+          }
+        },
+        "required": ["id", "object", "created", "model", "choices"]
+      },
+      "ChatChoice": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "description": "Index of the choice"
+          },
+          "message": {
+            "$ref": "#/components/schemas/ChatMessage"
+          },
+          "delta": {
+            "$ref": "#/components/schemas/ChatDelta"
+          },
+          "finish_reason": {
+            "type": "string",
+            "enum": ["stop", "length", "content_filter"],
+            "nullable": true,
+            "description": "Reason why the completion finished"
+          }
+        },
+        "required": ["index"]
+      },
+      "ChatDelta": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "Content delta for streaming responses"
+          }
+        }
+      },
+      "Usage": {
+        "type": "object",
+        "properties": {
+          "prompt_tokens": {
+            "type": "integer",
+            "description": "Number of tokens in the prompt"
+          },
+          "completion_tokens": {
+            "type": "integer",
+            "description": "Number of tokens in the completion"
+          },
+          "total_tokens": {
+            "type": "integer",
+            "description": "Total number of tokens used"
+          }
+        },
+        "required": ["prompt_tokens", "completion_tokens", "total_tokens"]
+      },
+
+      "SSEInitData": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The original prompt text"
+          },
+          "model": {
+            "type": "string",
+            "description": "The AI model being used"
+          },
+          "context": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional context from URLs or other sources"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "streaming", "complete", "error"],
+            "description": "Current processing status"
+          },
+          "result": {
+            "type": "string",
+            "description": "Current accumulated result (may be partial)"
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message if processing failed"
+          }
+        },
+        "required": ["prompt", "model", "status", "result"]
+      },
+      "SSETokenData": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "The new token/text chunk received"
+          },
+          "position": {
+            "type": "integer",
+            "description": "Position/index of this token in the sequence"
+          }
+        },
+        "required": ["text", "position"]
+      },
+      "SSEUpdateData": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The field being updated (e.g., 'context')"
+          },
+          "value": {
+            "type": "string",
+            "description": "The new value for the field"
+          }
+        },
+        "required": ["field", "value"]
+      },
+      "SSECompleteData": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string",
+            "description": "The final complete result"
+          }
+        },
+        "required": ["result"]
+      },
+      "SSEErrorData": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message describing what went wrong"
+          },
+          "stack": {
+            "type": "string",
+            "description": "Error stack trace for debugging"
+          }
+        },
+        "required": ["message"]
+      },
+      "SSEEvent": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["init", "token", "update", "complete", "error"],
+            "description": "Type of SSE event"
+          },
+          "data": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/SSEInitData"
+              },
+              {
+                "$ref": "#/components/schemas/SSETokenData"
+              },
+              {
+                "$ref": "#/components/schemas/SSEUpdateData"
+              },
+              {
+                "$ref": "#/components/schemas/SSECompleteData"
+              },
+              {
+                "$ref": "#/components/schemas/SSEErrorData"
+              }
+            ],
+            "description": "Event data payload - structure depends on event type"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Unix timestamp of the event"
+          }
+        },
+        "required": ["type", "data", "timestamp"]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "description": "Error message"
+              },
+              "type": {
+                "type": "string",
+                "description": "Error type"
+              },
+              "code": {
+                "type": "string",
+                "description": "Error code"
+              }
+            },
+            "required": ["message", "type", "code"]
+          }
+        },
+        "required": ["error"]
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Bad request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "PaymentRequired": {
+        "description": "Insufficient balance",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "RateLimit": {
+        "description": "Rate limit exceeded",
+        "headers": {
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Request limit per time window"
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Remaining requests in current time window"
+          },
+          "X-RateLimit-Reset": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Time when rate limit resets (Unix timestamp)"
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Seconds to wait before retrying"
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Prompts",
+      "description": "Operations for creating and retrieving AI prompts"
+    },
+    {
+      "name": "Chat",
+      "description": "OpenAI-compatible chat completions API"
+    },
+    {
+      "name": "Streaming",
+      "description": "Server-Sent Events streaming endpoints"
+    }
+  ]
+}
