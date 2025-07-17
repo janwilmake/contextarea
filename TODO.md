@@ -8,6 +8,7 @@
 - ✅ Incase of `store:true` ensure the response id is the URL we store it at
 - ❌ Optional: add `resultUrl` in the same objects
 - ✅ Create openapi for all of LMPIFY for programmatic use (leaving out html stuff)
+- Test anthropic model via https://docs.anthropic.com/en/api/openai-sdk - got model not found error
 - In the UI, show 'Use Context' in footer which shows how to use the API.
 - Endpoint `[/{id}]/mcp` that turns chat completion into an MCP tool
 

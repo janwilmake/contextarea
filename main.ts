@@ -483,11 +483,17 @@ export async function handleChatCompletions(
     let expandedMessages = body.messages;
 
     if (id) {
-      const existingData = (await env.RESULTS.get(id, "json")) as KVData | null;
+      const pathname = `/${id}`;
+      const existingData = (await env.RESULTS.get(
+        pathname,
+        "json"
+      )) as KVData | null;
+      console.log({ id, exist: !!existingData });
       if (existingData?.prompt) {
         // Expand URLs in the stored prompt
         const { context } = await generateContext(existingData.prompt);
         if (context) {
+          console.log("added system context", context.length);
           // Add context as system message
           expandedMessages = [
             { role: "system", content: context },
@@ -526,6 +532,8 @@ export async function handleChatCompletions(
       ...(body.store && { store: undefined }),
       ...(body.stream && { stream_options: { include_usage: true } }),
     };
+
+    console.log({ modelConfig, llmRequestBody });
 
     // Get API key
     const envVariableName = `${modelConfig.providerSlug.toUpperCase()}_SECRET`;
@@ -650,7 +658,8 @@ export async function handleChatCompletions(
                 timestamp: Date.now(),
                 headline: undefined,
               };
-              await this.env.RESULTS.put(id, JSON.stringify(kvData));
+              const pathname = `/${id}`;
+              await this.env.RESULTS.put(pathname, JSON.stringify(kvData));
             }
           };
 
@@ -1100,7 +1109,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       const llmResponse = await fetch(
         isAnthropic
-          ? `${modelConfig.basePath}/v1/messages`
+          ? `${modelConfig.basePath}/messages`
           : `${modelConfig.basePath}/chat/completions`,
         {
           method: "POST",
