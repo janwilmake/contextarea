@@ -42,15 +42,27 @@
                 /* Remove container padding */
                 max-width: 100%;
                 margin: 0 !important;
-                padding-top: 80px;
+                padding-top: 60px;
+            }
+
+            .content-container {
+                flex-direction: column;
             }
 
             /* Adjust header */
             h1 {
-                font-size: 18px;
-                margin: 8px 0;
-                padding: 0 16px;
-                /* Add some padding to header only */
+                font-size: 14px !important;
+                margin: 0;
+                padding: 0;
+                text-align: left;
+                display: flex;
+                align-items: center;
+            }
+
+            h1 img {
+                width: 20px !important;
+                height: 20px !important;
+                margin-right: 8px !important;
             }
 
             /* Make content container stack vertically with auto height */
@@ -78,6 +90,7 @@
                 border: none !important;
                 /* Remove background color */
                 background-color: transparent !important;
+                border-radius: 0 !important;
             }
 
             /* Column header adjustments */
@@ -90,6 +103,7 @@
                 display: flex;
                 flex-direction: column;
                 align-items: flex-start !important;
+                border-radius: 0 !important;
             }
 
             /* Column content adjustments */
@@ -107,6 +121,7 @@
                 height: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                border-radius: 0 !important;
             }
 
             /* Sticky header content */
@@ -115,6 +130,7 @@
                 /* Match body background */
                 padding: 16px;
                 border-bottom: 1px solid #4a4a4a;
+                border-radius: 0 !important;
             }
 
             /* Sticky bottom content */
@@ -124,6 +140,7 @@
                 /* Match body background */
                 padding: 16px;
                 border-top: 1px solid #4a4a4a;
+                border-radius: 0 !important;
             }
 
             .submit-button {
@@ -131,6 +148,7 @@
                 font-size: 14px !important;
                 width: 100% !important;
                 justify-content: center !important;
+                border-radius: 8px !important;
             }
 
             /* .share-input {
@@ -142,6 +160,7 @@
                 padding: 8px 12px !important;
                 font-size: 14px !important;
                 min-height: auto !important;
+                border-radius: 8px !important;
             }
 
             .footer-copy-button svg {
@@ -152,7 +171,7 @@
             button {
                 min-height: 36px;
                 padding: 6px 8px;
-                border-radius: 4px;
+                border-radius: 8px !important;
             }
 
             #tokenCounter {
@@ -187,7 +206,7 @@
             .result-button {
                 padding: 6px 8px !important;
                 font-size: 12px !important;
-                border-radius: 6px !important;
+                border-radius: 8px !important;
                 min-width: auto !important;
             }
 
@@ -206,6 +225,44 @@
             .result-button.clicked {
                 opacity: 0.6;
                 cursor: not-allowed;
+            }
+
+            /* Navigation bar for mobile */
+            .nav-bar {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                background-color: #2a2a2a !important;
+                border-bottom: 1px solid #4a4a4a !important;
+                padding: 12px 16px !important;
+                z-index: 1000 !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                height: 60px !important;
+                box-sizing: border-box !important;
+            }
+
+            .nav-links {
+                display: flex !important;
+                gap: 8px !important;
+            }
+
+            .nav-links a {
+                background-color: #3a3a3a !important;
+                color: #e5e5e5 !important;
+                padding: 8px 12px !important;
+                border-radius: 8px !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                text-decoration: none !important;
+                transition: background-color 0.2s ease !important;
+            }
+
+            .nav-links a:hover {
+                background-color: #4a4a4a !important;
+                color: #fff !important;
             }
         }
 
@@ -273,7 +330,7 @@
             flex: 1;
             background-color: #3a3a3a;
             border: 1px solid #4a4a4a;
-            border-radius: 24px;
+            border-radius: 8px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -292,6 +349,7 @@
             padding: 12px 24px 12px 24px;
             z-index: 10;
             height: 60px;
+            border-radius: 8px 8px 0 0;
         }
 
         .column-header {
@@ -320,6 +378,7 @@
             padding: 16px 24px 24px 24px;
             z-index: 10;
             height: 60px;
+            border-radius: 0 0 8px 8px;
         }
 
         a {
@@ -337,7 +396,7 @@
             width: 100%;
             background-color: #2a2a2a;
             border: 1px solid #4a4a4a;
-            border-radius: 12px;
+            border-radius: 8px;
             color: #e5e5e5;
             font-size: 16px;
             padding: 16px;
@@ -367,7 +426,7 @@
             background: linear-gradient(135deg, #ff8800 0%, #FF7D1F 100%);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             padding: 8px 20px;
             font-size: 16px;
             font-weight: 500;
@@ -475,7 +534,7 @@
         .result-button {
             padding: 6px 8px !important;
             font-size: 12px !important;
-            border-radius: 6px !important;
+            border-radius: 8px !important;
             min-width: auto !important;
         }
 
@@ -627,21 +686,7 @@
             background-color: #6a6a6a;
         }
 
-        /* Mobile responsive */
-        @media (max-width: 768px) {
-            .content-container {
-                flex-direction: column;
-            }
 
-            h1 {
-                font-size: 24px;
-            }
-
-            .icon {
-                width: 28px;
-                height: 28px;
-            }
-        }
 
         .chat-api-container {
             display: flex;
@@ -673,39 +718,52 @@
             width: 16px;
             height: 16px;
         }
+
+        /* Desktop navigation - hide on mobile */
+        .desktop-nav {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none !important;
+            }
+        }
+
+        /* Mobile navigation - hide on desktop */
+        .nav-bar {
+            display: none;
+        }
     </style>
 
 </head>
 
 <body>
-    <style>
-        #link {
-            position: fixed;
-            background-color: #3a3a3a;
-            color: #e5e5e5;
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-            transition: background-color 0.2s ease;
-            z-index: 1000;
-        }
+    <!-- Mobile navigation bar -->
+    <div class="nav-bar">
+        <a href="/">
+            <h1><img src="/logo.png" width="20" height="20" />let me prompt it for you</h1>
+        </a>
+        <div class="nav-links">
+            <a href="https://github.com/janwilmake/lmpify-docs/blob/main/README.md" target="_blank">Docs</a>
+            <a href="https://github.com/janwilmake/lmpify-docs/blob/main/privacy-policy.md" target="_blank">Privacy</a>
+        </div>
+    </div>
 
-        #link:hover {
-            background-color: #4a4a4a;
-            color: #fff;
-        }
-    </style>
-
-    <a href="https://github.com/janwilmake/lmpify-docs/blob/main/README.md" target="_blank" id="link"
-        style="top:20px;right:100px;" title="Docs">Docs</a>
-    <a href="https://github.com/janwilmake/lmpify-docs/blob/main/privacy-policy.md" target="_blank" id="link"
-        style="top:20px;right:20px;" title="Privacy">Privacy</a>
+    <!-- Desktop navigation -->
+    <div class="desktop-nav">
+        <a href="https://github.com/janwilmake/lmpify-docs/blob/main/README.md" target="_blank" id="link"
+            style="position:fixed;top:20px;right:100px;background-color:#3a3a3a;color:#e5e5e5;padding:8px 14px;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.4);transition:background-color 0.2s ease;z-index:1000;"
+            onmouseover="this.style.backgroundColor='#4a4a4a';this.style.color='#fff';"
+            onmouseout="this.style.backgroundColor='#3a3a3a';this.style.color='#e5e5e5';">Docs</a>
+        <a href="https://github.com/janwilmake/lmpify-docs/blob/main/privacy-policy.md" target="_blank" id="link"
+            style="position:fixed;top:20px;right:20px;background-color:#3a3a3a;color:#e5e5e5;padding:8px 14px;border-radius:8px;font-size:14px;font-weight:500;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.4);transition:background-color 0.2s ease;z-index:1000;"
+            onmouseover="this.style.backgroundColor='#4a4a4a';this.style.color='#fff';"
+            onmouseout="this.style.backgroundColor='#3a3a3a';this.style.color='#e5e5e5';">Privacy</a>
+    </div>
 
     <div class="container">
-        <a href="/">
+        <a href="/" class="desktop-nav">
             <h1><img src="/logo.png" width="32" height="32" style="width:32px;height:32px;margin-right:12px;" />let me
                 prompt it for you</h1>
         </a>

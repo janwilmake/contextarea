@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross-Page Audio Permission Demo</title>
+</head>
+
+<body>
+    <h1>Cross-Page Audio Permission Demo</h1>
+    <div id="content">
+        <p>This demo shows how to handle audio across page reloads.</p>
+        <button id="grantPermissionButton">Grant Audio Permission & Reload</button>
+        <p id="status">Click the button to grant permission and reload the page</p>
+    </div>
+
+    <script>
+        const grantPermissionButton = document.getElementById('grantPermissionButton');
+        const status = document.getElementById('status');
+
+        // Check if we have permission context from previous page load
+        const permissionContext = localStorage.getItem('audioPermissionContext');
+
+        if (permissionContext) {
+            const context = JSON.parse(permissionContext);
+
+            // We have permission context from previous interaction
+            status.textContent = `Permission context found (granted: ${new Date(context.timestamp).toLocaleTimeString()})! Audio will attempt to play in 3 seconds...`;
+            grantPermissionButton.style.display = 'none';
+
+            setTimeout(() => {
+                // Attempt to play audio using the stored permission context
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFA==');
+
+                audio.play().then(() => {
+                    status.textContent = 'Sound played successfully! The permission context persisted across page reload.';
+                }).catch(err => {
+                    status.textContent = 'Audio play failed: ' + err.message + ' (This is expected - browsers may still block autoplay despite stored permission context)';
+                    console.error('Audio play failed:', err);
+
+                    // Show a button to manually trigger audio
+                    const playButton = document.createElement('button');
+                    playButton.textContent = 'Click to Play Audio';
+                    playButton.onclick = () => {
+                        audio.play().then(() => {
+                            status.textContent = 'Sound played successfully with manual trigger!';
+                        });
+                    };
+                    document.getElementById('content').appendChild(playButton);
+                });
+            }, 3000);
+
+            // Add a reset button
+            const resetButton = document.createElement('button');
+            resetButton.textContent = 'Reset Permission Context';
+            resetButton.onclick = () => {
+                localStorage.removeItem('audioPermissionContext');
+                location.reload();
+            };
+            document.getElementById('content').appendChild(resetButton);
+
+        } else {
+            // No permission context yet, show the grant button
+            grantPermissionButton.addEventListener('click', async function () {
+                try {
+                    // Create and play a short audio to establish user interaction
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+TyvmweBCaK2/LNeSsFJHfH8N2QQAoUXrTp66hVFA==');
+
+                    await audio.play();
+
+                    // Store permission context with timestamp and additional info
+                    const permissionContext = {
+                        granted: true,
+                        timestamp: Date.now(),
+                        userAgent: navigator.userAgent,
+                        domain: window.location.hostname,
+                        audioSupported: !!window.Audio
+                    };
+
+                    localStorage.setItem('audioPermissionContext', JSON.stringify(permissionContext));
+
+                    status.textContent = 'Permission context stored! Reloading page...';
+
+                    // Reload the page after a short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+
+                } catch (err) {
+                    status.textContent = 'Error granting permission: ' + err.message;
+                    console.error('Permission grant failed:', err);
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
