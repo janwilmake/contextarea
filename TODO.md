@@ -68,12 +68,13 @@ Now, I should be able to use an MCP server in the `/{id}/chat/completions` endpo
 
 **[STEP 3]** Deployment MCP
 
-- Make deploy.flaredream.com an MCP
+- ✅ Improve cloudflare provider, create `login-with-cloudflare` package.
+- Use that in https://deploy.flaredream.com and make it an MCP using `withMcp`
 - Use deploy.flaredream.com/mcp as MCP tool with flaredream LMPIFY FormData stream, from within flaredreams landingpage. This requires login with Cloudflare as well as my personal API key for LMPIFY (for now)
 
 I should now be able to start the entire request from flaredream.com, and let users look into the response if they want to (but not require that). I can now just add XMoney to flaredream and use XYText as interface.
 
-# Idea of simplification of the text/event-stream
+# Idea of simplification of the `text/event-stream`
 
 Why don't I just make an endpoint `POST|GET /{id}/simple` that just returns a plain/markdown ReadableStream? This is much easier to use and stack, and could eventually replace the `text/event-stream` which should not be needed.
 

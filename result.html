@@ -18,76 +18,31 @@
     <script src="https://contextarea.com/lib.js" defer></script>
 
     <style>
-        @media (max-width: 1200px) {
-
-            /* Result content mobile adjustments */
-            .result-content {
-                overflow: visible !important;
-                max-height: none !important;
-                word-break: break-word;
-                font-size: 14px;
-                padding-bottom: 80px;
-            }
-
-            /* Result buttons container for mobile */
-            .result-buttons-container {
-                position: relative !important;
-                top: auto !important;
-                right: auto !important;
-                margin-top: 8px !important;
-                margin-bottom: 8px !important;
-                display: flex !important;
-                flex-wrap: wrap !important;
-                gap: 6px !important;
-                justify-content: flex-end !important;
-            }
-
-            .result-button {
-                padding: 6px 8px !important;
-                font-size: 12px !important;
-                border-radius: 6px !important;
-                min-width: auto !important;
-            }
-
-            .result-button svg {
-                width: 16px;
-                height: 16px;
-                transition: transform 0.3s ease;
-            }
-
-            .result-button:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-                pointer-events: none;
-            }
-
-            .result-button.clicked {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-        }
-
         @media (max-width: 768px) {
 
             /* Remove body padding and adjust container */
             body {
-                padding: 0;
-                margin: 0;
+                padding: 0 !important;
+                margin: 0 !important;
                 overflow-x: hidden;
                 height: auto;
                 min-height: 100vh;
+                background-color: #2a2a2a !important;
             }
 
             .container {
                 height: auto !important;
                 min-height: auto !important;
                 display: block;
-                gap: 0;
+                gap: 0 !important;
                 /* Remove gap between columns */
-                padding: 0;
+                padding-bottom: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
                 /* Remove container padding */
                 max-width: 100%;
-                margin: 0;
+                margin: 0 !important;
+                padding-top: 80px;
             }
 
             /* Adjust header */
@@ -116,15 +71,13 @@
                 min-height: auto !important;
                 max-height: none !important;
                 flex: none !important;
-                margin-bottom: 0;
-                padding: 0;
+                margin: 0;
                 /* Remove padding */
-                border-radius: 0;
-                /* Remove roundedness */
-                border: none !important;
+                padding: 0;
                 /* Remove border */
-                background-color: transparent;
+                border: none !important;
                 /* Remove background color */
+                background-color: transparent !important;
             }
 
             /* Column header adjustments */
@@ -134,13 +87,14 @@
                 padding: 16px;
                 /* Add padding to header content */
                 border-bottom: 1px solid #4a4a4a;
-                /* Keep some separation */
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start !important;
             }
 
             /* Column content adjustments */
             .column-content {
-                padding: 16px;
-                /* Add padding to content */
+                padding: 0;
             }
 
             /* Mobile sticky adjustments - remove background styling */
@@ -172,24 +126,6 @@
                 border-top: 1px solid #4a4a4a;
             }
 
-            .prompt-textarea {
-                max-height: 150px;
-                min-height: 80px;
-                height: auto;
-                overflow-y: auto;
-                padding: 8px;
-                font-size: 14px;
-                border-radius: 6px;
-                field-sizing: content;
-                resize: vertical;
-            }
-
-            @supports not (field-sizing: content) {
-                .prompt-textarea {
-                    height: 120px;
-                }
-            }
-
             .submit-button {
                 padding: 8px 16px !important;
                 font-size: 14px !important;
@@ -197,10 +133,10 @@
                 justify-content: center !important;
             }
 
-            .share-input {
+            /* .share-input {
                 font-size: 13px !important;
                 padding: 6px 8px !important;
-            }
+            } */
 
             .footer-copy-button {
                 padding: 8px 12px !important;
@@ -245,7 +181,7 @@
                 display: flex !important;
                 flex-wrap: wrap !important;
                 gap: 6px !important;
-                justify-content: flex-end !important;
+                justify-content: flex-start !important;
             }
 
             .result-button {
@@ -270,26 +206,6 @@
             .result-button.clicked {
                 opacity: 0.6;
                 cursor: not-allowed;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 5px;
-            }
-
-            h1 {
-                font-size: 16px;
-            }
-
-            .column {
-                padding: 8px;
-                margin-bottom: 6px;
-            }
-
-            .prompt-textarea {
-                font-size: 13px;
-                padding: 6px;
             }
         }
 
@@ -431,10 +347,7 @@
             line-height: 1.6;
             min-height: 200px;
             transition: border-color 0.2s ease;
-        }
-
-        .prompt-textarea:focus {
-            border-color: #6a6a6a;
+            height: auto;
         }
 
         /* Prompt actions container */
@@ -533,11 +446,54 @@
             }
         }
 
-        /* Result buttons container - now in sticky header */
+
+        /* Result content mobile adjustments */
+        .result-content {
+            overflow: visible !important;
+            max-height: none !important;
+            word-break: break-word;
+            font-size: 14px;
+            padding-bottom: 80px;
+        }
+
+        /* Result buttons container for mobile */
         .result-buttons-container {
             display: flex;
             align-items: center;
             gap: 8px;
+            position: relative;
+            top: auto;
+            right: auto;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .result-button {
+            padding: 6px 8px !important;
+            font-size: 12px !important;
+            border-radius: 6px !important;
+            min-width: auto !important;
+        }
+
+        .result-button svg {
+            width: 16px;
+            height: 16px;
+            transition: transform 0.3s ease;
+        }
+
+        .result-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .result-button.clicked {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         .result-button {
@@ -588,12 +544,12 @@
             gap: 12px;
         }
 
-        .share-label {
+        /* .share-label {
             font-size: 14px;
             color: #b5b5b5;
             white-space: nowrap;
-        }
-
+        } */
+        /* 
         .share-input {
             flex: 1;
             background-color: #2a2a2a;
@@ -606,7 +562,7 @@
             font-family: monospace;
             cursor: text;
             user-select: all;
-        }
+        } */
 
         .footer-copy-button {
             background-color: transparent;
@@ -871,14 +827,13 @@
                                 </button>
                             </div>
 
-                            <span class="share-label">Share:</span>
-                            <input type="text" class="share-input" id="shareInput" readonly onclick="this.select()">
+                            <input type="hidden" class="share-input" id="shareInput" readonly>
                             <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                 </svg>
-                                <span>Copy</span>
+                                <span>Share</span>
                             </button>
                         </div>
                     </div>
@@ -974,7 +929,7 @@
                 this.isTabVisible = !document.hidden;
                 this.loadingInterval = null;
                 this.loadingState = 0;
-                this.loadingStates = ['Generating.', 'Generating..', 'Generating...', 'Generating'];
+                this.loadingStates = ['Generating..', 'Generating...', 'Generating.'];
                 this.wasStreamingWhenHidden = false;
                 this.streamingCompleted = false;
 
@@ -995,7 +950,9 @@
 
             async fetchOwnTitle() {
                 try {
-                    const response = await fetch(window.location.href);
+                    const cacheBustedUrl = `${window.location.href}?t=${Date.now()}`;
+
+                    const response = await fetch(cacheBustedUrl, { cache: "no-store", headers: { "accept": "text/html" } });
                     const html = await response.text();
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
@@ -1010,25 +967,18 @@
 
             handleTabActive() {
 
-                console.log('active')
+                console.log('active', this.wasStreamingWhenHidden)
                 this.stopLoadingAnimation();
 
-                if (this.wasStreamingWhenHidden) {
-                    if (this.streamingCompleted) {
-                        // If streaming completed while tab was hidden, keep the completion state
-                        this.setCompletionState();
-                    } else {
-                        this.fetchOwnTitle().then(title => {
-                            // If still streaming, fetch and update title
-                            document.title = title;
-                        });
-                    }
-                }
+                this.fetchOwnTitle().then(title => {
+                    // If still streaming, fetch and update title
+                    document.title = title;
+                });
             }
 
             handleTabInactive() {
                 // Only start loading animation if currently streaming
-                if (uiManager && uiManager.isStreaming) {
+                if (uiManager?.isStreaming) {
                     this.wasStreamingWhenHidden = true;
                     this.startLoadingAnimation();
                 }
@@ -1038,10 +988,12 @@
                 if (this.loadingInterval) return; // Already running
 
                 this.loadingState = 0;
+                document.title = this.loadingStates[this.loadingState];
+
                 this.loadingInterval = setInterval(() => {
                     document.title = this.loadingStates[this.loadingState];
                     this.loadingState = (this.loadingState + 1) % this.loadingStates.length;
-                }, 750);
+                }, 2000);
             }
 
             stopLoadingAnimation() {
@@ -1377,11 +1329,11 @@
                 try {
                     await navigator.clipboard.writeText(text);
                     button.classList.add('copied');
-                    button.querySelector('span').textContent = 'Copied!';
+                    button.querySelector('span').textContent = 'URL Copied';
 
                     setTimeout(() => {
                         button.classList.remove('copied');
-                        button.querySelector('span').textContent = 'Copy';
+                        button.querySelector('span').textContent = 'Share';
                     }, 2000);
                 } catch (err) {
                     console.error('Failed to copy:', err);
@@ -1569,6 +1521,10 @@
                 sseHandler.close();
             });
         }
+
+        this.contextarea.addEventListener('input', () => {
+            this.adjustTextareaHeight();
+        });
 
         // Initial UI update
         uiManager.updateUI(data, true);
