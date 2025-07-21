@@ -206,6 +206,6 @@ curl -X POST "https://beta.parallel.ai/chat/completions" -H "Content-Type: appli
 
 # Added stream error handling (2025-07-21)
 
-Anthropic has lot of outages and i got empty string back since errors in-stream were fully ignored.
+Anthropic has lot of outages (https://status.anthropic.com) and i got empty string back since errors in-stream were fully ignored.
 
 Now, these errors should properly throw and set 'error' value
