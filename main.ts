@@ -1180,55 +1180,64 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             const data = line.slice(6).trim();
 
             if (data === "[DONE]") continue;
+            let parsed: any;
 
             try {
-              const parsed = JSON.parse(data);
-              let token = "";
-
-              if (isAnthropic) {
-                if (
-                  parsed.type === "content_block_delta" &&
-                  parsed.delta?.text
-                ) {
-                  token = parsed.delta.text;
-                }
-
-                if (parsed.usage?.output_tokens) {
-                  console.log(
-                    "anthropic output tokens",
-                    parsed.usage.output_tokens
-                  );
-                  priceAtOutput =
-                    parsed.usage.output_tokens *
-                    (modelConfig.pricePerMillionOutput / 1000000);
-                }
-              } else {
-                if (parsed.choices?.[0]?.delta?.content) {
-                  token = parsed.choices[0].delta.content;
-                }
-
-                if (parsed.usage?.completion_tokens) {
-                  console.log(
-                    "chatgpt output tokens",
-                    parsed.usage.completion_tokens
-                  );
-
-                  priceAtOutput =
-                    parsed.usage.completion_tokens *
-                    (modelConfig.pricePerMillionOutput / 1000000);
-                }
-              }
-
-              if (token) {
-                this.accumulatedData += token;
-                this.broadcastEvent("token", {
-                  type: "token",
-                  text: token,
-                  position: position++,
-                });
-              }
+              parsed = JSON.parse(data);
             } catch (e) {
               console.error("Error parsing SSE data:", e);
+              continue;
+            }
+
+            let token = "";
+
+            if (isAnthropic) {
+              if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+                token = parsed.delta.text;
+              } else if (parsed.usage?.output_tokens) {
+                console.log(
+                  "anthropic output tokens",
+                  parsed.usage.output_tokens
+                );
+                priceAtOutput =
+                  parsed.usage.output_tokens *
+                  (modelConfig.pricePerMillionOutput / 1000000);
+              } else if (parsed.type === "error") {
+                throw new Error(
+                  "Error during stream: " + JSON.stringify(parsed)
+                );
+              } else {
+                // do nothing for other stuff
+                //  console.log("unknown event")
+              }
+            } else {
+              if (parsed.choices?.[0]?.delta?.content) {
+                token = parsed.choices[0].delta.content;
+              } else if (parsed.usage?.completion_tokens) {
+                console.log(
+                  "chatgpt output tokens",
+                  parsed.usage.completion_tokens
+                );
+
+                priceAtOutput =
+                  parsed.usage.completion_tokens *
+                  (modelConfig.pricePerMillionOutput / 1000000);
+              } else if (parsed.type === "error") {
+                throw new Error(
+                  "Error during stream: " + JSON.stringify(parsed)
+                );
+              } else {
+                // do nothing for other stuff
+              }
+            }
+
+            if (token) {
+              this.accumulatedData += token;
+              this.broadcastEvent("token", {
+                type: "token",
+                text: token,
+                position: position++,
+              });
             }
           }
         }
@@ -1797,7 +1806,7 @@ const getResult = async (
 
   const scriptData = {
     ...data,
-    user: publicUser,
+    //user: publicUser,
     status,
     streaming: status !== "complete",
   };
