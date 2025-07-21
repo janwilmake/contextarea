@@ -540,7 +540,7 @@ export async function handleChatCompletions(
       ...(body.stream && { stream_options: { include_usage: true } }),
     };
 
-    console.log({ modelConfig, llmRequestBody });
+    console.log({ model: modelConfig.model, llmRequestBody });
 
     // Get API key
     const envVariableName = `${modelConfig.providerSlug.toUpperCase()}_SECRET`;
@@ -927,7 +927,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     console.log(
       "Starting SSE stream for:",
       pathname,
-      prompt,
+      //  prompt,
       modelConfig?.model
     );
 
@@ -1075,7 +1075,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       this.ctx.waitUntil(
         generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
-          console.log("GOT HEADLINE", data.title);
+          //   console.log("GOT HEADLINE", data.title);
           this.set("headline", data.title);
         })
       );
@@ -1120,35 +1120,34 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         Math.round((context?.length || 0) / 5) + Math.round(prompt.length / 5);
       const inputPrice =
         inputTokens * (modelConfig.pricePerMillionInput / 1000000);
+      const fullUrl = isAnthropic
+        ? `${modelConfig.basePath}/messages`
+        : `${modelConfig.basePath}/chat/completions`;
 
-      const llmResponse = await fetch(
-        isAnthropic
-          ? `${modelConfig.basePath}/messages`
-          : `${modelConfig.basePath}/chat/completions`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(isAnthropic
-              ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
-              : { Authorization: `Bearer ${apiKey}` }),
-          },
-          body: JSON.stringify({
-            model: modelConfig.model,
-            messages,
-            stream: true,
-            ...(isAnthropic || isCloudflare
-              ? {
-                  max_tokens:
-                    modelConfig.maxTokens -
-                    Math.round(JSON.stringify(messages).length / 5),
-                }
-              : {}),
-            ...(isAnthropic && context && { system: context }),
-            ...(!isAnthropic && { stream_options: { include_usage: true } }),
-          }),
-        }
-      );
+      console.log("gonna do request ", fullUrl);
+      const llmResponse = await fetch(fullUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(isAnthropic
+            ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
+            : { Authorization: `Bearer ${apiKey}` }),
+        },
+        body: JSON.stringify({
+          model: modelConfig.model,
+          messages,
+          stream: true,
+          ...(isAnthropic || isCloudflare
+            ? {
+                max_tokens:
+                  modelConfig.maxTokens -
+                  Math.round(JSON.stringify(messages).length / 5),
+              }
+            : {}),
+          ...(isAnthropic && context && { system: context }),
+          ...(!isAnthropic && { stream_options: { include_usage: true } }),
+        }),
+      });
 
       if (!llmResponse.ok) {
         throw new Error(
@@ -1156,6 +1155,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         );
       }
 
+      console.log(
+        "Response OK",
+        llmResponse.status,
+        llmResponse.headers.get("content-type")
+      );
       // Process SSE stream
       const reader = llmResponse.body!.getReader();
       const decoder = new TextDecoder();
@@ -1266,11 +1270,13 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           prompt,
           model: modelConfig.model,
           context: context || undefined,
-          result: "",
-          error: error.message,
+          error: "Error:" + error.message,
           timestamp: Date.now(),
         };
+        console.warn("error stored", error);
         await this.env.RESULTS.put(pathname, JSON.stringify(errorData));
+      } else {
+        console.warn("error not stored", error.message);
       }
 
       // Close all connections
@@ -1306,12 +1312,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
     console.log(
       "Request is done. User should be charged; total cost: ",
-      totalCost,
-      "access_token",
-      user?.access_token,
-      user?.client_reference_id,
-      "model config",
-      modelConfig
+      totalCost
+      // "access_token",
+      // user?.access_token,
+      // user?.client_reference_id,
+      // "model config",
+      // modelConfig
     );
 
     if (user?.access_token) {
@@ -1777,9 +1783,16 @@ const getResult = async (
   // For API calls, return JSON
   if (format === "application/json") {
     headers.set("Content-Type", "application/json");
-    return new Response(JSON.stringify({ ...data, user: publicUser, status }), {
-      headers,
-    });
+    return new Response(
+      JSON.stringify(data),
+      //{
+      //   ...data,
+      //  user: publicUser, status
+      // })
+      {
+        headers,
+      }
+    );
   }
 
   const scriptData = {
@@ -2089,7 +2102,7 @@ const requestHandler = async (
 
       const modelConfig =
         providers.find((m) => m.model === modelName) || providers[0];
-      console.log({ modelConfig });
+
       model = modelConfig?.model;
 
       const userNeedsPayment =
@@ -2172,7 +2185,10 @@ const requestHandler = async (
       prompt = result.prompt!;
       model = result.model;
       context = result.context;
-      console.log("GET METHOD got details", { prompt, model });
+      console.log("GET METHOD got details", {
+        promptLength: prompt?.length || 0,
+        model,
+      });
     }
 
     const data: KVData = {
