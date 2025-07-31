@@ -1306,7 +1306,7 @@
                 // Deploy button
                 this.deployButton.addEventListener('click', () => {
                     let domain = prompt('Which domain do you want this to be deployed? Leave empty to get a standard worker-domain.')
-                    window.open(`https://deploy.flaredream.com/https://download.flaredream.com${window.location.pathname}.json${domain ? '?pattern=' + domain : ''}`);
+                    window.open(`https://deploy.flaredream.com/https://download.flaredream.com${window.location.pathname}.formdata${domain ? '?pattern=' + domain : ''}`);
                 });
 
                 // Preview button
