@@ -119,19 +119,22 @@ class MarkdownHighlighter {
     };
 
     this.renderer.link = (href, title, text) => {
+      const urlPrefix =
+        text === href ? "" : `<span class="md-italic">[${text}](</span>`;
+      const urlSuffix = text === href ? "" : `<span class="md-italic">)</span>`;
       const titleAttr = title ? ` title="${title}"` : "";
-      return `<span class="md-italic">[${text}](</span><a href="${this.escapeHTML(
-        href,
-      )}" class="md-link" target="_blank" rel="noopener noreferrer"${titleAttr}>${
-        text === href ? text : `${href}`
-      }</a><span class="md-italic">)</span>`;
+      const urlPart = `<a href="${this.escapeHTML(
+        href
+      )}" class="md-link" target="_blank" rel="noopener noreferrer"${titleAttr}>${href}</a>`;
+
+      return `${urlPrefix}${urlPart}${urlSuffix}`;
     };
 
     this.renderer.image = (href, title, text) => {
       const titlePart = title ? ` "${title}"` : "";
       const altText = text || "";
       return `<span class="md-italic">![${altText}](</span><a href="${this.escapeHTML(
-        href,
+        href
       )}" class="md-link md-image-link" target="_blank" rel="noopener noreferrer">${href}${titlePart}</a><span class="md-italic">)</span>`;
     };
 
@@ -475,7 +478,7 @@ class MarkdownHighlighter {
     // Set initial height based on content length (can be adjusted)
     iframe.style.height = `${Math.max(
       200,
-      Math.min(600, htmlContent.length / 10),
+      Math.min(600, htmlContent.length / 10)
     )}px`;
 
     // Return the iframe element - we'll inject the content after it's added to DOM
@@ -738,21 +741,21 @@ class MarkdownHighlighter {
       block.addEventListener("click", () => {
         const blockId = block.getAttribute("data-block-id");
         const container = document.querySelector(
-          `.code-block-container[data-block-id="${blockId}"]`,
+          `.code-block-container[data-block-id="${blockId}"]`
         );
 
         if (container) {
           // Show the code view instead
           block.style.display = "none";
           const codeWrapper = container.querySelector(
-            `.code-block-wrapper[data-block-id="${blockId}-code"]`,
+            `.code-block-wrapper[data-block-id="${blockId}-code"]`
           );
           if (codeWrapper) {
             codeWrapper.style.display = "";
 
             // Update the toggle button text
             const toggleButton = container.querySelector(
-              ".code-collapse-toggle",
+              ".code-collapse-toggle"
             );
             if (toggleButton) {
               toggleButton.innerHTML = `
@@ -782,19 +785,19 @@ class MarkdownHighlighter {
         e.stopPropagation(); // Prevent event bubbling
         const blockId = newButton.getAttribute("data-block-id");
         const container = document.querySelector(
-          `.code-block-container[data-block-id="${blockId}"]`,
+          `.code-block-container[data-block-id="${blockId}"]`
         );
 
         if (container) {
           const currentView = container.getAttribute("data-view");
           const collapsedBlock = container.querySelector(
-            `.code-block-collapsed`,
+            `.code-block-collapsed`
           );
           const codeWrapper = container.querySelector(
-            `.code-block-wrapper[data-block-id="${blockId}-code"]`,
+            `.code-block-wrapper[data-block-id="${blockId}-code"]`
           );
           const renderWrapper = container.querySelector(
-            `.code-render-wrapper[data-block-id="${blockId}-render"]`,
+            `.code-render-wrapper[data-block-id="${blockId}-render"]`
           );
 
           if (currentView === "collapsed") {
@@ -844,19 +847,19 @@ class MarkdownHighlighter {
         e.stopPropagation(); // Prevent event bubbling
         const blockId = newButton.getAttribute("data-block-id");
         const container = document.querySelector(
-          `.code-block-container[data-block-id="${blockId}"]`,
+          `.code-block-container[data-block-id="${blockId}"]`
         );
 
         if (container) {
           const currentView = container.getAttribute("data-view");
           const collapsedBlock = container.querySelector(
-            `.code-block-collapsed`,
+            `.code-block-collapsed`
           );
           const codeWrapper = container.querySelector(
-            `.code-block-wrapper[data-block-id="${blockId}-code"]`,
+            `.code-block-wrapper[data-block-id="${blockId}-code"]`
           );
           const renderWrapper = container.querySelector(
-            `.code-render-wrapper[data-block-id="${blockId}-render"]`,
+            `.code-render-wrapper[data-block-id="${blockId}-render"]`
           );
 
           if (currentView === "render") {
@@ -910,13 +913,13 @@ class MarkdownHighlighter {
   // Initialize HTML renders for blocks set to render view by default
   initializeHtmlRenders() {
     const htmlBlocks = document.querySelectorAll(
-      `.code-block-container[data-language="html"][data-view="render"]`,
+      `.code-block-container[data-language="html"][data-view="render"]`
     );
 
     htmlBlocks.forEach((container) => {
       const blockId = container.getAttribute("data-block-id");
       const renderWrapper = container.querySelector(
-        `.code-render-wrapper[data-block-id="${blockId}-render"]`,
+        `.code-render-wrapper[data-block-id="${blockId}-render"]`
       );
 
       if (renderWrapper && !renderWrapper.querySelector("iframe")) {

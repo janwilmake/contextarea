@@ -1,14 +1,38 @@
-# Flaredream Improvements
+# TODO
 
-Create a flaredream template that uses typescript and packages! Do the bundling as separate step using esbuild. I should start doing all my own projects in this way. Also, attaching a local CLI for `flaredream build` will be nice, simply adding in the "durable-worker" idea. Great to introduce.
+- ✅ Package: `llms-txt-to-readme` to also add links. Add this to https://github.com/janwilmake/parallel-openapi and cloudflare-openapi. Worth a post!
+- ✅ I need to use uithub with this one, but getting 403: https://github.com/shapleyai/parallel-sdk-internal-typescript. Try new token or fix in uithub itself if needed. **Not possible due to shapleyai restrictions**
+- LMPIFY BUG: links become `[]()` even if the text and url is same. not sure if there's a way to differentiate, but should defniitely just remain url if it was url.
 
-Also needed:
+# Lay-out & UX
 
-1. pass wrangler and export defaulted config to build.
-2. have default entrypoint if wrangler not provided
-3. generate types from flaredream types from remote url
-4. use it to know what to do at deployment
-5. ability to add formdata properties like name, pattern[], not query-params.
+Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
+
+It seems that the UI doesn't always properly handle errors. E.g. when claude is down sometimes, I'm getting just a blank screen, rather than a red error.
+
+The model is always selected on whatever we had in localStorage, but it's better to set it to the configured value. Does it make sense to allow setting the model with frontmatter, overwriting whatever state is in lmpify? Would be cool!
+
+E.g.
+
+```
+---
+model: lmpify/flaredream
+tools: https://deploy.flaredream.com/mcp
+---
+```
+
+Frontmatter, if present, would always be removed from the prompt. It could also allow for tools this way (running it would first redirect to login if mcp isn't authenticated yet)
+
+# Running Multiple Models
+
+I can already create a new `/chat/completion` endpoint from any systemprompt. Now, it'd be great to improve the interface such that:
+
+- I can also name and add these models to my model selector
+- I can select a primary response model, but also select any amount of secondary response models.
+- These responses all become independent results, streaming in separate DOs, but can be linked by by having each generation be passed the other generationIds.
+- The UI can show this by also linking to these other pages to easily switch, like tabs. Not invasive, but allows to quickly create multiple responses on any prompt.
+
+This opens the door for parallel prompting and easy experimentation with it. The cool part is it requires minimal UI changes this way.
 
 # MCP Use
 
@@ -94,45 +118,6 @@ https://xymake.com/mcp
 Hey, this is a tweet. It can literally just be understood one on one
 ```
 
-# Make the tailproxy MCP work!!!
-
-- ❌ Why doesn't this work sometimes? Is it permissions? is it the route?
-- What else can I make to make this more user friendly? I wanna be able to manually test in this way in the browser, and see logs somehow. In a header is great, but what if a script can be injected into each html output that has a sw.js that observes all requests and adds tail logs? This could potentially be very insightful.
-- The deployment API --> Tailproxy should also functions as MCPs and should be first made possible from letmeprompt.com
-
-# Idea of simplification of the `text/event-stream`
-
-Why don't I just make an endpoint `POST|GET /{id}/simple` that just returns a plain/markdown ReadableStream? This is much easier to use and stack, and could eventually replace the `text/event-stream` which should not be needed.
-
-# Lay-out & UX
-
-Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
-
-It seems that the UI doesn't always properly handle errors. E.g. when claude is down sometimes, I'm getting just a blank screen, rather than a red error.
-
-The model is always selected on whatever we had in localStorage, but it's better to set it to the configured value. Does it make sense to allow setting the model with frontmatter, overwriting whatever state is in lmpify? Would be cool!
-
-E.g.
-
-```
----
-model: lmpify/flaredream
-tools: https://deploy.flaredream.com/mcp
----
-```
-
-Frontmatter, if present, would always be removed from the prompt. It could also allow for tools this way (running it would first redirect to login if mcp isn't authenticated yet)
-
-# Improved Usability & Benchmark For Workers
-
-https://deploy.flaredream.com/https://uithub.com/janwilmake/xymake.profile didn't see route in `wrangler.toml`. Need perfect wrangler parsing!
-
-In https://letmeprompt.com/httpspastebincon-ujmnhs0, `/api/stats` returns a 409 and doesn't log any error. Code seems fine. Let's try locally and see what's up.
-
-Lot of generated things return errors. Tail worker often gets exception
-
-Landingpage flaredream.com should retrieve all `featured:true` from benchmark and render them with 'view'
-
 # With-money refactor
 
 Check `withMoney` again and see what context would be needed to do a drop-in replacement with that from what i have now
@@ -148,6 +133,38 @@ Ensure it doesn't logout quickly.
 This would also allow getting an API KEY and more securely deposit lots of cash. To easily to build against LMPIFY with XYTEXT. also will allow closed-loop monetary system between creators and generations of these prompts, etc.
 
 Then, `agent-architecture.drawio.png`
+
+# Flaredream Improvements
+
+Create a flaredream template that uses typescript and packages! Do the bundling as separate step using esbuild. I should start doing all my own projects in this way. Also, attaching a local CLI for `flaredream build` will be nice, simply adding in the "durable-worker" idea. Great to introduce.
+
+Also needed:
+
+1. pass wrangler and export defaulted config to build.
+2. have default entrypoint if wrangler not provided
+3. generate types from flaredream types from remote url
+4. use it to know what to do at deployment
+5. ability to add formdata properties like name, pattern[], not query-params.
+
+# Make the tailproxy MCP work!!!
+
+- ❌ Why doesn't this work sometimes? Is it permissions? is it the route?
+- What else can I make to make this more user friendly? I wanna be able to manually test in this way in the browser, and see logs somehow. In a header is great, but what if a script can be injected into each html output that has a sw.js that observes all requests and adds tail logs? This could potentially be very insightful.
+- The deployment API --> Tailproxy should also functions as MCPs and should be first made possible from letmeprompt.com
+
+# Idea of simplification of the `text/event-stream`
+
+Why don't I just make an endpoint `POST|GET /{id}/simple` that just returns a plain/markdown ReadableStream? This is much easier to use and stack, and could eventually replace the `text/event-stream` which should not be needed.
+
+# Improved Usability & Benchmark For Workers
+
+https://deploy.flaredream.com/https://uithub.com/janwilmake/xymake.profile didn't see route in `wrangler.toml`. Need perfect wrangler parsing!
+
+In https://letmeprompt.com/httpspastebincon-ujmnhs0, `/api/stats` returns a 409 and doesn't log any error. Code seems fine. Let's try locally and see what's up.
+
+Lot of generated things return errors. Tail worker often gets exception
+
+Landingpage flaredream.com should retrieve all `featured:true` from benchmark and render them with 'view'
 
 # Proper way to let REPO-OWNERS pay for generations, not users.
 
@@ -166,3 +183,8 @@ What I'd want is a custom link that redirects to the cached response, e.g. https
 4. Redirect user to `X-Result-URL` where the result is being streamed to, paid for them.
 
 After I have this, remove cheaper, smaller models; definitely discourage them. I can allow a budget of up to $5 free for anyone that puts a `context.json` file in their repo, but also should already have a way to see who's using it in a dashboard, and reach out to them easily.
+
+#
+
+https://x.com/janwilmake/status/1952006989237617143
+https://letmeprompt.com/rules-httpsuithu-uvscxz0
