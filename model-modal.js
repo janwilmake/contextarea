@@ -1,6 +1,11 @@
 // Model Modal Component
 (function () {
   // Hardcoded models array
+  const serverDataElement = document.getElementById("server-data");
+
+  const data = serverDataElement
+    ? JSON.parse(serverDataElement.textContent)
+    : {};
 
   // SVG icons
   const ICONS = {
@@ -310,12 +315,6 @@
 
   // Create modal HTML
   function createModalHTML(models, selectedModelId = null, me) {
-    const serverDataElement = document.getElementById("server-data");
-
-    const data = serverDataElement
-      ? JSON.parse(serverDataElement.textContent)
-      : {};
-
     const modalHTML = `
               <div class="model-modal-backdrop" id="modelModalBackdrop">
                   <div class="model-modal">
@@ -429,11 +428,12 @@
 
   // Modal functionality
   class ModelModal {
-    constructor() {
-      this.selectedModelId =
-        typeof window.localStorage.getItem("model") === "string"
-          ? window.localStorage.getItem("model")
-          : undefined;
+    constructor(model) {
+      this.selectedModelId = model
+        ? model
+        : typeof window.localStorage.getItem("model") === "string"
+        ? window.localStorage.getItem("model")
+        : undefined;
       this.modalElement = null;
       this.onSelectCallback = null;
       this.showingAll = false;
@@ -715,7 +715,7 @@
   }
 
   // Initialize and expose to global scope
-  window.modelModal = new ModelModal();
+  window.modelModal = new ModelModal(data.model);
 
   // Public API
   window.openModelModal = function (onSelect) {

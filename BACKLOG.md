@@ -1,4 +1,4 @@
-# Make /chat/completions with cache making it intelligently cheaper
+# Make `/chat/completions` with cache making it intelligently cheaper
 
 - Later: Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily. Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
 - Later: After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
@@ -104,8 +104,6 @@ If a link contains `{var}` or `?var=` (not filled in) it is assumed to require p
 
 - IDEA: if at least one URL returns a `multipart/form-data` stream or file object, take the biggest of those, and use it with `uithub.filetransformers` with the rest of the prompt. we now apply the prompt on every file. Critical component: detecting streamable url response early + proxy traffic.
 
-- IDEA: "hooks" - plugins users can install that allow performing additional analysis on the prompt, context, and result. This could become a marketplace in itself.
-
 - IDEA: `/from/{url}` could be what shows up in address bar, may make it easier to learn that convention, or at least show it in the interface, if it was the source.
 
 - IDEA: User-based DO that collects all history and keeps a live connection with any active browser session of that user, such that it is broadcastable from https://letmeprompt.com/{userslug} and a history is also collected there. xytext can definitely be used here too.
@@ -121,62 +119,11 @@ It's interesting ways to make the 'prompt it' button more appealing
 
 # BUGS/Problems
 
-- 🟠 Resultpage loads somewhat slow now some times, due to stripe middleware as the DO is being relocated. Could've been a temporary bug! It was supposed to be fast, so let's figure out why it is NOT fast. in private window, the DO is super fast. in current safari https://letmeprompt.com is slow (500+ms). figure out where it's located and how this is possible!? https://x.com/janwilmake/status/1922592298904219859 - potential solution; refresh access token after 24h so the DO doesn't stay slow, but gets refreshed; but need a proper transfer method for this too. It'd also be good to understand the problem better: log DO response time in `stripeflare` package with warning if its over 100ms?
-
-- 🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
-
-- Problem: re-rendering entire text for every output token makes it slow, especially when doing so many calculations. Idea: seal markdown output after every section. Before beginning a codeblock, and after ending acodeblock, these are moments which we would be able to seal it up to there and create a new 'block'. This way only the latest block is being re-rendered, making it a lot faster. This would allow making complete codeblocks interactive already. Incomplete codeblocks can now also made interactive, especially if can figure out how to skip updating the UI for 95% of tokens, just update it everh 20th token. Besides, if I can do this, it'd be possible to render the unfinished html incrementally as it gets created, creating a magical experience.
-
-# prompt-each idea
-
-llms.txt is a guided navigation at the root of any domain. The key is that we should be able to find it at the root of the domain, and thus, the domain itself is sufficient to use llms.txt as a base notation. However, maybe this is not that useful.
-
-What are interesting and powerful prompts that could help refining context? Can I somehow put them in a simple URL convention?
-
-1. **file hierarchy filter**: filter on `llms.txt` itself to get a subset of links based on a prompt
-2. **prompt each file**: run a given prompt for each file, then do something with the output
-
-The first one is easy, it's just a prompt that outputs a new URL
-
-What if you could run a prompt for each URL found at a given URL? What if we use a different protocol for this? What if you could just do this in a prompt in LMPIFY?
-
-```md
-https://flaredream.com/janwilmake
-
-foreach://markdownfeed.com/janwilmake/following
-
-based on the feed shown, is there any overlap in work and interests between the work from janwilmake and the things the person seems interested in?
-```
-
-This would be super powerful as it would do a prompt for each follower and it's super easy to understand that. If we have foreach twice, it could run every possible combination, potentially. We could then show the output like this:
-
-````md
-```md for="https://markdownfeed.com/flowisgreat"
-He really loves cursor rules and it may be similar enough to the `user-agent-router` project of janwilmake
-```
-
-```md for="https://markdownfeed.com/carol"
-She really loves iOS and it may be similar enough to the `screenless` project of janwilmake
-```
-
-...etc
-````
-
-This is basically a way of looping over prompts with the context being the only variable without any programming knowledge, just a simple 'trick'.
-
-Other 'context protocols' I should consider:
-
-- `foreach://{url}` will run a prompt many times and aggregate the results as they come back in the order of the urls found
-- `expand://{url}` could expand every URL found at the url (going 1 level deeper)
-- `goto://{url}` in the result could redirect the result to this url as the final answer. this url could also be a subset of the output itself, e.g. a link to a codeblock! In the browser for humans this could do an actual redirect. this means just a single goto url would be possible, although the output could technically also continue.
-
-Expand and foreach are in the input prompt and therefore unlikely to be unsafe. It'd also be great to think in terms of nlang again. with nlang I had ideas about defining doing cronjobs as well, and every file had a name/path which determined output location as well.
-
-For-each implementation: https://letmeprompt.com/httpspastebincon-1nej5v0
-
-Seeing this now, i notice it's also interesting to try and figure it out the other way around as in, providing a file to a URL and post it there, e.g. referring to a codeblock. however, i don't know if that's feasible. the foreach protocol is quite elegant!
+Resultpage loads somewhat slow now some times, due to stripe middleware as the DO is being relocated. Could've been a temporary bug! It was supposed to be fast, so let's figure out why it is NOT fast. in private window, the DO is super fast. in current safari https://letmeprompt.com is slow (500+ms). figure out where it's located and how this is possible!? https://x.com/janwilmake/status/1922592298904219859 - potential solution; refresh access token after 24h so the DO doesn't stay slow, but gets refreshed; but need a proper transfer method for this too. It'd also be good to understand the problem better: log DO response time in `stripeflare` package with warning if its over 100ms?
 
 # incremental markdown parser
+
+Problem: re-rendering entire text for every output token makes it slow, especially when doing so many calculations. Idea: seal markdown output after every section. Before beginning a codeblock, and after ending acodeblock, these are moments which we would be able to seal it up to there and create a new 'block'. This way only the latest block is being re-rendered, making it a lot faster. This would allow making complete codeblocks interactive already. Incomplete codeblocks can now also made interactive, especially if can figure out how to skip updating the UI for 95% of tokens, just update it everh 20th token. Besides, if I can do this, it'd be possible to render the unfinished html incrementally as it gets created, creating a magical experience.
 
 https://x.com/__morse/status/1945589927820902562
 https://github.com/remorses/fumabase/blob/main/contesto/src/lib/incremental-markdown-parser.ts
@@ -220,3 +167,21 @@ Revshare with the creators is super epic. Can be done directly to client_referen
 - **Edit history**; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.
 
 - **Add models and other mediatypes**: Add Gemini 2.5 Pro w/ video upload - https://x.com/tryingET/status/1924810864260960271. Add image urls as images for claude/chatgpt. Also grok would be nice. Also, let's use some cerebras models.
+
+## Proper way to let REPO-OWNERS pay for generations, not users.
+
+🤔 Ultimately I'd want to be able to set worker-name, repo-name, branch, and have these deployments happen automatically, instantly. For this to work, I require `Login with Cloudflare` and `Login with GitHub` to be a part of letmeprompt.com, and allow for generation-configs (name, repo, branch, worker-name). It's not clear to me yet if this should be a completely new app that uses letmeprompt.com? Maybe better; niched towards easy workers: flaredream!
+
+The UI here is not nice: https://github.com/eastlondoner/vibe-tools
+
+- it leads to use a bad model
+- people may hit a ratelimit very quickly
+
+What I'd want is a custom link that redirects to the cached response, e.g. https://contextjson.com/{owner}/{repo}/tree/{branch}/context/{id}. This should:
+
+1. Check the `context.json` in the raw githubusercontent file
+2. Generate uithub URL+prompt
+3. With MY OWN API KEY (AND COST), call `POST https://letmeprompt.com/chat/completions` with preset model (if url/prompt didn't change, result should be cached). Also, result should include `X-Result-URL` header.
+4. Redirect user to `X-Result-URL` where the result is being streamed to, paid for them.
+
+After I have this, remove cheaper, smaller models; definitely discourage them. I can allow a budget of up to $5 free for anyone that puts a `context.json` file in their repo, but also should already have a way to see who's using it in a dashboard, and reach out to them easily.

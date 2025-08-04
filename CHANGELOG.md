@@ -209,3 +209,7 @@ curl -X POST "https://beta.parallel.ai/chat/completions" -H "Content-Type: appli
 Anthropic has lot of outages (https://status.anthropic.com) and i got empty string back since errors in-stream were fully ignored.
 
 Now, these errors should properly throw and set 'error' value
+
+# Small improvements (2025-08-03)
+
+- ✅ LMPIFY BUG: links become `[]()` even if the text and url is same. not sure if there's a way to differentiate, but should defniitely just remain url if it was url.
