@@ -169,6 +169,7 @@ class MarkdownHighlighter {
   }
 
   // Inject required CSS styles into the document
+  // Inject required CSS styles into the document
   injectStyles() {
     // Only inject styles once
     if (document.getElementById("markdown-highlighter-styles")) {
@@ -179,213 +180,212 @@ class MarkdownHighlighter {
     styleElement.id = "markdown-highlighter-styles";
     styleElement.textContent = `
         /* Code block container styles */
-
         .md-image-link {
-          color: #4a9eff;
-          text-decoration: underline;
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-          font-size: 0.9em;
+            color: var(--success-color);
+            text-decoration: underline;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
         }
 
         .md-image-link:hover {
-          color: #2980d9;
+            color: var(--accent-primary);
         }
+
         .md-link {
-          color: #4a9eff;
-          text-decoration: underline;
-          transition: color 0.2s ease;
+            color: var(--success-color);
+            text-decoration: underline;
+            transition: color 0.2s ease;
         }
 
         .md-link:hover {
-          color: #2980d9;
-          text-decoration: underline;
+            color: var(--accent-primary);
+            text-decoration: underline;
         }
 
         .md-link:visited {
-          color: #6c5ce7;
+            color: var(--accent-secondary);
         }
 
         .md-link:visited:hover {
-          color: #5742d4;
+            color: var(--accent-primary);
         }
-
 
         .code-block-container {
-          position: relative;
-          margin: 0;
-          font-size: 0;
-          border: 1px solid #444;
-          border-radius: 6px;
-          margin-bottom: 16px;
-          overflow: hidden;
+            position: relative;
+            margin: 0;
+            font-size: 0;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            margin-bottom: 16px;
+            overflow: hidden;
         }
-  
+
         .code-block-wrapper {
-          position: relative;
-          margin: 0;
-          padding: 0;
-          font-size: 0;
+            position: relative;
+            margin: 0;
+            padding: 0;
+            font-size: 0;
         }
 
         /* Common button styles */
         .code-button {
-          background-color: rgba(42, 42, 42, 0.6);
-          border: 1px solid #4a4a4a;
-          border-radius: 4px;
-          color: #e5e5e5;
-          cursor: pointer;
-          transition: all 0.2s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-          height: 24px;
-          padding: 0;
-          min-width: 24px;
+            background-color: var(--backdrop-blur);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            height: 24px;
+            padding: 0;
+            min-width: 24px;
         }
 
         .code-button:hover {
-          background-color: rgba(74, 74, 74, 0.8);
+            background-color: var(--bg-tertiary);
         }
 
         .code-button svg {
-          width: 12px;
-          height: 12px;
+            width: 12px;
+            height: 12px;
         }
 
         .code-button-with-text {
-          padding: 0 6px;
-          gap: 4px;
+            padding: 0 6px;
+            gap: 4px;
         }
-  
+
         /* Restore font-size for the actual content */
         .code-block-wrapper pre {
-          margin: 0;
-          padding: 0;
-          font-size: 14px;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
         }
-  
+
         .code-block-wrapper pre code {
-          padding: 8px;
-          display: block;
-          font-size: 14px;
+            padding: 8px;
+            display: block;
+            font-size: 14px;
         }
-  
+
         /* Markdown code fence marker styling */
         .md-codeblock {
-          display: inline-block;
-          padding: 0;
-          margin: 0;
-          line-height: 1;
-          font-size: 12px;
-          color: #ff6b6b;
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            display: inline-block;
+            padding: 0;
+            margin: 0;
+            line-height: 1;
+            font-size: 12px;
+            color: var(--error-color);
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
-  
+
         /* Code block header */
         .code-block-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 8px;
-          background-color: #2a2a2a;
-          border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-primary);
         }
-  
+
         .code-block-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          color: #e5e5e5;
-          font-size: 12px;
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         }
-  
+
         .code-block-actions {
-          display: flex;
-          gap: 8px;
+            display: flex;
+            gap: 8px;
         }
-  
+
         /* Collapsed view */
         .code-block-collapsed {
-          padding: 16px;
-          background-color: #2a2a2a;
-          color: #e5e5e5;
-          font-size: 14px;
-          cursor: pointer;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
+            padding: 16px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-  
+
         .code-block-collapsed:hover {
-          background-color: #3a3a3a;
+            background-color: var(--bg-tertiary);
         }
-  
+
         /* Render iframe */
         .code-render-container {
-          width: 100%;
-          border: none;
-          background-color: white;
-          min-height: 200px;
+            width: 100%;
+            border: none;
+            background-color: white;
+            min-height: 200px;
         }
-  
+
         /* For mobile devices, keep the button visible always */
         @media (max-width: 768px) {
-          .code-button {
-            opacity: 0.7;
-          }
+            .code-button {
+                opacity: 0.7;
+            }
         }
-  
+
         /* Style for bold text */
         .md-bold {
-          color: #feca57;
-          font-weight: bold;
+            color: var(--warning-color);
+            font-weight: bold;
         }
-  
+
         /* Style for italic text */
         .md-italic {
-          color: #b5b5b5;
-          font-style: italic;
+            color: var(--text-secondary);
+            font-style: italic;
         }
-  
+
         /* Style for headings */
         .md-heading {
-          color: #4a9eff;
+            color: var(--success-color);
         }
-  
+
         /* Style for blockquotes */
         .md-blockquote {
-          color: #b5b5b5;
+            color: var(--text-secondary);
         }
-  
+
         /* Style for inline code */
         .hljs-inline {
-          color: #ff6b6b;
+            color: var(--error-color);
         }
-  
+
         /* Make sure we don't lose the original markdown formatting */
         .result-content {
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          font-family: monospace;
-          line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            line-height: 1.6;
         }
-  
+
         /* Code blocks */
         .result-content pre {
-          margin: 0;
-          padding: 0;
-          background: none;
-          display: block;
+            margin: 0;
+            padding: 0;
+            background: none;
+            display: block;
         }
-  
+
         .result-content code {
-          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-          font-size: 10px;
-          background: none;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 10px;
+            background: none;
         }
-  
+
         pre {
             white-space: pre-wrap;
             word-break: break-word;
@@ -393,64 +393,63 @@ class MarkdownHighlighter {
 
         /* Mobile responsive adjustments */
         @media (max-width: 768px) {
-          
-          .code-block-wrapper {
-            max-width: 100%;
-            overflow-x: auto;
-          }
-  
-          .hljs {
-            white-space: pre-wrap;
-            word-break: break-word;
-          }
+            .code-block-wrapper {
+                max-width: 100%;
+                overflow-x: auto;
+            }
+
+            .hljs {
+                white-space: pre-wrap;
+                word-break: break-word;
+            }
         }
 
-.md-list {
-  margin: 0.5em 0; /* Reduced margin */
-  padding-left: 2em;
-  color: #e5e5e5;
-}
+        .md-list {
+            margin: 0.5em 0; /* Reduced margin */
+            padding-left: 2em;
+            color: var(--text-primary);
+        }
 
-.md-list-ordered {
-  list-style-type: decimal;
-}
+        .md-list-ordered {
+            list-style-type: decimal;
+        }
 
-.md-list-unordered {
-  list-style-type: disc;
-}
+        .md-list-unordered {
+            list-style-type: disc;
+        }
 
-.md-list-item {
-  margin: 0.2em 0; /* Reduced margin between items */
-  color: #e5e5e5;
-}
+        .md-list-item {
+            margin: 0.2em 0; /* Reduced margin between items */
+            color: var(--text-primary);
+        }
 
-/* Nested lists - reduce spacing */
-.md-list .md-list {
-  margin: 0.1em 0; /* Much smaller margin for nested lists */
-}
+        /* Nested lists - reduce spacing */
+        .md-list .md-list {
+            margin: 0.1em 0; /* Much smaller margin for nested lists */
+        }
 
-.md-list .md-list-unordered {
-  list-style-type: circle;
-}
+        .md-list .md-list-unordered {
+            list-style-type: circle;
+        }
 
-.md-list .md-list .md-list-unordered {
-  list-style-type: square;
-}
+        .md-list .md-list .md-list-unordered {
+            list-style-type: square;
+        }
 
-/* Ensure proper spacing for lists with blank lines */
-.md-list-item p {
-  margin: 0;
-}
+        /* Ensure proper spacing for lists with blank lines */
+        .md-list-item p {
+            margin: 0;
+        }
 
-/* Additional fix: control spacing between lists and other elements */
-.md-list + * {
-  margin-top: 0.5em;
-}
+        /* Additional fix: control spacing between lists and other elements */
+        .md-list + * {
+            margin-top: 0.5em;
+        }
 
-* + .md-list {
-  margin-top: 0.5em;
-}
-      `;
+        * + .md-list {
+            margin-top: 0.5em;
+        }
+    `;
 
     document.head.appendChild(styleElement);
   }
@@ -843,8 +842,15 @@ class MarkdownHighlighter {
       const newButton = button.cloneNode(true);
       button.parentNode.replaceChild(newButton, button);
 
+      let lastRender = 0;
+
       newButton.addEventListener("click", (e) => {
         e.stopPropagation(); // Prevent event bubbling
+
+        const now = Date.now();
+        if (now - lastRender < 100) return; // • If less than 100 ms passed, ignore
+        lastRender = now; // • Otherwise, record the time
+
         const blockId = newButton.getAttribute("data-block-id");
         const container = document.querySelector(
           `.code-block-container[data-block-id="${blockId}"]`
@@ -936,6 +942,17 @@ class MarkdownHighlighter {
   // Process content and set up all functionality
   processContent(element, content, loading = false) {
     if (!element) return;
+
+    if (this._lastRender && Date.now() - this._lastRender < 100) {
+      clearTimeout(this._renderTimeout);
+      this._renderTimeout = setTimeout(
+        () => this.processContent(element, content, loading),
+        100 - (Date.now() - this._lastRender)
+      );
+      return;
+    }
+    this._lastRender = Date.now();
+
     this.loading = loading;
 
     // Wait for marked to be ready if it's still loading

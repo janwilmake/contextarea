@@ -29,282 +29,326 @@
 
   // CSS styles
   const STYLES = `
-            .model-modal-backdrop {
-              position: fixed;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              background-color: rgba(0, 0, 0, 0.8);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              z-index: 10000;
-              opacity: 0;
-              visibility: hidden;
-              pointer-events: none;
-              transition: opacity 0.3s ease, visibility 0.3s ease;
-              
-              /* These are crucial for fullscreen behavior */
-              width: 100vw;
-              height: 100vh;
-              margin: 0;
-              padding: 0;
-          }
+    .model-modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+        
+        /* These are crucial for fullscreen behavior */
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+    }
 
-          .model-modal-backdrop.active {
-              opacity: 1;
-              visibility: visible;
-              pointer-events: auto;
-          }
+    .model-modal-backdrop.active {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+    }
 
-          .model-modal {
-              background-color: #2a2a2a;
-              color: #e5e5e5;
-              width: 90%;
-              max-width: 600px;
-              max-height: 80vh;
-              border-radius: 16px;
-              overflow: hidden;
-              display: flex;
-              flex-direction: column;
-              box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-              transform: scale(0.9);
-              opacity: 0;
-              transition: all 0.3s ease;
-              
-              /* Ensure modal is centered and doesn't inherit parent constraints */
-              position: relative;
-              z-index: 10001;
-              margin: auto;
-          }
-  
-          .model-modal-backdrop.active .model-modal {
-              transform: scale(1);
-              opacity: 1;
-          }
-  
-          .model-modal-header {
-              position: relative;
-              padding: 20px;
-          }
-  
-          .model-modal-close {
-              position: absolute;
-              top: 16px;
-              right: 16px;
-              background: transparent;
-              border: none;
-              padding: 8px;
-              cursor: pointer;
-              color: #8a8a8a;
-              transition: color 0.2s ease;
-          }
-  
-          .model-modal-close:hover {
-              color: #e5e5e5;
-          }
-  
-          .model-modal-heading {
-              font-size: 18px;
-              font-weight: 500;
-              text-align: center;
-              margin: 0;
-              color: #8a8a8a;
-          }
-  
-          .model-modal-search {
-              padding: 0 20px 20px;
-          }
-  
-          .model-modal-search-input {
-              width: 100%;
-              background-color: #1a1a1a;
-              border: 1px solid #4a4a4a;
-              border-radius: 8px;
-              color: #e5e5e5;
-              font-size: 16px;
-              padding: 12px 16px 12px 48px;
-              outline: none;
-              font-family: inherit;
-              transition: border-color 0.2s ease;
-          }
-  
-          .model-modal-search-input:focus {
-              border-color: #6a6a6a;
-          }
-  
-          .model-modal-search-icon {
-              position: absolute;
-              left: 24px;
-              top: 50%;
-              transform: translateY(-50%);
-              color: #8a8a8a;
-              pointer-events: none;
-          }
-  
-          .model-modal-content {
-              flex: 1;
-              overflow-y: auto;
-              padding: 0 20px 20px;
-          }
-  
-          .model-modal-content::-webkit-scrollbar {
-              width: 8px;
-          }
-  
-          .model-modal-content::-webkit-scrollbar-track {
-              background: transparent;
-          }
-  
-          .model-modal-content::-webkit-scrollbar-thumb {
-              background-color: #5a5a5a;
-              border-radius: 4px;
-          }
-  
-          .model-modal-content::-webkit-scrollbar-thumb:hover {
-              background-color: #6a6a6a;
-          }
-  
-          .model-modal-upgrade {
-              background-color: #1a1a1a;
-              border: 1px solid #4a4a4a;
-              border-radius: 12px;
-              padding: 20px;
-              margin-bottom: 20px;
-          }
-  
-          .model-modal-upgrade-title {
-              font-size: 18px;
-              font-weight: 500;
-              margin-bottom: 8px;
-          }
-  
-          .model-modal-upgrade-price {
-              font-size: 32px;
-              font-weight: 300;
-              color: #e590c1;
-              margin-bottom: 16px;
-          }
-  
-          .model-modal-upgrade-price span {
-              font-size: 18px;
-              color: #e5e5e5;
-          }
-  
-          .model-modal-upgrade-button {
-              background-color: #8a3b6f;
-              color: #ffffff;
-              border: none;
-              border-radius: 8px;
-              padding: 10px 24px;
-              font-size: 16px;
-              font-weight: 500;
-              cursor: pointer;
-              text-decoration: none;
-              transition: background-color 0.2s ease;
-          }
-  
-          .model-modal-upgrade-button:hover {
-              background-color: #9d4480;
-          }
-  
-          .model-modal-list {
-              list-style: none;
-              padding: 0;
-              margin: 0;
-          }
-  
-          .model-modal-item {
-              display: flex;
-              align-items: center;
-              padding: 16px;
-              border-radius: 12px;
-              cursor: pointer;
-              transition: background-color 0.2s ease;
-              position: relative;
-          }
-  
-          .model-modal-item:hover {
-              background-color: #3a3a3a;
-          }
-  
-          .model-modal-item.selected {
-              background-color: #3a3a3a;
-          }
-  
-          .model-modal-item.disabled {
-              cursor: not-allowed;
-              opacity: 0.5;
-          }
-  
-          .model-modal-item.disabled:hover {
-              background-color: transparent;
-          }
-  
-          .model-modal-item-icon {
-              font-size: 24px;
-              margin-right: 16px;
-              width: 32px;
-              text-align: center;
-          }
-  
-          .model-modal-item-info {
-              flex: 1;
-              display: flex;
-              align-items: center;
-              gap: 12px;
-          }
-  
-          .model-modal-item-name {
-              font-size: 16px;
-              font-weight: 400;
-          }
-  
-          .model-modal-item-status {
-              font-size: 12px;
-              color: #ffa500;
-              background-color: rgba(255, 165, 0, 0.2);
-              padding: 2px 8px;
-              border-radius: 4px;
-          }
-  
-          .model-modal-item-premium {
-              font-size: 12px;
-              color: #e590c1;
-              background-color: rgba(229, 144, 193, 0.2);
-              padding: 2px 8px;
-              border-radius: 4px;
-          }
-  
-          .model-modal-item-check {
-              color: #4ade80;
-              margin-left: auto;
-          }
-  
-          .model-modal-item-actions {
-              display: flex;
-              gap: 8px;
-              align-items: center;
-          }
-  
-          .model-modal-item-action {
-              background: transparent;
-              border: none;
-              padding: 4px;
-              cursor: pointer;
-              color: #8a8a8a;
-              transition: color 0.2s ease;
-          }
-  
-          .model-modal-item-action:hover {
-              color: #e5e5e5;
-          }
-  
-          .model-modal-search-container {
-              position: relative;
-          }
-      `;
+    .model-modal {
+        background-color: var(--bg-secondary);
+        color: var(--text-primary);
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        border-radius: 16px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px var(--shadow);
+        transform: scale(0.9);
+        opacity: 0;
+        transition: all 0.3s ease;
+        
+        /* Ensure modal is centered and doesn't inherit parent constraints */
+        position: relative;
+        z-index: 10001;
+        margin: auto;
+    }
+
+    .model-modal-backdrop.active .model-modal {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    .model-modal-header {
+        position: relative;
+        padding: 20px;
+    }
+
+    .model-modal-close {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        background: transparent;
+        border: none;
+        padding: 8px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: color 0.2s ease;
+    }
+
+    .model-modal-close:hover {
+        color: var(--text-primary);
+    }
+
+    .model-modal-heading {
+        font-size: 18px;
+        font-weight: 500;
+        text-align: center;
+        margin: 0;
+        color: var(--text-muted);
+    }
+
+    .model-modal-search {
+        padding: 0 20px 20px;
+    }
+
+    .model-modal-search-input {
+        width: 100%;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 16px;
+        padding: 12px 16px 12px 48px;
+        outline: none;
+        font-family: inherit;
+        transition: border-color 0.2s ease;
+    }
+
+    .model-modal-search-input:focus {
+        border-color: var(--border-secondary);
+    }
+
+    .model-modal-search-icon {
+        position: absolute;
+        left: 24px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+    }
+
+    .model-modal-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 20px 20px;
+    }
+
+    .model-modal-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .model-modal-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .model-modal-content::-webkit-scrollbar-thumb {
+        background-color: var(--bg-quaternary);
+        border-radius: 4px;
+    }
+
+    .model-modal-content::-webkit-scrollbar-thumb:hover {
+        background-color: var(--border-secondary);
+    }
+
+    .model-modal-upgrade {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-primary);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .model-modal-upgrade-title {
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
+
+    .model-modal-upgrade-price {
+        font-size: 32px;
+        font-weight: 300;
+        color: var(--accent-primary);
+        margin-bottom: 16px;
+    }
+
+    .model-modal-upgrade-price span {
+        font-size: 18px;
+        color: var(--text-primary);
+    }
+
+    .model-modal-upgrade-button {
+        background-color: var(--accent-primary);
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+    }
+
+    .model-modal-upgrade-button:hover {
+        background-color: var(--accent-secondary);
+    }
+
+    .model-modal-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .model-modal-item {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        position: relative;
+    }
+
+    .model-modal-item:hover {
+        background-color: var(--bg-tertiary);
+    }
+
+    .model-modal-item.selected {
+        background-color: var(--bg-tertiary);
+    }
+
+    .model-modal-item.disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .model-modal-item.disabled:hover {
+        background-color: transparent;
+    }
+
+    .model-modal-item-icon {
+        font-size: 24px;
+        margin-right: 16px;
+        width: 32px;
+        text-align: center;
+    }
+
+    .model-modal-item-info {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .model-modal-item-name {
+        font-size: 16px;
+        font-weight: 400;
+        color: var(--text-primary);
+    }
+
+    .model-modal-item-status {
+        font-size: 12px;
+        color: var(--warning-color);
+        background-color: rgba(254, 202, 87, 0.2);
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .model-modal-item-premium {
+        font-size: 12px;
+        color: var(--accent-primary);
+        background-color: rgba(255, 136, 0, 0.2);
+        padding: 2px 8px;
+        border-radius: 4px;
+    }
+
+    .model-modal-item-check {
+        color: var(--success-color);
+        margin-left: auto;
+    }
+
+    .model-modal-item-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .model-modal-item-action {
+        background: transparent;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: color 0.2s ease;
+    }
+
+    .model-modal-item-action:hover {
+        color: var(--text-primary);
+    }
+
+    .model-modal-search-container {
+        position: relative;
+    }
+
+    /* Button styles for the trigger button */
+    .model-modal-trigger {
+        background-color: transparent;
+        border: 0.5px solid var(--text-muted);
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s ease;
+        font-size: 14px;
+        font-family: inherit;
+    }
+
+    .model-modal-trigger:hover {
+        background-color: var(--bg-tertiary);
+    }
+
+    .model-modal-trigger-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .model-modal-trigger-text {
+        font-weight: 400;
+    }
+
+    .model-modal-trigger-tag {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-left: 4px;
+    }
+
+    /* Hide model name on mobile */
+    @media (max-width: 768px) {
+        .model-modal-trigger-text {
+            display: none;
+        }
+    }
+`;
 
   // Create and inject styles
   function injectStyles() {

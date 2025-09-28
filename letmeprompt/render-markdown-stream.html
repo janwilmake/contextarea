@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Efficient Streaming Markdown Renderer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        #output {
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            background: #fafbfc;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #0052a3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .parse-indicator {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #ff6b35;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.8em;
+            display: none;
+        }
+
+        #streaming-content {
+            opacity: 0.7;
+            border-left: 3px solid #0066cc;
+            padding-left: 10px;
+            margin-left: -13px;
+        }
+
+        /* Markdown styles */
+        #output h1,
+        #output h2,
+        #output h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+
+        #output code {
+            background: #f6f8fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        }
+
+        #output pre {
+            background: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        #output pre code {
+            background: none;
+            padding: 0;
+        }
+
+        #output blockquote {
+            border-left: 4px solid #d0d7de;
+            padding-left: 16px;
+            margin-left: 0;
+            color: #656d76;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Efficient Streaming Markdown Renderer (Fixed)</h1>
+    <p>This demo shows how to efficiently render streaming markdown by only parsing complete blocks once.</p>
+
+    <div class="controls">
+        <button id="startBtn" onclick="startStreaming()">Start Streaming</button>
+        <button id="pauseBtn" onclick="pauseStreaming()" disabled>Pause</button>
+        <button id="resetBtn" onclick="resetDemo()">Reset</button>
+    </div>
+
+    <div class="stats">
+        <div>Characters streamed: <span id="charCount">0</span></div>
+        <div>Complete blocks parsed: <span id="completeParseCount">0</span></div>
+        <div>Streaming updates: <span id="streamingUpdateCount">0</span></div>
+        <div>Total DOM operations: <span id="domUpdateCount">0</span></div>
+    </div>
+
+    <div id="output"></div>
+    <div class="parse-indicator" id="parseIndicator">Parsing...</div>
+
+    <script>
+        class EfficientMarkdownStreamer {
+            constructor(outputElement) {
+                this.output = outputElement;
+                this.rawText = '';
+                this.lastProcessedLength = 0;
+                this.completeParseCount = 0;
+                this.streamingUpdateCount = 0;
+                this.domUpdateCount = 0;
+                this.lastStreamingContent = '';
+            }
+
+            addCharacter(char) {
+                this.rawText += char;
+                this.processNewContent();
+            }
+
+            processNewContent() {
+                // Find complete blocks that end with double newlines
+                const completeBlockEnd = this.findCompleteBlockEnd();
+
+                // If we found new complete blocks, render them permanently
+                if (completeBlockEnd > this.lastProcessedLength) {
+                    this.renderCompleteBlocks(completeBlockEnd);
+                    this.lastProcessedLength = completeBlockEnd;
+                }
+
+                // Update the streaming (incomplete) content
+                this.updateStreamingContent();
+            }
+
+            findCompleteBlockEnd() {
+                // Look for complete markdown blocks followed by double newlines
+                let searchStart = Math.max(0, this.lastProcessedLength - 10); // Look back a bit for context
+                let maxCompleteEnd = this.lastProcessedLength;
+
+                // Find all double newlines
+                const doubleNewlines = [];
+                let match;
+                const regex = /\n\n/g;
+                regex.lastIndex = searchStart;
+
+                while ((match = regex.exec(this.rawText)) !== null) {
+                    doubleNewlines.push(match.index + 2); // Position after the double newline
+                }
+
+                // The last complete block ends at the last double newline
+                if (doubleNewlines.length > 0) {
+                    maxCompleteEnd = Math.max(maxCompleteEnd, doubleNewlines[doubleNewlines.length - 1]);
+                }
+
+                return maxCompleteEnd;
+            }
+
+            renderCompleteBlocks(endIndex) {
+                const completeText = this.rawText.slice(this.lastProcessedLength, endIndex).trim();
+                if (!completeText) return;
+
+                this.showParseIndicator('Parsing complete blocks...');
+
+                // Parse and render complete blocks
+                const parsed = marked.parse(completeText);
+
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = parsed;
+
+                // Move all parsed content to the main output
+                while (tempDiv.firstChild) {
+                    this.output.appendChild(tempDiv.firstChild);
+                    this.domUpdateCount++;
+                }
+
+                this.completeParseCount++;
+                this.updateStats();
+            }
+
+            updateStreamingContent() {
+                const streamingText = this.rawText.slice(this.lastProcessedLength);
+
+                // Only update if the streaming content actually changed
+                if (streamingText === this.lastStreamingContent) {
+                    return; // No change, skip update
+                }
+
+                this.lastStreamingContent = streamingText;
+
+                // Remove existing streaming content
+                const existingStreaming = this.output.querySelector('#streaming-content');
+                if (existingStreaming) {
+                    existingStreaming.remove();
+                }
+
+                // Add new streaming content if there is any
+                if (streamingText.trim()) {
+                    this.showParseIndicator('Updating stream...');
+
+                    const streamingDiv = document.createElement('div');
+                    streamingDiv.id = 'streaming-content';
+
+                    try {
+                        // Try to parse as markdown
+                        streamingDiv.innerHTML = marked.parse(streamingText);
+                    } catch (e) {
+                        // Fall back to plain text if parsing fails
+                        streamingDiv.textContent = streamingText;
+                    }
+
+                    this.output.appendChild(streamingDiv);
+                    this.streamingUpdateCount++;
+                    this.domUpdateCount++;
+                }
+
+                this.updateStats();
+            }
+
+            showParseIndicator(message) {
+                const indicator = document.getElementById('parseIndicator');
+                indicator.textContent = message;
+                indicator.style.display = 'block';
+
+                clearTimeout(this.indicatorTimeout);
+                this.indicatorTimeout = setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 300);
+            }
+
+            updateStats() {
+                document.getElementById('charCount').textContent = this.rawText.length;
+                document.getElementById('completeParseCount').textContent = this.completeParseCount;
+                document.getElementById('streamingUpdateCount').textContent = this.streamingUpdateCount;
+                document.getElementById('domUpdateCount').textContent = this.domUpdateCount;
+            }
+
+            reset() {
+                this.rawText = '';
+                this.lastProcessedLength = 0;
+                this.completeParseCount = 0;
+                this.streamingUpdateCount = 0;
+                this.domUpdateCount = 0;
+                this.lastStreamingContent = '';
+                this.output.innerHTML = '';
+                this.updateStats();
+            }
+        }
+
+        // Demo markdown content with clear block separations
+        const demoMarkdown = `# Streaming Markdown Demo
+
+This is a **demonstration** of efficient markdown streaming.
+
+## How it works
+
+The renderer only parses complete markdown blocks once, leaving incomplete ones as temporary streaming content.
+
+### Key Benefits
+
+1. **Performance**: Complete blocks are parsed only once
+2. **Efficiency**: No re-parsing of finished content  
+3. **Smooth**: Real-time updates without full re-renders
+
+\`\`\`javascript
+// Example code block
+function efficientStream() {
+    console.log("Complete blocks stay parsed!");
+    return "Smart rendering";
+}
+\`\`\`
+
+> This blockquote demonstrates how complete blocks
+> are handled efficiently and never re-parsed.
+
+## Lists work perfectly
+
+- First item gets parsed once when complete
+- Second item streams in character by character
+- Third item completes the list block
+
+### More content
+
+Here's some \`inline code\` and more **bold text** that shows real-time streaming.
+
+## Final demonstration
+
+This approach minimizes:
+- Parsing overhead ✓
+- DOM manipulation ✓  
+- Layout thrashing ✓
+- Performance bottlenecks ✓
+
+*Watch the statistics to see the efficiency in action!*`;
+
+        // Global variables
+        let streamer;
+        let streamInterval;
+        let currentPosition = 0;
+
+        function initializeStreamer() {
+            const output = document.getElementById('output');
+            streamer = new EfficientMarkdownStreamer(output);
+        }
+
+        function startStreaming() {
+            if (streamInterval) return;
+
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+
+            streamInterval = setInterval(() => {
+                if (currentPosition >= demoMarkdown.length) {
+                    pauseStreaming();
+                    return;
+                }
+
+                const char = demoMarkdown[currentPosition];
+                streamer.addCharacter(char);
+                currentPosition++;
+
+            }, 80); // Stream one character every 80ms for better visibility
+        }
+
+        function pauseStreaming() {
+            if (streamInterval) {
+                clearInterval(streamInterval);
+                streamInterval = null;
+            }
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        }
+
+        function resetDemo() {
+            pauseStreaming();
+            currentPosition = 0;
+            if (streamer) {
+                streamer.reset();
+            }
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', initializeStreamer);
+    </script>
+</body>
+
+</html>

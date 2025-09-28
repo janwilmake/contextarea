@@ -1,16 +1,17 @@
 [
   {
-    "model": "@cf/meta/llama-4-scout-17b-16e-instruct",
-    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
-    "providerSlug": "cloudflare",
-    "pricePerMillionInput": 0.027,
-    "pricePerMillionOutput": 0.085,
-    "maxTokens": 100000,
-    "name": "Meta's Llama 4 Scout 17B",
-    "icon": "/providers/cloudflare.png",
-    "color": "#ed7e1f",
-    "description": "Experimental",
-    "features": []
+    "model": "openai/gpt-oss-120B",
+    "basePath": "https://api.groq.com/openai/v1",
+    "providerSlug": "groq",
+    "pricePerMillionInput": 0.15,
+    "pricePerMillionOutput": 0.75,
+    "maxTokens": 16384,
+    "color": "#f54f35",
+    "name": "GPT OSS 120B",
+    "icon": "/providers/groq.png",
+    "description": "Great speeds, low ratelimits",
+    "features": [],
+    "premium": false
   },
 
   {
@@ -60,18 +61,59 @@
   },
 
   {
-    "model": "gpt-4o",
+    "model": "gpt-5-mini-2025-08-07",
     "basePath": "https://api.openai.com/v1",
     "providerSlug": "openai",
-    "pricePerMillionInput": 2.5,
+    "pricePerMillionInput": 0.25,
+    "pricePerMillionOutput": 2.0,
+    "maxTokens": 128000,
+    "color": "#FFFFFF",
+    "name": "OpenAI - GPT-5 Mini",
+    "icon": "/providers/openai.png",
+    "features": []
+  },
+
+  {
+    "model": "gpt-5-chat-latest",
+    "basePath": "https://api.openai.com/v1",
+    "providerSlug": "openai",
+    "pricePerMillionInput": 1.25,
     "pricePerMillionOutput": 10.0,
     "maxTokens": 128000,
     "color": "#FFFFFF",
-    "name": "OpenAI - GPT-4o",
+    "name": "OpenAI - GPT-5",
     "icon": "/providers/openai.png",
-    "description": "Not that open *",
     "features": [],
     "premium": true
+  },
+
+  {
+    "model": "gpt-5-2025-08-07",
+    "basePath": "https://api.openai.com/v1",
+    "providerSlug": "openai",
+    "pricePerMillionInput": 1.25,
+    "pricePerMillionOutput": 10.0,
+    "maxTokens": 128000,
+    "color": "#FFFFFF",
+    "name": "OpenAI - GPT-5 High Reasoning Effort",
+    "icon": "/providers/openai.png",
+    "features": [],
+    "extra": { "reasoning_effort": "high" },
+    "premium": true
+  },
+
+  {
+    "model": "@cf/meta/llama-4-scout-17b-16e-instruct",
+    "basePath": "https://api.cloudflare.com/client/v4/accounts/080fd9e0587416d2fa30ed1f527e2323/ai/v1",
+    "providerSlug": "cloudflare",
+    "pricePerMillionInput": 0.027,
+    "pricePerMillionOutput": 0.085,
+    "maxTokens": 100000,
+    "name": "Meta's Llama 4 Scout 17B",
+    "icon": "/providers/cloudflare.png",
+    "color": "#ed7e1f",
+    "description": "Experimental",
+    "features": []
   },
 
   {
@@ -136,35 +178,6 @@
     "icon": "/providers/google.png",
     "description": "Best price-performance with thinking capabilities",
     "features": []
-  },
-
-  {
-    "model": "gpt-4.1-mini",
-    "basePath": "https://api.openai.com/v1",
-    "providerSlug": "openai",
-    "color": "#FFFFFF",
-    "pricePerMillionInput": 0.4,
-    "pricePerMillionOutput": 1.6,
-    "maxTokens": 32768,
-    "name": "OpenAI - ChatGPT 4.1 Mini",
-    "icon": "/providers/openai.png",
-    "description": "",
-    "features": []
-  },
-
-  {
-    "model": "o3-mini",
-    "basePath": "https://api.openai.com/v1",
-    "providerSlug": "openai",
-    "color": "#FFFFFF",
-    "pricePerMillionInput": 1.1,
-    "pricePerMillionOutput": 4.4,
-    "maxTokens": 128000,
-    "name": "OpenAI - o3 Mini",
-    "icon": "/providers/openai.png",
-    "description": "Not that open *",
-    "features": [],
-    "premium": true
   },
 
   {

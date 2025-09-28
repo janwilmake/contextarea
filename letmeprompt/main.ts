@@ -202,9 +202,8 @@ async function generateTitleWithAI(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini", // Using GPT-4.1 Mini model
+        model: "gpt-5-mini-2025-08-07",
         messages: [{ role: "user", content: titlePrompt }],
-        temperature: 0.7,
       }),
     });
 
@@ -348,6 +347,7 @@ interface ModelConfig {
   basePath: string;
   maxTokens: number;
   premium?: boolean;
+  extra?: object;
 }
 
 interface ChatCompletionsRequest {
@@ -536,6 +536,7 @@ export async function handleChatCompletions(
     const llmRequestBody = {
       ...body,
       messages: expandedMessages,
+      ...(modelConfig.extra && { ...modelConfig.extra }),
       ...(body.store && { store: undefined }),
       ...(body.stream && { stream_options: { include_usage: true } }),
     };
@@ -610,6 +611,7 @@ export async function handleChatCompletions(
 
               try {
                 const parsed = JSON.parse(data);
+                console.log("chunk", data);
 
                 if (parsed.id) {
                   id = parsed.id;
@@ -1062,7 +1064,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       let { context } = await generateContext(prompt);
       //overwite prompt_id
-      context = context?.replaceAll("{{prompt_id}}", pathname.slice(1));
+      context = context?.replaceAll(
+        "rules-httpsuithu-tey63r0",
+        pathname.slice(1)
+      );
 
       console.log("GOT CONTEXT", context?.length);
       // generate title after we have the context
@@ -1106,7 +1111,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           : []),
         {
           role: "user",
-          content: prompt.replaceAll("{{prompt_id}}", pathname.slice(1)),
+          content: prompt.replaceAll(
+            "rules-httpsuithu-tey63r0",
+            pathname.slice(1)
+          ),
         },
       ];
 
@@ -1137,6 +1145,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           model: modelConfig.model,
           messages,
           stream: true,
+          ...(modelConfig.extra && { ...modelConfig.extra }),
           ...(isAnthropic || isCloudflare
             ? {
                 max_tokens:
@@ -1160,11 +1169,14 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         llmResponse.status,
         llmResponse.headers.get("content-type")
       );
+
       // Process SSE stream
       const reader = llmResponse.body!.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       let position = 0;
+      let reasoningBuffer = "";
+      let isInReasoningBlock = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1190,6 +1202,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             }
 
             let token = "";
+            let reasoningToken = "";
 
             if (isAnthropic) {
               if (parsed.type === "content_block_delta" && parsed.delta?.text) {
@@ -1206,11 +1219,66 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                 throw new Error(
                   "Error during stream: " + JSON.stringify(parsed)
                 );
-              } else {
-                // do nothing for other stuff
-                //  console.log("unknown event")
               }
             } else {
+              // Handle reasoning events for OpenAI models
+              if (parsed.type?.startsWith("response.reasoning_")) {
+                console.log("reasoning event", parsed.type);
+
+                if (parsed.type === "response.reasoning_text.delta") {
+                  reasoningToken = parsed.delta || "";
+                  reasoningBuffer += reasoningToken;
+
+                  // Don't send reasoning deltas immediately, buffer them
+                  continue;
+                } else if (parsed.type === "response.reasoning_text.done") {
+                  // When reasoning is done, format it as quoted text and send it
+                  if (reasoningBuffer.trim()) {
+                    const quotedReasoning = reasoningBuffer
+                      .split("\n")
+                      .map((line) => `> ${line}`)
+                      .join("\n");
+
+                    this.accumulatedData += quotedReasoning + "\n\n";
+                    this.broadcastEvent("token", {
+                      type: "token",
+                      text: quotedReasoning + "\n\n",
+                      position: position++,
+                    });
+
+                    reasoningBuffer = "";
+                  }
+                  continue;
+                } else if (
+                  parsed.type === "response.reasoning_summary_text.delta"
+                ) {
+                  // Handle summary reasoning similarly
+                  reasoningToken = parsed.delta || "";
+                  reasoningBuffer += reasoningToken;
+                  continue;
+                } else if (
+                  parsed.type === "response.reasoning_summary_text.done"
+                ) {
+                  // Format summary reasoning as quoted text
+                  if (reasoningBuffer.trim()) {
+                    const quotedSummary = reasoningBuffer
+                      .split("\n")
+                      .map((line) => `> ${line}`)
+                      .join("\n");
+
+                    this.accumulatedData += quotedSummary + "\n\n";
+                    this.broadcastEvent("token", {
+                      type: "token",
+                      text: quotedSummary + "\n\n",
+                      position: position++,
+                    });
+
+                    reasoningBuffer = "";
+                  }
+                  continue;
+                }
+              }
+
               if (parsed.choices?.[0]?.delta?.content) {
                 token = parsed.choices[0].delta.content;
               } else if (parsed.usage?.completion_tokens) {
@@ -1226,11 +1294,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                 throw new Error(
                   "Error during stream: " + JSON.stringify(parsed)
                 );
-              } else {
-                // do nothing for other stuff
               }
             }
 
+            // Send regular content tokens
             if (token) {
               this.accumulatedData += token;
               this.broadcastEvent("token", {
@@ -1241,6 +1308,21 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             }
           }
         }
+      }
+
+      // Handle any remaining reasoning buffer at the end
+      if (reasoningBuffer.trim()) {
+        const quotedReasoning = reasoningBuffer
+          .split("\n")
+          .map((line) => `> ${line}`)
+          .join("\n");
+
+        this.accumulatedData += quotedReasoning + "\n\n";
+        this.broadcastEvent("token", {
+          type: "token",
+          text: quotedReasoning + "\n\n",
+          position: position++,
+        });
       }
 
       const totalCost = isFirstRequest

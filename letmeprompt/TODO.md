@@ -1,8 +1,33 @@
-# Making localhost work again
+<!--
+# LMPIFY for Parallel
 
-🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
+Why I can't post much about Parallel yet: Because I can't use it yet as part of the products I'm building. These are all things that will let me prototype faster:
 
-This is probably resolved now as I moved away from `remote-sql-cursor`. Check again!
+What is mainly nice for my day-to-day
+
+- Secondary models -> will allow showing parallel everywhere
+- Hooks -> Will allow making a 'context-retrieval-task' when needed using Parallel `/chat/completions` model.
+- flaredream agent -> will allow faster prototyping
+
+What is interesting:
+
+- Domain-based OAuth -> Will allow using different MCPs with easy sign-in, but also URL fetching.
+- MCP -> Allows experimenting with search/task MCP on daily basis
+- foreach -> will allow easy batch-prompting
+- frontmatter, cronjobs -> will allow creating fresh datasets and experiment with that easily.
+
+This is 'top-down' approach
+
+Bottom-up is small exapmles in cookbook, won't go as viral, won't be usable for daily use. But also doing that.
+-->
+
+# LMPIFY LAUNCH
+
+- Personal website: https://letmeprompt.com/make-me-a-personal-w-36k23j0
+- DBZ Janwilmake & Friends - https://letmeprompt.com/httpshttpsmarkdow-gb4y8k0
+- Durable Object - https://letmeprompt.com/httpsuithubcomj-uh41p00
+- Website for a friend - https://letmeprompt.com/httpsmarkdownfeed-gpouhd0
+- Worker with Assets - https://letmeprompt.com/httpsuithubcomj-4ssea90
 
 # Model Changes
 
@@ -31,7 +56,7 @@ This is probably resolved now as I moved away from `remote-sql-cursor`. Check ag
 - "server-data" and `/me` should include `customModels`
 - In model-modal, ensure to render custom models with a button to delete that sends `POST /model {model,action:"remove"}`
 
-**3) Submission of all models** (main.ts, )
+**3) Submission of all models**
 
 - In backend, submissions with received `secondaryModels` and `secondaryModelsEnabled` (if enabled) should trigger independent DO creation for each secondaryModel in `ctx.waitUntil`. These responses all become independent results, streaming in separate DOs, - Every result gets `linkedGenerationIds:string[]` set, which are all generation URLs, including this one.
 - The UI can show this by also linking to these other pages to easily switch, like tabs. Not invasive, but allows to quickly create multiple responses on any prompt.
@@ -65,22 +90,11 @@ We could start with a simple thing like this, and allow people to add hooks by j
 
 This makes it super easy to create hooks and turn them on/off.
 
-# Lay-out & UX
+# Making localhost work again
 
-✅ It seems that the UI doesn't always properly handle errors. E.g. when claude is down sometimes, I'm getting just a blank screen, rather than a red error.
+🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
 
-Does it make sense to allow setting the model with frontmatter, overwriting whatever state is in lmpify? Would be cool! Should
-
-E.g.
-
-```
----
-model: lmpify/flaredream
-tools: https://deploy.flaredream.com/mcp
----
-```
-
-Frontmatter, if present, would always be removed from the prompt. It could also allow for tools this way (running it would first redirect to login if mcp isn't authenticated yet)
+This is probably resolved now as I moved away from `remote-sql-cursor`. Check again!
 
 # Lay-out Design
 
@@ -145,90 +159,6 @@ limit:  5
 ```
 
 This would be super cool! Especially if it would stream each of them after each other in the response.
-
-# MCP Use
-
-I can now already turn https://flaredream.com/system.md into an MCP, albeit with manual auth. Post about it?
-
-First MCPs I want:
-
-- **Iterate Agent** `deploy` tool at the end: `deploy.flaredream.com/download.flaredream.com/id` for Flaredreams initial generation, using `deploy` tool after it's done (deploy tool must have access to intermediate result)
-- **Feedback agent** for Testing a flaredream deployment (`test(evaloncloudID,request,criteria)=>feedback` tool that processes request into feedback, and `final_feedback(feedback, replace_feedback:boolean, status: "ok"|"fail"|"retry")` will end the agent)
-
-This is a great first milestone having the 2 MCPs separately. With this I can verify manually if this works. After that, a looping agent can use both in a loop!
-
-Tools:
-
-```ts
-type Tool = {
-  /**The type of the MCP tool. Always mcp.*/
-  type: "mcp";
-  /** A label for this MCP server, used to identify it in tool calls. */
-  server_label: string;
-  /** The URL for the MCP server. */
-  server_url: string;
-  allowed_tools?: { tool_names: string[] };
-  /** Optional HTTP headers to send to the MCP server. Use for authentication or other purposes.*/
-  headers?: { [key: string]: string };
-  require_approval?:
-    | "always"
-    | "never"
-    | { always?: { tool_names?: string[] }; never?: { tool_names?: string[] } };
-  server_description?: string;
-};
-```
-
-MCP implementations that are already there:
-
-- https://docs.anthropic.com/en/api/messages#body-mcp-servers
-- https://platform.openai.com/docs/api-reference/responses/create#responses-create-tools
-
-This means in order to add MCP support to LMPIFY, I could choose to do it for just the models that support it, rather than making my own tools to MCP adaptor. Another important question is: are generations always stored publicly, even if you use authenticated MCPs? This might be problematic.
-
-It is assumable that there will be other aggregators that allow mcp execution for any provider. It is also assumable that more providers like groq and xai will follow with MCP as tool, and it's possible that openai will add mcp tools to /chat/completions.
-
-However, I COULD also choose to implement the ability to pass MCP server(s) in a config, pass them as tools to the chat-completion endpoint, and execute them myself. This would need to be done for both /chat/completions as well as for the StreamDO.
-
-Other scenarios that need work:
-
-- Ability to configure MCP URL and perform OAuth from within UI where it stores auth on a per-url basis into localStorage. This requires making a POC first (possibly with dynamic client registration etc)
-- Ability to configure MCP tools in /chat/completions with X-MCP-Authorization in header
-- Ability to create a /chat/completions AND /mcp endpoint that uses an MCP as tools. The OAuth of it should perform 2 steps, gathering both the downstream MCP OAuth as well as the user itself
-
-For now I decide to go for the simplest approach that directly allows for creating my agent without complex mappings, and use things just in Anthropic.
-
-**[STEP 1]** Allow using Anthropic MCP functionality everywhere:
-
-- Create `handleAnthropicAsChatCompletion` (maybe take from what I made before and add `tools[].type=mcp`)
-- Create conversion from tools [type:mcp] property to the format of anthropic (https://docs.anthropic.com/en/api/messages#body-mcp-servers)
-- Make sure `handleChatCompletions` uses the above for anthropic.
-- Do not support any `require_approval` other than `never`
-- Do not support for any provider that does not have `mcp:true`
-- Use `handleChatCompletions` inside of the `StreamDO` to avoid code duplication.
-- Do not support mcp tools icm with `store:true`
-
-Now, I should be able to use an MCP server in the `/{id}/chat/completions` endpoint by passing mcp configs as tools. Test this first!
-
-**[STEP 2]** MCP in Streamer
-
-- Add `mcp_url` and `mcp_authorization` to POST FormData to allow a single MCP tool from there too.
-- Ensure to properly handle MCP use responses in the StreamDO so it can be formatted into nice-looking markdown (using `>`)
-
-**[STEP 3]** Deployment MCP
-
-- ✅ Improve cloudflare provider, create `login-with-cloudflare` package.
-- Use that in https://deploy.flaredream.com and make it an MCP using `withMcp`
-- Use deploy.flaredream.com/mcp as MCP tool with flaredream LMPIFY FormData stream, from within flaredreams landingpage. This requires login with Cloudflare as well as my personal API key for LMPIFY (for now)
-
-I should now be able to start the entire request from flaredream.com, and let users look into the response if they want to (but not require that). I can now just add XMoney to flaredream and use XYText as interface.
-
-Idea - allow context of the generation to include MCP urls! This way the tools used become part of the definition. Logical! Imagine having a tweet MCP, all it'd take would be something like this:
-
-```md
-https://xymake.com/mcp
-
-Hey, this is a tweet. It can literally just be understood one on one
-```
 
 # With-money refactor
 

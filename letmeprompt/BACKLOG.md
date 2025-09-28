@@ -1,3 +1,7 @@
+# Simple tools
+
+https://letmeprompt.com/rules-httpsuithu-iuvmgx0
+
 # Make `/chat/completions` with cache making it intelligently cheaper
 
 - Later: Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily. Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it

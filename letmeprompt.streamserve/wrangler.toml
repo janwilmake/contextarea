@@ -1,0 +1,13 @@
+name = "letmeprompt-streamserve"
+compatibility_date = "2025-06-30"
+dev.port = 3000
+main = "main.ts"
+route.pattern = "*.letmeprompt.com/*"
+route.zone_name = "letmeprompt.com"
+kv_namespaces = [
+  { binding = "RESULTS", id = "e698f458a5c0411b8998f335bd24dc11" }
+]
+[[durable_objects.bindings]]
+name = "SQL_STREAM_PROMPT_DO"
+class_name = "SQLStreamPromptDO"
+script_name = "lmpify3"
