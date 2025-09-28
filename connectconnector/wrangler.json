@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
+  "name": "connectconnector",
+  "compatibility_date": "2025-09-08",
+  "assets": {
+    "directory": "./public"
+  },
+  "routes": [
+    { "custom_domain": true, "pattern": "connectconnector.com" },
+    { "custom_domain": true, "pattern": "www.connectconnector.com" }
+  ]
+}

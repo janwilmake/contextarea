@@ -13,6 +13,47 @@ This is probably resolved now as I moved away from `remote-sql-cursor`. Check ag
 - Test and confirm that usage event works properly
 - Use frontmatter syntax to define MCPs to use and optional profile (used as suffix to user-id)
 
+# Stateful chat completions with callbacks
+
+<!-- Valuable research/preparation for Parallel. Also needed to separate auth UI from model response. Separating UI from model response opens the door for CLIs, MCP QA Testing & Monitoring, MarkdownOps, and much more! -->
+
+- Allow for long-running MCP tools (in the same way as [this SEP](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/1391)) - this makes this stateful though so may need to be done in a different place!
+- Ability to hold running the API waiting for a human to authorize, then continue fulfilling the request after that's solved. Potentially, a parameter `onUserMessage:(details)=>Promise<void>` could be added, which would send the authorization request (just an url and message) to that endpoint, with the same secret. That function could then send email, w'app, or notify in UI. Anything.
+- Expose chat completions as async MCP tool with oauth (basically a sub-agent!)
+
+## openrouter demo
+
+- Duplicates https://openrouter.ai/chat but only minimal features of selecting models
+- Adds modal to add MCPs
+
+## Other useful exploration
+
+- Build in the same url expansion with different configuration (all urls or urls with prefix @) and IDP.
+- Allow simplifying the response into text-only (reduce from reasoning, error messages, tool data, etc etc)
+- Build a CLI that has the frontmatter
+- A tool to search MCPs and continue the chat with different MCPs
+
+## Skill router
+
+This may not need to be something fully chained to the chat completions endpoint, but definitely a great thing to offer as well. A company should be able to list all their tools centrally so all employees can use all tools every prompt. A pre-selector prompt can do this.
+
+Questions:
+
+- How do we create a platform in which it's easy for companies to assign which users are their employees?
+  - X: See X company and who got added (expensive, not everyone has it)
+  - Email: see if people use company email (e.g. `@parallel.ai`)
+  - Slack: everyone who's in Slack arguably is inside of the org.
+- Do we need to let users be approved/invited into an org, or can the skill routing configuration be made public? May be more POC to be public. Also has benefits.
+
+TODO:
+
+- Create a super simple template for parallel
+
+## Parallel:
+
+- Create Integration-friendly Task API with MCP IDP built-in (by passing stable `user: string` ID) that instantly responds with a markdown-URL and JSON-URL on which the result will be able to be found without auth (`store:true` indefinitely, `store:false` for 24 hours)
+- Create task API as chat completions endpoint.
+
 <!--
 # LMPIFY for Parallel
 
