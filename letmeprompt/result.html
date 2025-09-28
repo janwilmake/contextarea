@@ -1562,6 +1562,7 @@
                     .replace(/^-+|-+$/g, '');
             }
 
+            // Simple hash function for 14-character SHA-like string
             simpleHash(str) {
                 let hash = 0;
                 for (let i = 0; i < str.length; i++) {
@@ -1569,7 +1570,17 @@
                     hash = ((hash << 5) - hash) + char;
                     hash = hash & hash;
                 }
-                return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, '0');
+
+                // Generate multiple hash values to fill 14 characters
+                let result = '';
+                let currentHash = Math.abs(hash);
+
+                while (result.length < 14) {
+                    result += currentHash.toString(36);
+                    currentHash = ((currentHash * 1103515245) + 12345) & 0x7fffffff; // Simple LCG
+                }
+
+                return result.substring(0, 14);
             }
 
             handleTryAgain() {
