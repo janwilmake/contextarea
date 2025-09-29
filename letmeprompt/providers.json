@@ -118,7 +118,7 @@
 
   {
     "model": "claude-opus-4-20250514",
-    "basePath": "https://api.anthropic.com",
+    "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
     "pricePerMillionInput": 15,
@@ -135,7 +135,7 @@
 
   {
     "model": "claude-3-7-sonnet-latest",
-    "basePath": "https://api.anthropic.com",
+    "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
     "pricePerMillionInput": 3,
@@ -152,7 +152,7 @@
 
   {
     "model": "claude-3-5-sonnet-latest",
-    "basePath": "https://api.anthropic.com",
+    "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
     "pricePerMillionInput": 3,

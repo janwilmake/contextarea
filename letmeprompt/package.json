@@ -3,6 +3,7 @@
     "chat-completions-mcp": "^0.0.2",
     "dormroom": "1.0.1",
     "marked": "^16.0.0",
+    "mcp-completions": "0.0.9",
     "stripeflare": "0.0.41",
     "workers-og": "^0.0.27"
   },

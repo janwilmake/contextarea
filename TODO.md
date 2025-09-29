@@ -1,19 +1,67 @@
-# Making localhost work again
+# Openrouter OAuth Provider
 
-🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
+- ✅ Have a direct cache from openrouter models, properly sorted, to select from.
+- ✅ Ensure balance is returned from `/me` such that it can be shown! Standardize this.
+- ❌ Look into how profile scope is standardized in oauth spec and how I can adopt this better.
+- ✅ Adapt simplerauth-client slightly so it's clear where balance can be found
 
-This is probably resolved now as I moved away from `remote-sql-cursor`. Check again!
+# 🟠 Refactor stripeflare --> openrouter
 
-# Add `mcp-completions` to LMPIFY:
+- Use `simplerauth-client` with openrouter.simplerauth.com as provider, instead of stripeflare for login.
+- Remove all token counting and pricing logic. Not needed anymore. Forward 402 appropriately, should direct to openrouter!
+- Use openrouter API for chat completions (https://openrouter.ai/api/v1/chat/completions)- still proxy through the mcp proxy!
 
-- ✅ Deploy as package `mcp-completions`
-- Replace original fetch call with the proxy
-- For anthropic, use https://docs.claude.com/en/api/openai-sdk
-- Make URL longer when tools are defined (32 random characters, yet, still public!)
-- Test and confirm that usage event works properly
-- Use frontmatter syntax to define MCPs to use and optional profile (used as suffix to user-id)
+# OAuth and model selection
 
-# Stateful chat completions with callbacks
+- Get localhost oauth solved: https://discord.com/channels/1091220969173028894/1422253423381844100
+- Need stable user-id instead of access token on user.id; Let's use a kv for this mapping.
+- Edit model selector to use `/providers-openrouter.json` (if model wasn't found set to default model)
+- Edit 401/402 page to properly perform oauth flow
+
+<!--
+✅ OAuth provider to build apps against
+✅ Uses more standard models endpoint
+✅ Easier to maintain
+✅ Adds MCP to openrouter
+✅ Adds `store:true to openrouter which should store the result. This should work the same as `/chat/completions`, and should then make this stateful storage reality.
+-->
+
+bonus:
+
+- refresh openrouter models automatically every hour or so
+- Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
+
+# Simplify implementation
+
+We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
+
+# MarkdownOps/NLANG
+
+Main Blocker: to make the MCP oauth happen asynchronously calling back to re-start the prompt.
+
+After that, what I want is a deployment of generations from github repos with:
+
+1. MCP
+2. cron, max-age, stale-while-revalidate
+
+However, this isn't really a requirement! Maybe should just start with a simpler markdownops that works just for repos with `nlang.json` and if the owner paid.
+
+- needs github oauth (public or private)
+- needs to push results to `target`, which can be the same branch same repo, another branch same repo, or other repo.
+
+Or should it also be able to be done fully locally? Maybe that makes more sense FIRST: long-running MCPs locally to simply go from file to file. What needs to be done for this?
+
+- Stripeflare should allow userID param (optional)
+- It should have a GITHUB oauth provider so the CLI can login to it nicely (just for the username and for depositing credit)
+- It should be stateful (don't break when connection drops) and cached (basically LMPIFY but over a well-documented API)
+- It should be possible to put it in a separate background process (node) that streams with retries and/or polling, notifying the user somehow once done.
+- Need model frontmatter prop and clarity on `nlang.json` spec
+
+This goes against my ideals, but removes the barrier to testing (Cuz local) and with that makes it more likely that I get somehting I'd use myself.
+
+What if it were a 'background agent' that could be made interoperable with several coding systems? This would be really cool too.
+
+# Stateful chatcompletions with callbacks
 
 <!-- Valuable research/preparation for Parallel. Also needed to separate auth UI from model response. Separating UI from model response opens the door for CLIs, MCP QA Testing & Monitoring, MarkdownOps, and much more! -->
 
@@ -86,12 +134,6 @@ Bottom-up is small exapmles in cookbook, won't go as viral, won't be usable for 
 - Worker with Assets - https://letmeprompt.com/httpsuithubcomj-4ssea90
 
 # Model Changes
-
-<!-- do after localhost works again. do giant prompt -->
-
-- ✅ "Create Model" should be button on the left.
-- ✅ Brain Icon!
-- ✅ The model is always selected on whatever we had in `localStorage`, but it's better to set it to the configured value.
 
 **1) Allowing selection of secondary models** (index.html, result.html, model-modal.js)
 
@@ -238,12 +280,6 @@ Also needed:
 4. use it to know what to do at deployment
 5. ability to add formdata properties like name, pattern[], not query-params.
 
-# Make the tailproxy MCP work!!!
-
-- ❌ Why doesn't this work sometimes? Is it permissions? is it the route?
-- What else can I make to make this more user friendly? I wanna be able to manually test in this way in the browser, and see logs somehow. In a header is great, but what if a script can be injected into each html output that has a sw.js that observes all requests and adds tail logs? This could potentially be very insightful.
-- The deployment API --> Tailproxy should also functions as MCPs and should be first made possible from letmeprompt.com
-
 # Flaredream MCP
 
 I can now already turn https://flaredream.com/system.md into an MCP, albeit with manual auth. Post about it?
@@ -271,16 +307,11 @@ https://xymake.com/mcp
 Hey, this is a tweet. It can literally just be understood one on one
 ```
 
-# Frontmatter support?
+# Make the tailproxy MCP work!!!
 
-```
----
-model: lmpify/flaredream
-tools: https://deploy.flaredream.com/mcp
----
-```
-
-Frontmatter, if present, would always be removed from the prompt. It could also allow for tools this way (running it would first redirect to login if mcp isn't authenticated yet)
+- ❌ Why doesn't this work sometimes? Is it permissions? is it the route?
+- What else can I make to make this more user friendly? I wanna be able to manually test in this way in the browser, and see logs somehow. In a header is great, but what if a script can be injected into each html output that has a sw.js that observes all requests and adds tail logs? This could potentially be very insightful.
+- The deployment API --> Tailproxy should also functions as MCPs and should be first made possible from letmeprompt.com
 
 # Idea of simplification of the `text/event-stream`
 

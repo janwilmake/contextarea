@@ -1,10 +1,11 @@
 {
+  "version": "0.0.9",
   "name": "mcp-completions",
   "main": "mcp-completions.ts",
   "files": [
-    "mcp-completions.ts"
+    "mcp-completions.ts",
+    "README.md"
   ],
-  "version": "0.0.1",
   "dependencies": {
     "universal-mcp-oauth": "0.0.14"
   }

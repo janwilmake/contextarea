@@ -236,19 +236,19 @@ async function initializeMCPSession(
   return { sessionId, tools: toolsResult.result?.tools || [] };
 }
 
-export const chatCompletionsProxy = async (
-  request: Request,
+export const chatCompletionsProxy = (
   env: any,
-  ctx: ExecutionContext,
   config: {
+    baseUrl: string;
     userId: string;
+    pathPrefix?: string;
     clientInfo: {
       name: string;
       title: string;
       version: string;
     };
   }
-): Promise<{
+): {
   fetchProxy: (
     input: RequestInfo | URL,
     init?: RequestInit
@@ -271,9 +271,8 @@ export const chatCompletionsProxy = async (
       reauthorizeUrl: string;
     })[]
   >;
-}> => {
-  const { userId, clientInfo } = config;
-  const url = new URL(request.url);
+} => {
+  const { userId, baseUrl, clientInfo, pathPrefix = "/mcp" } = config;
 
   // Create MCP OAuth handler
   const { middleware, getProviders, refreshProviders, removeMcp } =
@@ -281,7 +280,8 @@ export const chatCompletionsProxy = async (
       {
         userId,
         clientInfo,
-        baseUrl: url.origin,
+        baseUrl,
+        pathPrefix,
       },
       env
     );
@@ -293,7 +293,7 @@ export const chatCompletionsProxy = async (
   ) => {
     const url = new URL(request.url);
 
-    if (url.pathname.startsWith("/mcp/")) {
+    if (url.pathname.startsWith(pathPrefix + "/")) {
       return await middleware(request, env as MCPOAuthEnv, ctx);
     }
 
@@ -450,9 +450,9 @@ export const chatCompletionsProxy = async (
           const loginLinks = missingAuth
             .map(
               (x) =>
-                `- [Authorize ${new URL(x).hostname}](${
-                  url.origin
-                }/mcp/login?url=${encodeURIComponent(x)})`
+                `- [Authorize ${
+                  new URL(x).hostname
+                }](${baseUrl}/mcp/login?url=${encodeURIComponent(x)})`
             )
             .join("\n");
           const content = `# MCP Server Authentication Required\n\nTo use the requested MCP tools, you need to authenticate with the following servers:\n\n${loginLinks}\n\nAfter authentication, retry your request.`;
@@ -583,12 +583,19 @@ export const chatCompletionsProxy = async (
 
                     try {
                       const data = JSON.parse(line.slice(6));
+
                       const choice = data.choices[0];
+                      console.log("object", data);
+                      console.log("Tool Calls", choice?.delta?.tool_calls);
 
                       // Capture usage information if present (but don't forward it)
                       if (data.usage) {
                         stepUsage = data.usage;
-                        continue; // Don't forward usage chunks to client
+
+                        if (choice?.finish_reason !== "tool_calls") {
+                          continue;
+                          // Don't forward usage chunks to client incase it's not tool_calls
+                        }
                       }
 
                       if (
@@ -622,6 +629,8 @@ export const chatCompletionsProxy = async (
                       }
 
                       if (choice?.delta?.tool_calls) {
+                        console.log("Tool Calls", choice.delta.tool_calls);
+
                         for (const toolCall of choice.delta.tool_calls) {
                           const toolIndex = toolCall.index;
                           if (!toolCallBuffer.has(toolIndex)) {
@@ -642,7 +651,9 @@ export const chatCompletionsProxy = async (
                       }
 
                       if (choice?.finish_reason === "tool_calls") {
+                        console.log("FINISH TOOL cALLS");
                         for (const bufferedCall of toolCallBuffer.values()) {
+                          console.log({ bufferedCall });
                           if (bufferedCall.name && bufferedCall.arguments) {
                             try {
                               toolCalls.push({
@@ -709,7 +720,14 @@ export const chatCompletionsProxy = async (
                 currentMessages.push(assistantMsg);
               }
 
-              if (!toolCalls.length || finished) break;
+              if (finished) break;
+
+              if (!toolCalls.length) {
+                console.warn(
+                  "not finished, yet no tool calls. braeking ,but this shouldnt happen"
+                );
+                break;
+              }
 
               // Check if we've run out of tokens
               if (remainingTokens !== undefined && remainingTokens <= 0) {
@@ -810,9 +828,7 @@ export const chatCompletionsProxy = async (
                     if (!toolResponse.ok) {
                       if (toolResponse.status === 401) {
                         throw new Error(
-                          `# MCP Server Authentication Required\n\nAuthentication failed for ${hostname}. Please re-authenticate:\n\n- [Authorize ${hostname}](${
-                            url.origin
-                          }/mcp/login?url=${encodeURIComponent(
+                          `# MCP Server Authentication Required\n\nAuthentication failed for ${hostname}. Please re-authenticate:\n\n- [Authorize ${hostname}](${baseUrl}/mcp/login?url=${encodeURIComponent(
                             toolInfo.serverUrl
                           )})\n\nAfter authentication, retry your request.`
                         );

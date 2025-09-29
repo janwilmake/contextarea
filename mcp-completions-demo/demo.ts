@@ -902,6 +902,8 @@ const HTML_TEMPLATE = `
 
 // HTMLRewriter class to inject JSON data securely
 class DataInjector {
+  providersData: any;
+  userData: any;
   constructor(providersData, userData) {
     this.providersData = providersData;
     this.userData = userData;
@@ -925,17 +927,19 @@ export default {
       const url = new URL(request.url);
 
       // Initialize the proxy with user context
-      const proxy = await chatCompletionsProxy(request, env, ctx, {
-        userId: ctx.user.id,
-        clientInfo: {
-          name: "MCP Chat Proxy",
-          title: "MCP Chat Completions Proxy",
-          version: "1.0.0",
-        },
-      });
+      const { idpMiddleware, fetchProxy, getProviders, removeMcp } =
+        chatCompletionsProxy(env, {
+          baseUrl: new URL(request.url).origin,
+          userId: ctx.user.id,
+          clientInfo: {
+            name: "MCP Chat Proxy",
+            title: "MCP Chat Completions Proxy",
+            version: "1.0.0",
+          },
+        });
 
       // Handle MCP OAuth routes
-      const mcpResponse = await proxy.idpMiddleware(request, env, ctx);
+      const mcpResponse = await idpMiddleware(request, env, ctx);
       if (mcpResponse) {
         return mcpResponse;
       }
@@ -948,7 +952,7 @@ export default {
         }
 
         try {
-          await proxy.removeMcp(targetUrl);
+          await removeMcp(targetUrl);
           return new Response("OK", { status: 200 });
         } catch (error) {
           return new Response(`Error removing provider: ${error.message}`, {
@@ -961,7 +965,7 @@ export default {
       if (url.pathname === "/" && request.method === "GET") {
         try {
           // Get providers data
-          const providers = await proxy.getProviders();
+          const providers = await getProviders();
           const userData = ctx.user;
 
           // Create response with HTML template
@@ -1023,7 +1027,7 @@ export default {
       console.log({ llmEndpoint });
 
       // Use the fetchProxy to handle the request
-      return proxy.fetchProxy(llmEndpoint, {
+      return fetchProxy(llmEndpoint, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${llmApiKey}`,

@@ -1,0 +1,238 @@
+{
+  "$schema": "https://ref.actionschema.com/openapi.json",
+  "openapi": "3.1.0",
+  "x-actionschema": "0.0.1",
+
+  "info": {
+    "title": "Extexe File Transformer",
+    "description": "",
+    "version": "1.0.0"
+  },
+
+  "servers": [{ "url": "https://extexe.com" }],
+  "paths": {
+    "/tranform": {
+      "get": {
+        "summary": "Transform a file object",
+        "operationId": "transform",
+        "description": "Uses an LLM to generate changes to a file object, and respond with a diff leading to the new file object. To make efficient use of this filetransformer, it is important to use an LLM that uses caching to prevent recalculating everything every time.",
+        "parameters": [
+          {
+            "name": "llmApiKey",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+
+          {
+            "name": "llmBasePath",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+
+          {
+            "name": "llmModelName",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+
+          {
+            "name": "fileObjectUrl",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "File Object to be transformed"
+            }
+          },
+
+          {
+            "name": "fileObjectApiKey",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Authorization bearer token to retrieve the file object (if required)"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "headers": {
+              "X-Prompt-Tokens": {
+                "schema": {
+                  "type": "string",
+                  "description": "Input tokens used"
+                }
+              },
+              "X-Completion-Tokens": {
+                "schema": {
+                  "type": "string",
+                  "description": "completion tokens used"
+                }
+              },
+              "X-Cache-Hit": {
+                "schema": {
+                  "type": "boolean",
+                  "description": "If true, cached result was found"
+                }
+              }
+            },
+            "description": "The changes and/or result. Can be accepted in multiple formats:\n\n- **application/x-patch (default)**: Will just respond with a string that can be applied using 'git apply'. This is the default when using curl.\n- **application/json**: will respond with a 'ContentResponse' that contains a file object, a diff, and the operations done to get here.\n- **text/event-stream**: Will stream the result back with incremental updates. The 'final' response will be what you would normally get when using 'application/json'",
+            "content": {
+              "application/x-patch": {
+                "schema": {
+                  "type": "string",
+                  "description": "A diff file (without metadata) from the previous file object that, when applied, provides the new file object. can be applied using 'git apply'"
+                }
+              },
+
+              "application/json": {
+                "schema": {
+                  "$ref": "https://ref.actionschema.com/file-object.json"
+                }
+              },
+
+              "text/event-stream": {
+                "schema": {
+                  "type": "object",
+                  "description": "Event stream where each event is a JSON object prefixed with 'data: '",
+
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "description": "Information event containing iteration and token usage details",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["info"],
+                          "description": "Indicates this event contains progress information"
+                        },
+                        "info": {
+                          "type": "object",
+                          "properties": {
+                            "iteration": {
+                              "type": "number",
+                              "description": "Current iteration number"
+                            },
+                            "tokenCount": {
+                              "type": "number",
+                              "description": "Approximate token count for current response"
+                            },
+                            "matchCount": {
+                              "type": "number",
+                              "description": "Number of file operations in current iteration"
+                            }
+                          },
+                          "required": ["iteration", "tokenCount", "matchCount"]
+                        }
+                      },
+                      "required": ["type", "info"]
+                    },
+                    {
+                      "type": "object",
+                      "description": "File operation event containing changes for a single file",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["operation"],
+                          "description": "Indicates this event contains a file operation"
+                        },
+                        "operation": {
+                          "$ref": "https://ref.actionschema.com/file-operation.json"
+                        }
+                      },
+                      "required": ["type", "operation"]
+                    },
+                    {
+                      "type": "object",
+                      "description": "Final event containing complete file changes and PR details",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": ["final"],
+                          "description": "Indicates this is the final event with complete changes"
+                        },
+                        "data": {
+                          "$ref": "https://ref.actionschema.com/file-object.json"
+                        }
+                      },
+                      "required": ["type", "data"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "423": {
+            "description": "The requested is resource is being calculated. Please retry in a while",
+            "content": { "text/plain": { "schema": { "type": "string" } } }
+          },
+          "400": {
+            "description": "Invalid input parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid API keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "FileObject was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [{}]
+      }
+    }
+  }
+}

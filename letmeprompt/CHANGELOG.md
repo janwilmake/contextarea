@@ -213,3 +213,21 @@ Now, these errors should properly throw and set 'error' value
 # Small improvements (2025-08-03)
 
 - ✅ LMPIFY BUG: links become `[]()` even if the text and url is same. not sure if there's a way to differentiate, but should defniitely just remain url if it was url.
+
+# Making localhost work again (2025-09-28)
+
+🟠 In localhost, the thing isn't working as the server restarts. see where this bug comes from by changing versions and/or removing stuff (and ask claude)
+
+❌ This is probably resolved now as I moved away from `remote-sql-cursor`. Check again!
+
+❌ Not resolved. It maybe in the way the stream is set up. May need to use transformerstream but for now, i'll just leave it be.
+
+# Add `mcp-completions` to LMPIFY (2025-09-28)
+
+- ✅ Deploy as package `mcp-completions`
+- ✅ Make URL longer when tools are defined (14 random characters, yet, still public!)
+- ✅ Replace original fetch call with the proxy
+- ✅ For anthropic, use https://docs.claude.com/en/api/openai-sdk
+- ✅ Use frontmatter syntax to define MCPs to use
+- ✅ Debug: figure out why it doesn't do tool calls: https://letmeprompt.com/mcp-crmgrok-to-waamx94vlrls5e. debug api first, then lmpify part if still not fixed.
+- ✅ search-mcp.parallel.ai/mcp is now in a dead state. let's allow reconnecting and ensure it never adds it if it wasn't an mcp. ensure it requests to reauthorize if it can't call the tool

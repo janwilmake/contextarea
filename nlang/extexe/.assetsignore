@@ -1,0 +1,10 @@
+.git
+.wrangler
+private/**/*
+*.md
+node_modules
+.gitignore
+package-lock.json
+package.json
+tsconfig.json
+*.ts

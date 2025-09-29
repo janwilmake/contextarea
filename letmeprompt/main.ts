@@ -3,6 +3,12 @@
 /// <reference lib="esnext" />
 
 const PRICE_MARKUP_FACTOR = 1.5;
+const LMPIFY_CLIENT = {
+  name: "Let Me Prompt It For You",
+  title: "Let Me Prompt It For You",
+  version: "1.0.0",
+};
+import { MCPProviders, chatCompletionsProxy } from "mcp-completions";
 import { handleChatMcp } from "chat-completions-mcp";
 import { ImageResponse } from "workers-og";
 import {
@@ -20,6 +26,8 @@ import { RatelimitDO } from "./ratelimiter.js";
 export { RatelimitDO };
 import { Token, lexer } from "marked";
 export { DORM };
+export { MCPProviders };
+
 const DORM_VERSION = "bare-stripeflare";
 
 /**
@@ -887,9 +895,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   }) {
     // Save each field to storage
     this.set("pathname", data.pathname);
+    const prompt = data.prompt.slice(0, 1024 * 1024);
+    this.set("frontMatter", this.parseFrontMatter(prompt).frontMatter);
 
-    // cut prompt at 1mb = 200k tokens
-    this.set("prompt", data.prompt.slice(0, 1024 * 1024));
+    // cut prompt at 1mb = 200k tokens - use content without front matter
+    this.set("prompt", prompt);
     this.set("modelConfig", data.model);
     this.set("initialized", true);
 
@@ -899,6 +909,78 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Helper method to parse front matter from markdown
+  private parseFrontMatter(markdownContent: string): {
+    frontMatter: any;
+    content: string;
+  } {
+    const frontMatterRegex = /^---\s*\n([\s\S]*?)\n---\s*\n([\s\S]*)$/;
+    const match = markdownContent.match(frontMatterRegex);
+
+    if (!match) {
+      // No front matter found, return original content
+      return { frontMatter: {}, content: markdownContent };
+    }
+
+    const frontMatterYaml = match[1];
+    const content = match[2];
+
+    try {
+      // Parse YAML front matter
+      const frontMatter = this.parseYaml(frontMatterYaml);
+      return { frontMatter, content };
+    } catch (error) {
+      console.warn("Failed to parse front matter as YAML:", error);
+      // If YAML parsing fails, return original content
+      return { frontMatter: {}, content: markdownContent };
+    }
+  }
+
+  // Simple YAML parser for basic key-value pairs
+  private parseYaml(yamlString: string): any {
+    const result: any = {};
+    const lines = yamlString.split("\n");
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      // Skip empty lines and comments
+      if (!trimmedLine || trimmedLine.startsWith("#")) {
+        continue;
+      }
+
+      // Handle key-value pairs
+      const colonIndex = trimmedLine.indexOf(":");
+      if (colonIndex === -1) {
+        continue;
+      }
+
+      const key = trimmedLine.substring(0, colonIndex).trim();
+      let value = trimmedLine.substring(colonIndex + 1).trim();
+
+      // Remove quotes if present
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      // Try to parse as number or boolean
+      if (value === "true") {
+        result[key] = true;
+      } else if (value === "false") {
+        result[key] = false;
+      } else if (!isNaN(Number(value)) && value !== "") {
+        result[key] = Number(value);
+      } else {
+        result[key] = value;
+      }
+    }
+
+    return result;
   }
 
   async details() {
@@ -1048,6 +1130,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     try {
       // Get stored state
       const prompt = this.get<string>("prompt");
+      const frontMatter = this.get<{ [key: string]: string }>("frontMatter");
       const modelConfig = this.get<ModelConfig>("modelConfig");
       const pathname = this.get<string>("pathname");
 
@@ -1064,10 +1147,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       let { context } = await generateContext(prompt);
       //overwite prompt_id
-      context = context?.replaceAll(
-        "rules-httpsuithu-tey63r0",
-        pathname.slice(1)
-      );
+      context = context?.replaceAll("{{prompt_id}}", pathname.slice(1));
 
       console.log("GOT CONTEXT", context?.length);
       // generate title after we have the context
@@ -1096,25 +1176,17 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           value: context,
         });
       }
-      const isAnthropic = modelConfig.model.includes("claude");
+
       const isCloudflare = modelConfig.providerSlug === "cloudflare";
+
+      const content = prompt.replaceAll("{{prompt_id}}", pathname.slice(1));
 
       // Prepare LLM request
       const messages = [
-        ...(context && !isAnthropic
-          ? [
-              {
-                role: "system",
-                content: context,
-              },
-            ]
-          : []),
+        ...(context ? [{ role: "system", content: context }] : []),
         {
           role: "user",
-          content: prompt.replaceAll(
-            "rules-httpsuithu-tey63r0",
-            pathname.slice(1)
-          ),
+          content: this.parseFrontMatter(content).content,
         },
       ];
 
@@ -1128,33 +1200,56 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         Math.round((context?.length || 0) / 5) + Math.round(prompt.length / 5);
       const inputPrice =
         inputTokens * (modelConfig.pricePerMillionInput / 1000000);
-      const fullUrl = isAnthropic
-        ? `${modelConfig.basePath}/messages`
-        : `${modelConfig.basePath}/chat/completions`;
+      const fullUrl = `${modelConfig.basePath}/chat/completions`;
 
       console.log("gonna do request ", fullUrl);
-      const llmResponse = await fetch(fullUrl, {
+
+      const { fetchProxy } = chatCompletionsProxy(this.env, {
+        baseUrl: "https://letmeprompt.com",
+        userId: user?.client_reference_id,
+        clientInfo: LMPIFY_CLIENT,
+      });
+
+      const mcpUrls = frontMatter?.mcp
+        ? frontMatter.mcp
+            .split(",")
+            .map((x) => "https://" + x.trim())
+            .filter((x) => {
+              try {
+                new URL(x);
+                return true;
+              } catch (e) {
+                return false;
+              }
+            })
+        : undefined;
+
+      const tools =
+        mcpUrls?.length && user?.client_reference_id
+          ? mcpUrls.map((server_url) => ({ type: "mcp", server_url }))
+          : undefined;
+      console.log({ tools });
+      const llmResponse = await fetchProxy(fullUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(isAnthropic
-            ? { "x-api-key": apiKey, "anthropic-version": "2023-06-01" }
-            : { Authorization: `Bearer ${apiKey}` }),
+          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: modelConfig.model,
           messages,
           stream: true,
+          stream_options: { include_usage: true },
+          tools,
+
           ...(modelConfig.extra && { ...modelConfig.extra }),
-          ...(isAnthropic || isCloudflare
+          ...(isCloudflare
             ? {
                 max_tokens:
                   modelConfig.maxTokens -
                   Math.round(JSON.stringify(messages).length / 5),
               }
             : {}),
-          ...(isAnthropic && context && { system: context }),
-          ...(!isAnthropic && { stream_options: { include_usage: true } }),
         }),
       });
 
@@ -1203,98 +1298,76 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
             let token = "";
             let reasoningToken = "";
+            if (parsed.type?.startsWith("response.reasoning_")) {
+              console.log("reasoning event", parsed.type);
 
-            if (isAnthropic) {
-              if (parsed.type === "content_block_delta" && parsed.delta?.text) {
-                token = parsed.delta.text;
-              } else if (parsed.usage?.output_tokens) {
-                console.log(
-                  "anthropic output tokens",
-                  parsed.usage.output_tokens
-                );
-                priceAtOutput =
-                  parsed.usage.output_tokens *
-                  (modelConfig.pricePerMillionOutput / 1000000);
-              } else if (parsed.type === "error") {
-                throw new Error(
-                  "Error during stream: " + JSON.stringify(parsed)
-                );
-              }
-            } else {
-              // Handle reasoning events for OpenAI models
-              if (parsed.type?.startsWith("response.reasoning_")) {
-                console.log("reasoning event", parsed.type);
+              if (parsed.type === "response.reasoning_text.delta") {
+                reasoningToken = parsed.delta || "";
+                reasoningBuffer += reasoningToken;
 
-                if (parsed.type === "response.reasoning_text.delta") {
-                  reasoningToken = parsed.delta || "";
-                  reasoningBuffer += reasoningToken;
+                // Don't send reasoning deltas immediately, buffer them
+                continue;
+              } else if (parsed.type === "response.reasoning_text.done") {
+                // When reasoning is done, format it as quoted text and send it
+                if (reasoningBuffer.trim()) {
+                  const quotedReasoning = reasoningBuffer
+                    .split("\n")
+                    .map((line) => `> ${line}`)
+                    .join("\n");
 
-                  // Don't send reasoning deltas immediately, buffer them
-                  continue;
-                } else if (parsed.type === "response.reasoning_text.done") {
-                  // When reasoning is done, format it as quoted text and send it
-                  if (reasoningBuffer.trim()) {
-                    const quotedReasoning = reasoningBuffer
-                      .split("\n")
-                      .map((line) => `> ${line}`)
-                      .join("\n");
+                  this.accumulatedData += quotedReasoning + "\n\n";
+                  this.broadcastEvent("token", {
+                    type: "token",
+                    text: quotedReasoning + "\n\n",
+                    position: position++,
+                  });
 
-                    this.accumulatedData += quotedReasoning + "\n\n";
-                    this.broadcastEvent("token", {
-                      type: "token",
-                      text: quotedReasoning + "\n\n",
-                      position: position++,
-                    });
-
-                    reasoningBuffer = "";
-                  }
-                  continue;
-                } else if (
-                  parsed.type === "response.reasoning_summary_text.delta"
-                ) {
-                  // Handle summary reasoning similarly
-                  reasoningToken = parsed.delta || "";
-                  reasoningBuffer += reasoningToken;
-                  continue;
-                } else if (
-                  parsed.type === "response.reasoning_summary_text.done"
-                ) {
-                  // Format summary reasoning as quoted text
-                  if (reasoningBuffer.trim()) {
-                    const quotedSummary = reasoningBuffer
-                      .split("\n")
-                      .map((line) => `> ${line}`)
-                      .join("\n");
-
-                    this.accumulatedData += quotedSummary + "\n\n";
-                    this.broadcastEvent("token", {
-                      type: "token",
-                      text: quotedSummary + "\n\n",
-                      position: position++,
-                    });
-
-                    reasoningBuffer = "";
-                  }
-                  continue;
+                  reasoningBuffer = "";
                 }
-              }
+                continue;
+              } else if (
+                parsed.type === "response.reasoning_summary_text.delta"
+              ) {
+                // Handle summary reasoning similarly
+                reasoningToken = parsed.delta || "";
+                reasoningBuffer += reasoningToken;
+                continue;
+              } else if (
+                parsed.type === "response.reasoning_summary_text.done"
+              ) {
+                // Format summary reasoning as quoted text
+                if (reasoningBuffer.trim()) {
+                  const quotedSummary = reasoningBuffer
+                    .split("\n")
+                    .map((line) => `> ${line}`)
+                    .join("\n");
 
-              if (parsed.choices?.[0]?.delta?.content) {
-                token = parsed.choices[0].delta.content;
-              } else if (parsed.usage?.completion_tokens) {
-                console.log(
-                  "chatgpt output tokens",
-                  parsed.usage.completion_tokens
-                );
+                  this.accumulatedData += quotedSummary + "\n\n";
+                  this.broadcastEvent("token", {
+                    type: "token",
+                    text: quotedSummary + "\n\n",
+                    position: position++,
+                  });
 
-                priceAtOutput =
-                  parsed.usage.completion_tokens *
-                  (modelConfig.pricePerMillionOutput / 1000000);
-              } else if (parsed.type === "error") {
-                throw new Error(
-                  "Error during stream: " + JSON.stringify(parsed)
-                );
+                  reasoningBuffer = "";
+                }
+                continue;
               }
+            }
+
+            if (parsed.choices?.[0]?.delta?.content) {
+              token = parsed.choices[0].delta.content;
+            } else if (parsed.usage?.completion_tokens) {
+              console.log(
+                "chatgpt output tokens",
+                parsed.usage.completion_tokens
+              );
+
+              priceAtOutput =
+                parsed.usage.completion_tokens *
+                (modelConfig.pricePerMillionOutput / 1000000);
+            } else if (parsed.type === "error") {
+              throw new Error("Error during stream: " + JSON.stringify(parsed));
             }
 
             // Send regular content tokens
@@ -2069,6 +2142,19 @@ const requestHandler = async (
   }
 
   const { user } = result;
+
+  const { idpMiddleware } = chatCompletionsProxy(env, {
+    baseUrl: "https://letmeprompt.com",
+    userId: user?.client_reference_id,
+    clientInfo: LMPIFY_CLIENT,
+    pathPrefix: "/mcp",
+  });
+
+  const idpResponse = await idpMiddleware(request, env, ctx);
+  if (idpResponse) {
+    return idpResponse;
+  }
+
   const { access_token, verified_user_access_token, ...publicUser } =
     user || {};
   const headers = new Headers(result.headers || {});

@@ -1,0 +1,10 @@
+name = "codefromanywhere_nlang_api"
+main = "main.ts"
+compatibility_date = "2024-12-08"
+assets = { directory = "./public" }
+
+[env.main]
+
+routes = [
+  { pattern = "api.nlang.dev", custom_domain = true }
+]
