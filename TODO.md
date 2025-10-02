@@ -1,3 +1,15 @@
+# Mintlify
+
+https://github.com/orgs/mintlify/discussions/categories/feature-requests
+
+# W8
+
+Likely needs W-8BEN-E
+
+Fill this form in IRS and send to them.
+
+Also do dutch tax for q3 immediately
+
 # Openrouter OAuth Provider
 
 - ✅ Have a direct cache from openrouter models, properly sorted, to select from.
@@ -5,11 +17,27 @@
 - ❌ Look into how profile scope is standardized in oauth spec and how I can adopt this better.
 - ✅ Adapt simplerauth-client slightly so it's clear where balance can be found
 
-# 🟠 Refactor stripeflare --> openrouter
+# MCP
+
+- not sure if MCP is updated upon refresh, i think not. and there's no way to refresh it now. it'd be good to follow version from `initialize` and update if it's newer than the one we have.
+- seems that error handling broke. just getting blank pages sometimes fro claude now.
+
+# 🟠 Refactor Stripeflare --> OpenRouter
 
 - Use `simplerauth-client` with openrouter.simplerauth.com as provider, instead of stripeflare for login.
 - Remove all token counting and pricing logic. Not needed anymore. Forward 402 appropriately, should direct to openrouter!
-- Use openrouter API for chat completions (https://openrouter.ai/api/v1/chat/completions)- still proxy through the mcp proxy!
+- Use openrouter API for chat completions (https://openrouter.ai/api/v1/chat/completions) - still proxy through the mcp proxy!
+
+Deploy this, ensure data doesn't get wiped, just stripeflare is fine.
+
+Create a map for providers to colors, domains, icons.
+
+Before I do this: how to deal with free users? I should just stop having them?
+
+- Free users get a bad experience due to GPT OSS 120B or other tiny models. Not good!
+- For readme buttons we need a better solution: oauth into github, then sync paying for syncing from config-file or links from readme.
+
+^ If that's too hard, just tell the people that have it in their readme to remove it.
 
 # OAuth and model selection
 

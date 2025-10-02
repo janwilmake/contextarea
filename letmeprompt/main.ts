@@ -2,7 +2,6 @@
 /// <reference types="@cloudflare/workers-types" />
 /// <reference lib="esnext" />
 
-const PRICE_MARKUP_FACTOR = 1.5;
 const LMPIFY_CLIENT = {
   name: "Let Me Prompt It For You",
   title: "Let Me Prompt It For You",
@@ -11,24 +10,14 @@ const LMPIFY_CLIENT = {
 import { MCPProviders, chatCompletionsProxy } from "mcp-completions";
 import { handleChatMcp } from "chat-completions-mcp";
 import { ImageResponse } from "workers-og";
-import {
-  Env as StripeflareEnv,
-  stripeBalanceMiddleware,
-  type StripeUser,
-  DORM,
-  chargeUser,
-} from "stripeflare";
-import { createClient } from "dormroom";
+import { withSimplerAuth } from "simplerauth-client";
 import { DurableObject } from "cloudflare:workers";
 //@ts-ignore
-import providers from "./providers.json";
+import providers from "./providers-openrouter.json";
 import { RatelimitDO } from "./ratelimiter.js";
 export { RatelimitDO };
 import { Token, lexer } from "marked";
-export { DORM };
 export { MCPProviders };
-
-const DORM_VERSION = "bare-stripeflare";
 
 /**
  * Recursively flatten a marked token and return something if a find function is met
@@ -263,9 +252,9 @@ async function generateTitleWithAI(
 }
 
 /**
- * Extended environment interface including both stripeflare and original env variables
+ * Environment interface
  */
-interface Env extends StripeflareEnv {
+interface Env {
   RESULTS: KVNamespace; // KV namespace for storing results
   SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
   ANTHROPIC_SECRET: string;
@@ -275,11 +264,15 @@ interface Env extends StripeflareEnv {
 }
 
 /**
- * Extended user interface that includes stripeflare user properties
+ * User interface from simplerauth-client
  */
-interface User extends StripeUser {
-  // free_model_uses: number;
-  // Add any additional user properties here
+interface User {
+  id: string;
+  name: string;
+  username: string;
+  usage?: number;
+  balance?: number;
+  profile_image_url?: string;
 }
 
 /**
@@ -348,14 +341,11 @@ export interface SSEErrorData {
  * Model configuration
  */
 interface ModelConfig {
-  providerSlug: string;
-  pricePerMillionInput: number;
-  pricePerMillionOutput: number;
-  model: string;
-  basePath: string;
-  maxTokens: number;
-  premium?: boolean;
-  extra?: object;
+  id: string;
+  name: string;
+  context_length: number;
+  pricing: object;
+  supported_parameters: string[];
 }
 
 interface ChatCompletionsRequest {
@@ -390,22 +380,16 @@ interface ChatCompletionsResponse {
     total_tokens: number;
   };
 }
+
 /**
-Implement this. it should
-- ensure to be authenticated with stripe user
-- ensure sufficient balance. all models are premium in this endpoint
-- get prompt from ID if provided and expand urls on it
-- also expand urls on messages (all in parallel)
-- for streaming, count tokens to get to total price in same way, and charge user at the end. do not alter anything in response, but clone it to count tokens
-- for non streaming, also get total usage at the end and charge for that
-- do not differentiate between anthropic and others, anthropic also works with /chat/completions now
-- ensure to just pass on the whole body to the /chat/completions endpoint, except you should pass {stream_options:{include_usage:true}} incase we stream:true
+ * Handle chat completions through OpenRouter API
  */
 export async function handleChatCompletions(
   request: Request,
   env: Env,
   ctx: ExecutionContext,
   user: User | undefined,
+  accessToken: string | undefined,
   headers: Headers
 ): Promise<Response> {
   const url = new URL(request.url);
@@ -416,7 +400,7 @@ export async function handleChatCompletions(
     pathParts.length > 2 && pathParts[1] !== "chat" ? pathParts[1] : undefined;
 
   // Ensure user is authenticated
-  if (!user?.access_token) {
+  if (!user || !accessToken) {
     return new Response(
       JSON.stringify({
         error: {
@@ -427,23 +411,6 @@ export async function handleChatCompletions(
       }),
       {
         status: 401,
-        headers: { ...headers, "Content-Type": "application/json" },
-      }
-    );
-  }
-
-  // Check if user has sufficient balance (all models are premium)
-  if (!user.balance || user.balance <= 0) {
-    return new Response(
-      JSON.stringify({
-        error: {
-          message: "Insufficient balance. Please purchase tokens to continue.",
-          type: "insufficient_quota",
-          code: "insufficient_balance",
-        },
-      }),
-      {
-        status: 402,
         headers: { ...headers, "Content-Type": "application/json" },
       }
     );
@@ -469,22 +436,9 @@ export async function handleChatCompletions(
   }
 
   // Find model configuration
-  const modelConfig = providers.find((p) => p.model === body.model);
-  if (!modelConfig) {
-    return new Response(
-      JSON.stringify({
-        error: {
-          message: `Model '${body.model}' not found`,
-          type: "invalid_request_error",
-          code: "model_not_found",
-        },
-      }),
-      {
-        status: 400,
-        headers: { ...headers, "Content-Type": "application/json" },
-      }
-    );
-  }
+  const modelConfig = providers.data.find((p) => p.id === body.model) || {
+    id: body.model,
+  };
 
   try {
     // Get prompt from ID if provided and expand URLs
@@ -534,50 +488,24 @@ export async function handleChatCompletions(
 
     expandedMessages = await Promise.all(expandPromises);
 
-    // Calculate input tokens for pricing
-    const inputContent = expandedMessages.map((m) => m.content).join("\n");
-    const inputTokens = Math.round(inputContent.length / 5);
-    const inputPrice =
-      inputTokens * (modelConfig.pricePerMillionInput / 1000000);
-
-    // Prepare request body for the LLM API
+    // Prepare request body for the OpenRouter API
     const llmRequestBody = {
       ...body,
       messages: expandedMessages,
-      ...(modelConfig.extra && { ...modelConfig.extra }),
       ...(body.store && { store: undefined }),
       ...(body.stream && { stream_options: { include_usage: true } }),
     };
 
-    console.log({ model: modelConfig.model, llmRequestBody });
+    console.log({ model: modelConfig.id, llmRequestBody });
 
-    // Get API key
-    const envVariableName = `${modelConfig.providerSlug.toUpperCase()}_SECRET`;
-    const apiKey = env[envVariableName];
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({
-          error: {
-            message: `API key not configured for ${modelConfig.providerSlug}`,
-            type: "configuration_error",
-            code: "missing_api_key",
-          },
-        }),
-        {
-          status: 500,
-          headers: { ...headers, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Make request to the LLM API
+    // Make request to OpenRouter API
     const llmResponse = await fetch(
-      `${modelConfig.basePath}/chat/completions`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(llmRequestBody),
       }
@@ -585,12 +513,31 @@ export async function handleChatCompletions(
 
     if (!llmResponse.ok) {
       const errorText = await llmResponse.text();
+
+      // Forward 402 Payment Required appropriately
+      if (llmResponse.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: {
+              message:
+                "Insufficient credits. Please visit https://openrouter.ai to purchase credits.",
+              type: "insufficient_quota",
+              code: "insufficient_credits",
+            },
+          }),
+          {
+            status: 402,
+            headers: { ...headers, "Content-Type": "application/json" },
+          }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           error: {
-            message: `LLM API error: ${llmResponse.status} ${errorText}`,
+            message: `OpenRouter API error: ${llmResponse.status} ${errorText}`,
             type: "api_error",
-            code: "llm_api_error",
+            code: "openrouter_api_error",
           },
         }),
         {
@@ -602,13 +549,12 @@ export async function handleChatCompletions(
 
     // Handle streaming response
     if (body.stream) {
-      let outputTokens = 0;
       let fullMessage = "";
-      let totalCost = 0;
-      let id = undefined;
+      let responseId = undefined;
+
       const transformStream = new TransformStream({
         transform(chunk, controller) {
-          // Clone the chunk to count tokens
+          // Clone the chunk to capture content
           const chunkText = new TextDecoder().decode(chunk);
           const lines = chunkText.split("\n");
 
@@ -622,20 +568,12 @@ export async function handleChatCompletions(
                 console.log("chunk", data);
 
                 if (parsed.id) {
-                  id = parsed.id;
-                }
-                // Count tokens from streaming response
-                if (parsed.choices?.[0]?.delta?.content) {
-                  const tokenCount = Math.round(
-                    parsed.choices[0].delta.content.length / 5
-                  );
-                  fullMessage = fullMessage + parsed.choices[0].delta.content;
-                  outputTokens += tokenCount;
+                  responseId = parsed.id;
                 }
 
-                // Get final usage if available
-                if (parsed.usage?.completion_tokens) {
-                  outputTokens = parsed.usage.completion_tokens;
+                // Capture content from streaming response
+                if (parsed.choices?.[0]?.delta?.content) {
+                  fullMessage += parsed.choices[0].delta.content;
                 }
               } catch (e) {
                 // Ignore parsing errors for streaming data
@@ -646,43 +584,27 @@ export async function handleChatCompletions(
           controller.enqueue(chunk);
         },
         flush() {
-          // Calculate total cost and charge user
-          const outputPrice =
-            outputTokens * (modelConfig.pricePerMillionOutput / 1000000);
-          totalCost = (inputPrice + outputPrice) * PRICE_MARKUP_FACTOR;
+          // Store result if requested
+          if (body.store && responseId) {
+            const prompt = llmRequestBody.messages
+              .map((x) => `${x.role}:\n\n${x.content}`)
+              .join("\n\n");
 
-          const prompt = llmRequestBody.messages
-            .map((x) => `${x.role}:\n\n${x.content}`)
-            .join("\n\n");
-
-          const final = async () => {
-            // Charge user asynchronously
-
-            const charged = await chargeUser(
-              env,
-              ctx,
-              user.access_token,
-              DORM_VERSION,
-              totalCost,
-              true
-            );
-            console.log({ charged, totalCost });
-
-            if (body.store) {
+            const final = async () => {
               const kvData: KVData = {
                 prompt,
-                model: modelConfig.model,
+                model: modelConfig.id,
                 context: undefined,
                 result: fullMessage,
                 timestamp: Date.now(),
                 headline: undefined,
               };
-              const pathname = `/${id}`;
+              const pathname = `/${responseId}`;
               await env.RESULTS.put(pathname, JSON.stringify(kvData));
-            }
-          };
+            };
 
-          ctx.waitUntil(final());
+            ctx.waitUntil(final());
+          }
         },
       });
 
@@ -700,45 +622,26 @@ export async function handleChatCompletions(
 
     // Handle non-streaming response
     const responseData: ChatCompletionsResponse = await llmResponse.json();
-
-    // Calculate output tokens and total cost
-    const outputTokens = responseData.usage?.completion_tokens || 0;
-    const outputPrice =
-      outputTokens * (modelConfig.pricePerMillionOutput / 1000000);
-    const totalCost = (inputPrice + outputPrice) * PRICE_MARKUP_FACTOR;
     const prompt = llmRequestBody.messages
       .map((x) => `${x.role}:\n\n${x.content}`)
       .join("\n\n");
 
-    const final = async () => {
-      // Charge user asynchronously
-
-      // Charge user
-      const charged = await chargeUser(
-        env,
-        ctx,
-        user.access_token,
-        DORM_VERSION,
-        totalCost,
-        true
-      );
-
-      console.log({ charged, totalCost });
-
-      if (body.store) {
+    // Store result if requested
+    if (body.store) {
+      const final = async () => {
         const kvData: KVData = {
           prompt,
-          model: modelConfig.model,
+          model: modelConfig.id,
           context: undefined,
           result: responseData.choices?.[0]?.message?.content,
           timestamp: Date.now(),
           headline: undefined,
         };
         await env.RESULTS.put("/" + responseData.id, JSON.stringify(kvData));
-      }
-    };
+      };
 
-    ctx.waitUntil(final());
+      ctx.waitUntil(final());
+    }
 
     // Return the response
     return new Response(JSON.stringify(responseData), {
@@ -834,6 +737,7 @@ const generateContext = async (prompt: string) => {
 
   return { context };
 };
+
 /**
  * Durable Object for handling streaming LLM responses
  */
@@ -892,6 +796,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     prompt: string;
     model: ModelConfig;
     user?: User;
+    accessToken?: string;
   }) {
     // Save each field to storage
     this.set("pathname", data.pathname);
@@ -902,6 +807,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.set("prompt", prompt);
     this.set("modelConfig", data.model);
     this.set("initialized", true);
+    this.set("accessToken", data.accessToken);
 
     // NB: Magic! already get started as soon as it is submitted
     this.state.waitUntil(this.stream(data.user, true));
@@ -988,7 +894,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     const prompt = this.get<string>("prompt");
     const context = this.get<string>("context");
     const headline = this.get<string>("headline");
-    return { prompt, model: modelConfig?.model, context, headline };
+    return { prompt, model: modelConfig?.id, context, headline };
   }
 
   stream = async (user: User | undefined, isFirstRequest?: boolean) => {
@@ -1012,7 +918,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       "Starting SSE stream for:",
       pathname,
       //  prompt,
-      modelConfig?.model
+      modelConfig?.id
     );
 
     // Create SSE stream
@@ -1024,7 +930,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         await this.sendEvent(controller, "init", {
           type: "init",
           prompt,
-          model: modelConfig!.model,
+          model: modelConfig!.id,
           context,
           status: error ? "error" : streamComplete ? "complete" : "pending",
           result: this.accumulatedData,
@@ -1080,7 +986,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
     const currentResult = {
       prompt,
-      model: modelConfig?.model,
+      model: modelConfig?.id,
       context,
       headline,
       result: this.accumulatedData, // This is the current result so far
@@ -1133,16 +1039,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const frontMatter = this.get<{ [key: string]: string }>("frontMatter");
       const modelConfig = this.get<ModelConfig>("modelConfig");
       const pathname = this.get<string>("pathname");
+      const accessToken = this.get<string>("accessToken");
 
-      if (!prompt || !modelConfig || !pathname) {
+      if (!prompt || !modelConfig || !pathname || !accessToken) {
         throw new Error("Missing required state");
-      }
-      const envVariableName = `${modelConfig.providerSlug.toUpperCase()}_SECRET`;
-      const apiKey = this.env[envVariableName];
-      if (!apiKey) {
-        throw new Error(
-          `Missing API Key for ${modelConfig.model}: ${envVariableName}`
-        );
       }
 
       let { context } = await generateContext(prompt);
@@ -1153,7 +1053,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // generate title after we have the context
 
       const markdown = getMarkdownResponse(pathname, {
-        model: modelConfig.model,
+        model: modelConfig.id,
         prompt: prompt,
         context: context,
       });
@@ -1177,8 +1077,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         });
       }
 
-      const isCloudflare = modelConfig.providerSlug === "cloudflare";
-
       const content = prompt.replaceAll("{{prompt_id}}", pathname.slice(1));
 
       // Prepare LLM request
@@ -1190,23 +1088,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         },
       ];
 
-      let priceAtOutput: number | undefined = undefined;
-
-      const titleTokens = Math.round(markdown.length / 5);
-      const titleCostPerToken = 0.5 / 1000000;
-      const titlePrice = titleTokens * titleCostPerToken;
-
-      const inputTokens =
-        Math.round((context?.length || 0) / 5) + Math.round(prompt.length / 5);
-      const inputPrice =
-        inputTokens * (modelConfig.pricePerMillionInput / 1000000);
-      const fullUrl = `${modelConfig.basePath}/chat/completions`;
-
-      console.log("gonna do request ", fullUrl);
+      console.log("gonna do request to OpenRouter");
 
       const { fetchProxy } = chatCompletionsProxy(this.env, {
         baseUrl: "https://letmeprompt.com",
-        userId: user?.client_reference_id,
+        userId: user?.id,
         clientInfo: LMPIFY_CLIENT,
       });
 
@@ -1225,37 +1111,41 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         : undefined;
 
       const tools =
-        mcpUrls?.length && user?.client_reference_id
+        mcpUrls?.length && user?.id
           ? mcpUrls.map((server_url) => ({ type: "mcp", server_url }))
           : undefined;
       console.log({ tools });
-      const llmResponse = await fetchProxy(fullUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: modelConfig.model,
-          messages,
-          stream: true,
-          stream_options: { include_usage: true },
-          tools,
 
-          ...(modelConfig.extra && { ...modelConfig.extra }),
-          ...(isCloudflare
-            ? {
-                max_tokens:
-                  modelConfig.maxTokens -
-                  Math.round(JSON.stringify(messages).length / 5),
-              }
-            : {}),
-        }),
-      });
+      const llmResponse = await fetchProxy(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            model: modelConfig.id,
+            messages,
+            stream: true,
+            stream_options: { include_usage: true },
+            tools,
+          }),
+        }
+      );
 
       if (!llmResponse.ok) {
+        const errorText = await llmResponse.text();
+
+        // Forward 402 Payment Required appropriately
+        if (llmResponse.status === 402) {
+          throw new Error(
+            "Insufficient credits. Please visit https://openrouter.ai to purchase credits."
+          );
+        }
+
         throw new Error(
-          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`
+          `OpenRouter API error: ${llmResponse.status} ${errorText}`
         );
       }
 
@@ -1271,7 +1161,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       let buffer = "";
       let position = 0;
       let reasoningBuffer = "";
-      let isInReasoningBlock = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -1357,15 +1246,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
             if (parsed.choices?.[0]?.delta?.content) {
               token = parsed.choices[0].delta.content;
-            } else if (parsed.usage?.completion_tokens) {
-              console.log(
-                "chatgpt output tokens",
-                parsed.usage.completion_tokens
-              );
-
-              priceAtOutput =
-                parsed.usage.completion_tokens *
-                (modelConfig.pricePerMillionOutput / 1000000);
             } else if (parsed.type === "error") {
               throw new Error("Error during stream: " + JSON.stringify(parsed));
             }
@@ -1398,20 +1278,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         });
       }
 
-      const totalCost = isFirstRequest
-        ? (inputPrice + titlePrice + (priceAtOutput || 0)) * PRICE_MARKUP_FACTOR
-        : 0;
-
-      if (isFirstRequest) {
-        console.log({
-          inputPrice,
-          titlePrice,
-          priceAtOutput,
-          PRICE_MARKUP_FACTOR,
-        });
-      }
-
-      await this.handleStreamComplete(user, totalCost);
+      await this.handleStreamComplete(user);
     } catch (error: any) {
       console.error("Error processing request:", error);
       this.set("error", error.message);
@@ -1432,7 +1299,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       if (pathname && prompt && modelConfig) {
         const errorData: KVData = {
           prompt,
-          model: modelConfig.model,
+          model: modelConfig.id,
           context: context || undefined,
           error: "Error:" + error.message,
           timestamp: Date.now(),
@@ -1455,10 +1322,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     }
   }
 
-  private async handleStreamComplete(
-    user: User | undefined,
-    totalCost: number
-  ) {
+  private async handleStreamComplete(user: User | undefined) {
     this.set("streamComplete", true);
 
     // Send complete event
@@ -1474,42 +1338,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     const context = this.get<string>("context");
     const headline = this.get<string>("headline") || undefined;
 
-    console.log(
-      "Request is done. User should be charged; total cost: ",
-      totalCost
-      // "access_token",
-      // user?.access_token,
-      // user?.client_reference_id,
-      // "model config",
-      // modelConfig
-    );
-
-    if (user?.access_token) {
-      const client = createClient({
-        // NB: need to wrap because of the this reference
-        //@ts-ignore
-        ctx: {
-          waitUntil: (promise: Promise<void>) => this.ctx.waitUntil(promise),
-        },
-        configs: [
-          { name: `${DORM_VERSION}-user-${user.client_reference_id}` },
-          { name: `${DORM_VERSION}-aggregate` },
-        ],
-        doNamespace: this.env.DORM_NAMESPACE,
-      });
-      await client.exec(
-        "UPDATE users SET balance = balance - ? WHERE access_token = ?",
-        totalCost * 100,
-        user?.access_token
-      );
-    } else {
-      console.log("WARN; NO USER ACCESS TOKEN");
-    }
+    console.log("Request is done. No user charging needed with OpenRouter.");
 
     if (pathname && prompt && modelConfig) {
       const kvData: KVData = {
         prompt,
-        model: modelConfig.model,
+        model: modelConfig.id,
         context: context || undefined,
         result: this.accumulatedData,
         timestamp: Date.now(),
@@ -1821,7 +1655,7 @@ const getMarkdownResponse = (
 const getResult = async (
   request: Request,
   env: Env,
-  publicUser: Omit<User, "access_token" | "verified_user_access_token"> | {},
+  publicUser: User | {},
   data: KVData,
   status: string,
   headers: any
@@ -1831,7 +1665,7 @@ const getResult = async (
 
   // For OG image
   if (format === "image/png") {
-    const provider = providers.find((x) => x.model === data.model);
+    const provider = providers.data.find((x) => x.id === data.model);
 
     const promptWithoutUrls = removeUrlsFromText(data.prompt);
     // Extract a preview of the prompt - display first 40 chars
@@ -1846,12 +1680,12 @@ const getResult = async (
     
     <!-- Top orange section -->
     <div style="position: absolute; top: 0; left: 0; display:flex; width: 100%; height: 80px; background-color: ${
-      provider.color
+      provider?.color || "#ff6b35"
     };"></div>
     
     <!-- Bottom orange section -->
     <div style="position: absolute; bottom: 0; left: 0; display:flex; width: 100%; height: 80px; background-color: ${
-      provider.color
+      provider?.color || "#ff6b35"
     };"></div>
     
     <!-- Main content container -->
@@ -1887,15 +1721,6 @@ const getResult = async (
       
     </div>
   </div>`;
-
-    /* 
-  
-  TODO: Add back after we have login
-  
-  <span style="color: #b5b5b5; font-size: 36px; font-weight: 300;">by Jan</span>
-        
-        <!-- Profile picture -->
-        <img src="https://pbs.twimg.com/profile_images/1904848783290019841/1duyf2SK_400x400.jpg" width="120" height="120" alt="Jan Wilmake" style="width: 120px; height: 120px; border-radius: 24px;" />*/
 
     // Generate the image using ImageResponse from workers-og
     try {
@@ -1947,16 +1772,9 @@ const getResult = async (
   // For API calls, return JSON
   if (format === "application/json") {
     headers.set("Content-Type", "application/json");
-    return new Response(
-      JSON.stringify(data),
-      //{
-      //   ...data,
-      //  user: publicUser, status
-      // })
-      {
-        headers,
-      }
-    );
+    return new Response(JSON.stringify(data), {
+      headers,
+    });
   }
 
   const scriptData = {
@@ -1969,7 +1787,7 @@ const getResult = async (
   return getResultHTML(env, scriptData, headers, request.url);
 };
 
-const getInstructions = (id: string, data: KVData, access_token: string) => {
+const getInstructions = (id: string, data: KVData, accessToken: string) => {
   return `You can use this prompt as system prompt using the following endpoint:
 
 System Prompt:
@@ -1985,7 +1803,7 @@ The prompt will be URL-expanded and used as system prompt for the generation. UR
 \`\`\`sh
 curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${access_token}" \
+  -H "Authorization: Bearer ${accessToken}" \
   -d '{
     "model": "${data.model}",
     "stream":true,
@@ -2004,7 +1822,7 @@ This is a fully OpenAI Compatible API:
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-    apiKey: "${access_token}",   // Your LMPIFY API key
+    apiKey: "${accessToken}",   // Your OpenRouter API key
     baseURL: "https://letmeprompt.com/${id}",
 });
 
@@ -2037,7 +1855,7 @@ Add this to your Cursor MCP configuration:
     "lmpify-${id}": {
       "url": "https://letmeprompt.com/${id}/mcp",
       "headers": {
-        "Authorization": "Bearer ${access_token}"
+        "Authorization": "Bearer ${accessToken}"
       }
     }
   }
@@ -2086,7 +1904,8 @@ const handleMcp = async (
   request: Request,
   env: Env,
   ctx: ExecutionContext,
-  user: User
+  user: User,
+  accessToken: string
 ) => {
   const url = new URL(request.url);
   const pathname =
@@ -2102,7 +1921,7 @@ const handleMcp = async (
   const basePath = url.origin + url.pathname.slice(0, -4);
 
   return handleChatMcp(request, {
-    apiKey: user.access_token,
+    apiKey: accessToken,
     basePath,
     model: existingData.model,
     fetcher: {
@@ -2123,50 +1942,15 @@ const requestHandler = async (
   const pathname = url.pathname;
   const acceptHeader = request.headers.get("Accept") || "*/*";
 
-  // Get model configuration
-
-  const t = Date.now();
-  // Apply stripeflare middleware
-  const result = await stripeBalanceMiddleware<User>(
-    request,
-    env,
-    ctx,
-    DORM_VERSION
-  );
-
-  console.log({ stripeMiddlewareMs: Date.now() - t });
-
-  // If middleware returned a response, return it directly
-  if (result.type === "response") {
-    return result.response;
-  }
-
-  const { user } = result;
-
-  const { idpMiddleware } = chatCompletionsProxy(env, {
-    baseUrl: "https://letmeprompt.com",
-    userId: user?.client_reference_id,
-    clientInfo: LMPIFY_CLIENT,
-    pathPrefix: "/mcp",
-  });
-
-  const idpResponse = await idpMiddleware(request, env, ctx);
-  if (idpResponse) {
-    return idpResponse;
-  }
-
-  const { access_token, verified_user_access_token, ...publicUser } =
-    user || {};
-  const headers = new Headers(result.headers || {});
-
   // Only accept POST and GET methods
   if (!["POST", "GET"].includes(request.method)) {
-    return new Response("Method not allowed", { status: 405, headers });
+    return new Response("Method not allowed", { status: 405 });
   }
 
   if (url.pathname.endsWith("/mcp")) {
     if (request.method === "POST") {
-      return handleMcp(request, env, ctx, user);
+      // Need user and access token for MCP
+      return new Response("Authentication required for MCP", { status: 401 });
     } else if (request.method === "GET") {
       return new Response(null, {
         status: 302,
@@ -2179,7 +1963,8 @@ const requestHandler = async (
 
   if (url.pathname.endsWith("/chat/completions")) {
     if (request.method === "POST") {
-      return await handleChatCompletions(request, env, ctx, user, headers);
+      // Need user and access token for chat completions
+      return new Response("Authentication required", { status: 401 });
     } else if (request.method === "GET") {
       const url = new URL(request.url);
 
@@ -2198,7 +1983,9 @@ const requestHandler = async (
       if (!existingData) {
         return new Response("Not found", { status: 404 });
       }
-      return new Response(getInstructions(id, existingData, access_token));
+      return new Response(
+        getInstructions(id, existingData, "YOUR_OPENROUTER_API_KEY")
+      );
     }
   }
 
@@ -2217,10 +2004,10 @@ const requestHandler = async (
       return getResult(
         request,
         env,
-        publicUser,
+        {},
         existingData,
         existingData.error ? "error" : "complete",
-        headers
+        new Headers()
       );
     }
 
@@ -2250,135 +2037,112 @@ const requestHandler = async (
       });
     }
 
-    // Process POST request
+    // Process POST request (without authentication for now - could be modified later)
+    if (request.method === "POST") {
+      // Get or create Durable Object
+      const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
+      const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+      const result = await doStub.details();
 
-    // Get or create Durable Object
-    const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
-    const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
-    const result = await doStub.details();
+      let model: string | undefined = undefined;
+      let prompt: string | undefined = undefined;
 
-    let model: string | undefined = undefined;
-    let prompt: string | undefined = undefined;
-    let context: string | null | undefined = undefined;
+      const requestLimit = 5; // Simple rate limit without authentication
 
-    const requestLimit =
-      !user?.access_token || (user?.balance || 0) <= 0
-        ? // Logged out should get 5 requests per hour, then login first.
-          5
-        : 1000;
+      if (!result.prompt) {
+        const formData = await request.formData();
+        prompt = formData?.get("prompt")?.toString();
+        const modelName = formData?.get("model")?.toString();
+        console.log("received submission", modelName);
+        if (!prompt) {
+          console.log("missing prompt");
+          return new Response("Missing prompt", { status: 400 });
+        }
 
-    if (request.method === "POST" && !result.prompt) {
-      const formData = await request.formData();
-      prompt = formData?.get("prompt")?.toString();
-      const modelName = formData?.get("model")?.toString();
-      console.log("received submission", modelName);
-      if (!prompt) {
-        console.log("missing prompt");
-        return new Response("Missing prompt", { status: 400, headers });
-      }
+        const modelConfig =
+          providers.data.find((m) => m.id === modelName) || providers.data[0];
 
-      const modelConfig =
-        providers.find((m) => m.model === modelName) || providers[0];
+        model = modelConfig?.id;
 
-      model = modelConfig?.model;
+        const clientIp =
+          request.headers.get("CF-Connecting-IP") ||
+          request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
+          "127.0.0.1";
 
-      const userNeedsPayment =
-        (modelConfig.premium || (user && user.balance > 0)) &&
-        (!user?.balance || user.balance <= 0);
+        const ratelimited = await env.RATELIMIT_DO.get(
+          env.RATELIMIT_DO.idFromName("v2." + clientIp)
+        ).checkRateLimit({
+          requestLimit,
+          resetIntervalMs: 3600 * 1000,
+        });
 
-      const clientIp =
-        request.headers.get("CF-Connecting-IP") ||
-        request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
-        "127.0.0.1";
+        const acceptHtml = request.headers.get("accept")?.includes("text/html");
+        const hasWaitTime = (ratelimited?.waitTime || 0) > 0;
 
-      const ratelimited = await env.RATELIMIT_DO.get(
-        env.RATELIMIT_DO.idFromName("v2." + clientIp)
-      ).checkRateLimit({
-        requestLimit,
-        resetIntervalMs: 3600 * 1000,
-      });
+        if (hasWaitTime) {
+          if (acceptHtml) {
+            const scriptData = {
+              model,
+              prompt,
+              status: "error",
+              ratelimited: true,
+              error:
+                "You have reached the rate limit. Please try again later or sign in for higher limits.",
+              streaming: false,
+            };
 
-      // console.log("middleware 2:", Date.now() - t + "ms", {
-      //   requestLimit,
-      //   ratelimited,
-      // });
+            return getResultHTML(
+              env,
+              scriptData,
+              new Headers(ratelimited.headers),
+              request.url
+            );
+          }
 
-      const acceptHtml = request.headers.get("accept")?.includes("text/html");
-      const TEST_RATELIMIT_PAGE = false;
-      const hasWaitTime = (ratelimited?.waitTime || 0) > 0;
-      // console.log({ requestLimit, ratelimited, hasWaitTime, hasNegativeBalance });
-      if (hasWaitTime || TEST_RATELIMIT_PAGE || userNeedsPayment) {
-        if (acceptHtml) {
-          const scriptData = {
-            model,
-            prompt,
-            user: publicUser,
-            status: "error",
-            ratelimited: true,
-            error: hasWaitTime
-              ? "You have reached the ratelimit. Please purchase tokens to continue."
-              : "You have spent all your tokens. Please purchase tokens to continue.",
-            streaming: false,
-          };
-
-          const newHeaders = {};
-          headers.forEach((value, key) => {
-            newHeaders[key] = value;
-          });
-
-          return getResultHTML(
-            env,
-            scriptData,
-            new Headers({ ...newHeaders, ...ratelimited.headers }),
-            request.url
+          return new Response(
+            "Rate limit exceeded\n\n" +
+              JSON.stringify(ratelimited?.headers, undefined, 2),
+            {
+              status: 429,
+              headers: {
+                ...ratelimited?.headers,
+                "WWW-Authenticate":
+                  'Bearer realm="LMPIFY",' +
+                  'error="rate_limit_exceeded",' +
+                  'error_description="Rate limit exceeded. Please sign in for higher limits or visit https://openrouter.ai for API access"',
+              },
+            }
           );
         }
 
-        // can only exceed ratelimit if balance is negative
-        return new Response(
-          "Ratelimit exceeded\n\n" + ratelimited?.headers
-            ? JSON.stringify(ratelimited?.headers, undefined, 2)
-            : undefined,
-          {
-            status: 429,
-            headers: {
-              ...ratelimited?.headers,
-              "WWW-Authenticate":
-                'Bearer realm="LMPIFY",' +
-                'error="rate_limit_exceeded",' +
-                'error_description="Rate limit exceeded. Please purchase credit at https://letmeprompt.com for higher limits"',
-            },
-          }
-        );
+        await doStub.setup({
+          pathname: pathnameWithoutExt,
+          prompt,
+          model: modelConfig,
+          // No user or accessToken for unauthenticated requests
+        });
+      } else {
+        prompt = result.prompt!;
+        model = result.model;
+        console.log("GET METHOD got details", {
+          promptLength: prompt?.length || 0,
+          model,
+        });
       }
 
-      await doStub.setup({
-        pathname: pathnameWithoutExt,
+      const data: KVData = {
+        model: model || providers.data[0].id,
         prompt,
-        model: modelConfig,
-        user,
-      });
-    } else {
-      prompt = result.prompt!;
-      model = result.model;
-      context = result.context;
-      console.log("GET METHOD got details", {
-        promptLength: prompt?.length || 0,
-        model,
-      });
+        headline: result.headline || undefined,
+      };
+      return getResult(request, env, {}, data, "pending", new Headers());
     }
-
-    const data: KVData = {
-      model: model || providers[0].model,
-      prompt,
-      context,
-      headline: result.headline || undefined,
-    };
-    return getResult(request, env, publicUser, data, "pending", headers);
   } catch (error) {
     console.error("Error in fetch handler:", error);
-    return new Response("Internal server error", { status: 500, headers });
+    return new Response("Internal server error", { status: 500 });
   }
+
+  return new Response("Not found", { status: 404 });
 };
 
 function slugify(text) {
@@ -2401,10 +2165,82 @@ function simpleHash(str) {
   return Math.abs(hash).toString(36).substring(0, 7).padEnd(7, "0");
 }
 
-export default {
-  fetch: async (request: Request, env: Env, ctx: ExecutionContext) => {
+const authHandler = withSimplerAuth(
+  async (request: Request, env: Env, ctx) => {
     const url = new URL(request.url);
     const pathname = url.pathname;
+
+    // Handle authenticated endpoints
+    if (url.pathname.endsWith("/mcp")) {
+      if (request.method === "POST") {
+        if (!ctx.authenticated) {
+          return new Response("Authentication required", { status: 401 });
+        }
+        return handleMcp(request, env, ctx, ctx.user!, ctx.accessToken!);
+      } else if (request.method === "GET") {
+        return new Response(null, {
+          status: 302,
+          headers: {
+            Location: url.pathname.slice(0, -4) + "/chat/completions",
+          },
+        });
+      }
+    }
+
+    if (url.pathname.endsWith("/chat/completions")) {
+      if (request.method === "POST") {
+        if (!ctx.authenticated) {
+          return new Response(
+            JSON.stringify({
+              error: {
+                message: "Authentication required",
+                type: "authentication_error",
+                code: "unauthenticated",
+              },
+            }),
+            {
+              status: 401,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+        return await handleChatCompletions(
+          request,
+          env,
+          ctx,
+          ctx.user!,
+          ctx.accessToken!,
+          new Headers()
+        );
+      } else if (request.method === "GET") {
+        const url = new URL(request.url);
+
+        // Extract ID from pathname if provided (e.g., /abc123/chat/completions)
+        const pathParts = url.pathname.split("/");
+        const id =
+          pathParts.length > 2 && pathParts[1] !== "chat"
+            ? pathParts[1]
+            : undefined;
+        const pathname = `/${id}`;
+        const existingData = (await env.RESULTS.get(
+          pathname,
+          "json"
+        )) as KVData | null;
+
+        if (!existingData) {
+          return new Response("Not found", { status: 404 });
+        }
+        return new Response(
+          getInstructions(
+            id,
+            existingData,
+            ctx.accessToken || "YOUR_OPENROUTER_API_KEY"
+          )
+        );
+      }
+    }
+
+    // Handle /from/ redirects
     if (pathname.startsWith("/from/")) {
       // redirect to post
       try {
@@ -2454,6 +2290,59 @@ export default {
       }
     }
 
+    // For authenticated requests to regular paths with user data
+    if (ctx.authenticated) {
+      const pathnameWithoutExt = pathname.split(".")[0];
+
+      // Check if we need to enhance the DO setup with user info
+      if (request.method === "POST") {
+        const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
+        const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+        const result = await doStub.details();
+
+        if (!result.prompt) {
+          const formData = await request.formData();
+          const prompt = formData?.get("prompt")?.toString();
+          const modelName = formData?.get("model")?.toString();
+
+          if (prompt) {
+            const modelConfig =
+              providers.data.find((m) => m.id === modelName) ||
+              providers.data[0];
+
+            await doStub.setup({
+              pathname: pathnameWithoutExt,
+              prompt,
+              model: modelConfig,
+              user: ctx.user,
+              accessToken: ctx.accessToken,
+            });
+
+            const data: KVData = {
+              model: modelConfig.model,
+              prompt,
+            };
+            return getResult(
+              request,
+              env,
+              ctx.user || {},
+              data,
+              "pending",
+              new Headers()
+            );
+          }
+        }
+      }
+    }
+
+    // Fall back to unauthenticated handler for other requests
     return requestHandler(request, env, ctx);
   },
+  {
+    oauthProviderHost: "openrouter.simplerauth.com",
+  }
+);
+
+export default {
+  fetch: authHandler,
 };
