@@ -3,7 +3,6 @@ Content:
 - [connectconnector](connectconnector): simple landingpage for connectconnector.com
 - [letmeprompt](letmeprompt): makes chat completions stateful, monetized with stripe, and adds nice frontend
 - [letmeprompt.streamserve](letmeprompt.streamserve): way to quickly serve a UI streamed from a completion
-- [lmpify](lmpify): redirects to letmeprompt.com
 - [mcp-completions](mcp-completions): chat completions proxy that adds authenticated mcp tools
 - [mcp-completions-demo](mcp-completions-demo)
 

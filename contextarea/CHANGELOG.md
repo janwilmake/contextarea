@@ -102,7 +102,7 @@ the result is added to kv under key of pathname
 
 ✅ Made `usage.html/md`
 
-✅ Turn usage, why and privacy-policy into https://github.com/janwilmake/lmpify-docs and link from homepage
+✅ Turn usage, why and privacy-policy into https://github.com/janwilmake/contextarea/tree/main/docs and link from homepage
 
 # After contextarea works... add to lmpify and focus on this (2025-05-24)
 
