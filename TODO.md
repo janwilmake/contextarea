@@ -1,14 +1,6 @@
-# Mintlify
+# new name?
 
-https://github.com/orgs/mintlify/discussions/categories/feature-requests
-
-# W8
-
-Likely needs W-8BEN-E
-
-Fill this form in IRS and send to them.
-
-Also do dutch tax for q3 immediately
+just 'contextarea.com'. attracts devs more. better name for monaco-based ux
 
 # Openrouter OAuth Provider
 
@@ -20,9 +12,9 @@ Also do dutch tax for q3 immediately
 # MCP
 
 - not sure if MCP is updated upon refresh, i think not. and there's no way to refresh it now. it'd be good to follow version from `initialize` and update if it's newer than the one we have.
-- seems that error handling broke. just getting blank pages sometimes fro claude now.
+- seems that error handling broke. just getting blank pages sometimes for claude now.
 
-# 🟠 Refactor Stripeflare --> OpenRouter
+# 🟠 Refactor Stripeflare --> OpenRouter (??? Maybe better to keep stripe but rely on open router models as a more stable suite of models, then still allow to adding my own too)
 
 - Use `simplerauth-client` with openrouter.simplerauth.com as provider, instead of stripeflare for login.
 - Remove all token counting and pricing logic. Not needed anymore. Forward 402 appropriately, should direct to openrouter!
