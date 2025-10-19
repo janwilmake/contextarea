@@ -1,55 +1,25 @@
-# new name?
+# new name
 
-just 'contextarea.com'. attracts devs more. better name for monaco-based ux
+✅ just 'contextarea.com'. attracts devs more. better name for monaco-based ux
 
-# Openrouter OAuth Provider
+# openrouter demo
 
-- ✅ Have a direct cache from openrouter models, properly sorted, to select from.
-- ✅ Ensure balance is returned from `/me` such that it can be shown! Standardize this.
-- ❌ Look into how profile scope is standardized in oauth spec and how I can adopt this better.
-- ✅ Adapt simplerauth-client slightly so it's clear where balance can be found
+- Duplicates https://openrouter.ai/chat but only minimal features of selecting models
+- Adds modal to add MCPs
+
+# Add OpenRouter Models
+
+Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
+
+# Open Sourcing
+
+- Make it Open Source with MIT lisence
+- Seek Sponsor and be open about this!
 
 # MCP
 
 - not sure if MCP is updated upon refresh, i think not. and there's no way to refresh it now. it'd be good to follow version from `initialize` and update if it's newer than the one we have.
 - seems that error handling broke. just getting blank pages sometimes for claude now.
-
-# 🟠 Refactor Stripeflare --> OpenRouter (??? Maybe better to keep stripe but rely on open router models as a more stable suite of models, then still allow to adding my own too)
-
-- Use `simplerauth-client` with openrouter.simplerauth.com as provider, instead of stripeflare for login.
-- Remove all token counting and pricing logic. Not needed anymore. Forward 402 appropriately, should direct to openrouter!
-- Use openrouter API for chat completions (https://openrouter.ai/api/v1/chat/completions) - still proxy through the mcp proxy!
-
-Deploy this, ensure data doesn't get wiped, just stripeflare is fine.
-
-Create a map for providers to colors, domains, icons.
-
-Before I do this: how to deal with free users? I should just stop having them?
-
-- Free users get a bad experience due to GPT OSS 120B or other tiny models. Not good!
-- For readme buttons we need a better solution: oauth into github, then sync paying for syncing from config-file or links from readme.
-
-^ If that's too hard, just tell the people that have it in their readme to remove it.
-
-# OAuth and model selection
-
-- Get localhost oauth solved: https://discord.com/channels/1091220969173028894/1422253423381844100
-- Need stable user-id instead of access token on user.id; Let's use a kv for this mapping.
-- Edit model selector to use `/providers-openrouter.json` (if model wasn't found set to default model)
-- Edit 401/402 page to properly perform oauth flow
-
-<!--
-✅ OAuth provider to build apps against
-✅ Uses more standard models endpoint
-✅ Easier to maintain
-✅ Adds MCP to openrouter
-✅ Adds `store:true to openrouter which should store the result. This should work the same as `/chat/completions`, and should then make this stateful storage reality.
--->
-
-bonus:
-
-- refresh openrouter models automatically every hour or so
-- Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
 
 # Simplify implementation
 
@@ -88,11 +58,6 @@ What if it were a 'background agent' that could be made interoperable with sever
 - Allow for long-running MCP tools (in the same way as [this SEP](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/1391)) - this makes this stateful though so may need to be done in a different place!
 - Ability to hold running the API waiting for a human to authorize, then continue fulfilling the request after that's solved. Potentially, a parameter `onUserMessage:(details)=>Promise<void>` could be added, which would send the authorization request (just an url and message) to that endpoint, with the same secret. That function could then send email, w'app, or notify in UI. Anything.
 - Expose chat completions as async MCP tool with oauth (basically a sub-agent!)
-
-## openrouter demo
-
-- Duplicates https://openrouter.ai/chat but only minimal features of selecting models
-- Adds modal to add MCPs
 
 ## Other useful exploration
 

@@ -231,3 +231,48 @@ Now, these errors should properly throw and set 'error' value
 - ✅ Use frontmatter syntax to define MCPs to use
 - ✅ Debug: figure out why it doesn't do tool calls: https://letmeprompt.com/mcp-crmgrok-to-waamx94vlrls5e. debug api first, then lmpify part if still not fixed.
 - ✅ search-mcp.parallel.ai/mcp is now in a dead state. let's allow reconnecting and ensure it never adds it if it wasn't an mcp. ensure it requests to reauthorize if it can't call the tool
+
+# Refactor Stripeflare --> OpenRouter (early october 2025)
+
+- Use `simplerauth-client` with openrouter.simplerauth.com as provider, instead of stripeflare for login.
+- Remove all token counting and pricing logic. Not needed anymore. Forward 402 appropriately, should direct to openrouter!
+- Use openrouter API for chat completions (https://openrouter.ai/api/v1/chat/completions) - still proxy through the mcp proxy!
+
+Deploy this, ensure data doesn't get wiped, just stripeflare is fine.
+
+Create a map for providers to colors, domains, icons.
+
+Before I do this: how to deal with free users? I should just stop having them?
+
+- Free users get a bad experience due to GPT OSS 120B or other tiny models. Not good!
+- For readme buttons we need a better solution: oauth into github, then sync paying for syncing from config-file or links from readme.
+
+^ If that's too hard, just tell the people that have it in their readme to remove it.
+
+# Openrouter OAuth Provider
+
+- ✅ Have a direct cache from openrouter models, properly sorted, to select from.
+- ✅ Ensure balance is returned from `/me` such that it can be shown! Standardize this.
+- ❌ Look into how profile scope is standardized in oauth spec and how I can adopt this better.
+- ✅ Adapt simplerauth-client slightly so it's clear where balance can be found
+
+## OAuth and model selection
+
+- Get localhost oauth solved: https://discord.com/channels/1091220969173028894/1422253423381844100
+- Need stable user-id instead of access token on user.id; Let's use a kv for this mapping.
+- Edit model selector to use `/providers-openrouter.json` (if model wasn't found set to default model)
+- Edit 401/402 page to properly perform oauth flow
+
+<!--
+✅ OAuth provider to build apps against
+✅ Uses more standard models endpoint
+✅ Easier to maintain
+✅ Adds MCP to openrouter
+✅ Adds `store:true to openrouter which should store the result. This should work the same as `/chat/completions`, and should then make this stateful storage reality.
+-->
+
+bonus: refresh openrouter models automatically every hour or so.
+
+❌ I did NOT end up doing this. I decided to keep stripe-based user signup for now. We need the ability to have our own pricing models!
+
+> It May be better to keep stripe but rely on open router models as a more stable suite of models, then still allow to adding my own too.
