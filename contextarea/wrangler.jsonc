@@ -9,11 +9,11 @@
   },
   "routes": [
     {
-      "pattern": "letmeprompt.com",
+      "pattern": "contextarea.com",
       "custom_domain": true
     },
     {
-      "pattern": "www.letmeprompt.com",
+      "pattern": "www.contextarea.com",
       "custom_domain": true
     }
   ],

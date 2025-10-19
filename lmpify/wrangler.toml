@@ -1,8 +1,0 @@
-name = "lmpify-old"
-compatibility_date = "2025-06-30"
-dev.port = 3000
-main = "worker.js"
-routes = [ 
-  { pattern = "lmpify.com", custom_domain = true },
-  { pattern = "www.lmpify.com", custom_domain = true }
-]

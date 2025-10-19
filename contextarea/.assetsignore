@@ -2,4 +2,10 @@ node_modules
 .wrangler
 .git
 .DS_Store
-*/
+.dev.vars
+TODO.md
+ADR.md
+BACKLOG.md
+CHANGELOG.md
+README.md
+lmpify
