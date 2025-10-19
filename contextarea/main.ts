@@ -4,8 +4,8 @@
 
 const PRICE_MARKUP_FACTOR = 1.5;
 const LMPIFY_CLIENT = {
-  name: "Let Me Prompt It For You",
-  title: "Let Me Prompt It For You",
+  name: "Context Area",
+  title: "Context Area",
   version: "1.0.0",
 };
 import { MCPProviders, chatCompletionsProxy } from "mcp-completions";
@@ -1594,7 +1594,7 @@ function sanitizeMetadataString(str, maxLength = 160) {
 
   return sanitized;
 }
-const removeUrlsFromText = (text: string): string => {
+const removeUrlsFromText = (text: string = ""): string => {
   // This pattern matches URLs with or without protocol
   // It handles http, https, ftp, and protocol-less URLs (www.example.com)
   const urlPattern =
@@ -1606,7 +1606,7 @@ const removeUrlsFromText = (text: string): string => {
 const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
   const { prompt = "", model = "", context = "", headline } = kvData;
   const url = new URL(requestUrl);
-  const tokens = Math.round((context || prompt).length / 5);
+  const tokens = Math.round(((context || prompt)?.length || 0) / 5);
   // Create a title from the prompt (limit to first 60 chars)
 
   const promptWithoutUrls = removeUrlsFromText(prompt);
@@ -2381,7 +2381,7 @@ const requestHandler = async (
   }
 };
 
-function slugify(text) {
+function slugify(text = "") {
   return text
     .toLowerCase()
     .trim()

@@ -1,4 +1,4 @@
-# Let Me Prompt It For You - Fast, Smart Prompting for Devs
+# Context Area - Fast, Smart Prompting for Devs
 
 Launch:
 

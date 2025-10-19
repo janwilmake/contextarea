@@ -315,7 +315,7 @@
       logo.target = "_blank";
       logo.innerHTML = `
           <img src="https://letmeprompt.com/android-chrome-192x192.png" alt="lmpify logo" />
-          <span>let me prompt it for you</span>
+          <span>Context Area</span>
         `;
 
       header.appendChild(logo);
@@ -369,8 +369,8 @@
       const footer = document.createElement("div");
       footer.className = "lmpify-footer";
       footer.innerHTML = `
-          <div>Powered by <a href="https://letmeprompt.com" target="_blank">lmpify.com</a></div>
-          <div><a href="https://letmeprompt.com/privacy" target="_blank">Privacy Policy</a></div>
+          <div>Powered by <a href="https://contextarea.com" target="_blank">contextarea.com</a></div>
+          <div><a href="https://contextarea.com/privacy" target="_blank">Privacy Policy</a></div>
         `;
 
       // Assemble the widget
@@ -449,7 +449,7 @@
       const modelId = this.options.defaultModel;
       // Create the URL with query parameters
       const url = `https://letmeprompt.com/?prompt=${encodeURIComponent(
-        promptText,
+        promptText
       )}&model=${encodeURIComponent(modelId)}`;
 
       // Open the URL in a new tab

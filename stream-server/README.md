@@ -1,4 +1,4 @@
-# Let Me Prompt Stream-Server - A single prompt should be enough to share simple GPT ideas!
+# Stream-Server - A single prompt should be enough to share simple GPT ideas!
 
 - ✅ serve response files in right mediatype from codeblock index as well as path
 - ✅ easy to share and navigate any gpt idea

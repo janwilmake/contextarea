@@ -1,10 +1,10 @@
 # Privacy Policy
 
-**Important:** All content submitted to lmpify.com, including prompts and generated responses, is public by design. This information is accessible and searchable on the public internet.
+**Important:** All content submitted to contextarea.com, including prompts and generated responses, is public by design. This information is accessible and searchable on the public internet.
 
 ## Public Nature of the Service
 
-lmpify.com is designed as a public sharing platform. The public nature of our service is core to its functionality, allowing for easy sharing and discovery of AI-generated content.
+contextarea.com is designed as a public sharing platform. The public nature of our service is core to its functionality, allowing for easy sharing and discovery of AI-generated content.
 
 When you use our service:
 
@@ -35,13 +35,13 @@ We use the collected information to:
 
 ## Content Ownership and Responsibility
 
-You are responsible for the content you submit to lmpify.com. Do not submit sensitive personal information, confidential data, or content that violates others' rights.
+You are responsible for the content you submit to contextarea.com. Do not submit sensitive personal information, confidential data, or content that violates others' rights.
 
 While you retain ownership of your original content, by using our service, you grant us a worldwide, non-exclusive license to use, store, display, reproduce, and distribute your content in connection with the service.
 
 ## Content Removal
 
-If you wish to have content removed from lmpify.com, please contact us with the specific URL of the content. While we will consider removal requests, please remember that the public nature of the service means that content may have been cached, shared, or archived elsewhere.
+If you wish to have content removed from contextarea.com, please contact us with the specific URL of the content. While we will consider removal requests, please remember that the public nature of the service means that content may have been cached, shared, or archived elsewhere.
 
 ## Third-Party Services
 
@@ -63,4 +63,4 @@ If you have any questions about this privacy policy or our practices, please con
 
 _Last updated: May 17, 2025_
 
-© 2025 lmpify.com - [let me prompt it for you](https://lmpify.com)
+© 2025 contextarea.com - [Context Area](https://contextarea.com)

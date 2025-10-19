@@ -211,14 +211,14 @@ function generateLoadingIndicator(isLoading: boolean): string {
  */
 function generateSidebarCategories(
   llmsJson: LLMSJSON,
-  currentPath: string,
+  currentPath: string
 ): string {
   const categories = [...new Set(llmsJson.links.map((link) => link.category))];
 
   return categories
     .map((category) => {
       const categoryLinks = llmsJson.links.filter(
-        (link) => link.category === category,
+        (link) => link.category === category
       );
 
       return `
@@ -286,7 +286,7 @@ function generateSidebarCategories(
 function generateSidebar(
   llmsJson: LLMSJSON,
   currentPath: string,
-  isLoading: boolean,
+  isLoading: boolean
 ): string {
   const loadingIndicator = generateLoadingIndicator(isLoading);
   const categoryHTML = generateSidebarCategories(llmsJson, currentPath);
@@ -515,7 +515,7 @@ function generateSidebarAssets(isLoading: boolean): string {
 function injectMetaTagsIntoHead(
   html: string,
   llmsJson: LLMSJSON,
-  currentUrl: string,
+  currentUrl: string
 ): string {
   let metaTagsToInject = "";
 
@@ -526,7 +526,7 @@ function injectMetaTagsIntoHead(
 
   if (!html.match(/<meta[^>]*name=["']description["'][^>]*>/i)) {
     metaTagsToInject += `<meta name="description" content="${escapeHtml(
-      llmsJson.description,
+      llmsJson.description
     )}" />\n    `;
   }
 
@@ -541,11 +541,11 @@ function injectMetaTagsIntoHead(
     <meta property="og:type" content="website" />
     <meta property="og:title" content="${escapeHtml(llmsJson.title)}" />
     <meta property="og:description" content="${escapeHtml(
-      llmsJson.description,
+      llmsJson.description
     )}" />
     <meta property="og:image" content="https://quickog.com/screenshot/${currentUrl}" />
     <meta property="og:image:alt" content="${escapeHtml(
-      llmsJson.description,
+      llmsJson.description
     )}"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
@@ -560,7 +560,7 @@ function injectMetaTagsIntoHead(
     <meta property="twitter:url" content="${currentUrl}" />
     <meta name="twitter:title" content="${escapeHtml(llmsJson.title)}" />
     <meta name="twitter:description" content="${escapeHtml(
-      llmsJson.description,
+      llmsJson.description
     )}" />
     <meta name="twitter:image" content="https://quickog.com/screenshot/${currentUrl}" />
     `;
@@ -581,7 +581,7 @@ function injectCompleteHtml(
   html: string,
   llmsJson: LLMSJSON,
   url: string,
-  isLoading: boolean,
+  isLoading: boolean
 ): string {
   const currentPath = new URL(url).pathname;
   const currentUrl = `https://${new URL(url).hostname}${currentPath}`;
@@ -606,7 +606,7 @@ function injectCompleteHtml(
     if (processedHtml.includes("</body>")) {
       processedHtml = processedHtml.replace(
         "</body>",
-        `${sidebar}${sidebarToggle}${sidebarAssets}</body>`,
+        `${sidebar}${sidebarToggle}${sidebarAssets}</body>`
       );
     } else {
       processedHtml += `${sidebar}${sidebarToggle}${sidebarAssets}`;
@@ -616,14 +616,14 @@ function injectCompleteHtml(
     const metaTags = generateMetaTags(llmsJson, currentUrl);
     processedHtml = processedHtml.replace(
       "<body",
-      `<head>${metaTags}</head><body`,
+      `<head>${metaTags}</head><body`
     );
 
     // Inject sidebar before </body>
     if (processedHtml.includes("</body>")) {
       processedHtml = processedHtml.replace(
         "</body>",
-        `${sidebar}${sidebarToggle}${sidebarAssets}</body>`,
+        `${sidebar}${sidebarToggle}${sidebarAssets}</body>`
       );
     } else {
       processedHtml += `${sidebar}${sidebarToggle}${sidebarAssets}`;
@@ -659,7 +659,7 @@ function injectIncompleteHtml(
   html: string,
   llmsJson: LLMSJSON,
   url: string,
-  isLoading: boolean,
+  isLoading: boolean
 ): string {
   const currentPath = new URL(url).pathname;
   const currentUrl = `https://${new URL(url).hostname}${currentPath}`;
@@ -672,7 +672,7 @@ function injectIncompleteHtml(
   if (processedHtml.includes("<head>") || processedHtml.includes("<head ")) {
     processedHtml = processedHtml.replace(
       /<head([^>]*)>/i,
-      `<head$1><base href="${baseUrl}/">`,
+      `<head$1><base href="${baseUrl}/">`
     );
   } else {
     // Add head with base tag if no head exists
@@ -720,10 +720,10 @@ ${metaTags}
 function generateLLMSJSON(
   subdomain: string,
   result: KVData,
-  codeblocks: Codeblock[],
+  codeblocks: Codeblock[]
 ): LLMSJSON {
   const title = result.headline || `${subdomain} - AI Generated Content`;
-  const description = `AI-generated content using ${result.model}. Created with "Let Me Prompt It For You" platform.`;
+  const description = `AI-generated content using ${result.model}. Created with "Context Area" platform.`;
   const editUrl = `https://letmeprompt.com/${subdomain}`;
 
   const links: LLMSLink[] = [
@@ -839,7 +839,7 @@ function generateLLMSTxt(llmsJson: LLMSJSON): string {
 export default {
   fetch: async (
     request: Request,
-    env: { RESULTS: KVNamespace; SQL_STREAM_PROMPT_DO: DurableObjectNamespace },
+    env: { RESULTS: KVNamespace; SQL_STREAM_PROMPT_DO: DurableObjectNamespace }
   ) => {
     // Handle preflight OPTIONS requests
     if (request.method === "OPTIONS") {
@@ -859,7 +859,7 @@ export default {
     if (!result?.result) {
       // Not yet. Check DO
       const stub = env.SQL_STREAM_PROMPT_DO.get(
-        env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt),
+        env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt)
       );
       const response = await stub.fetch(new Request("https://do/current"));
       if (!response.ok) {
@@ -941,7 +941,7 @@ export default {
           "Should be chat completions endpoint with prompt+context in system and should be authenticated with xmoney-provided API key. Creator will earn for it! On this page, there should be lot of instructions on how to use it.",
           {
             headers: { ...corsHeaders },
-          },
+          }
         );
       } else if (request.method === "POST") {
         return new Response("Coming soon", {
@@ -1142,7 +1142,7 @@ export default {
         ${
           result.timestamp
             ? `<strong>Generated:</strong> ${new Date(
-                result.timestamp,
+                result.timestamp
               ).toLocaleString()}<br>`
             : ""
         }
@@ -1157,7 +1157,7 @@ export default {
         htmlContent,
         llmsJson,
         url.href,
-        isLoading,
+        isLoading
       );
       return new Response(htmlWithSidebar, {
         headers: {
@@ -1172,7 +1172,7 @@ export default {
 
 > This AI-generated website doesn't have the requested page.
 
-The page you're looking for doesn't exist on this AI-generated website. This content was created using the "Let Me Prompt It For You" platform.
+The page you're looking for doesn't exist on this AI-generated website. This content was created using the "Context Area" platform.
 
 ${generateLLMSTxt(llmsJson)}
 `;
@@ -1258,7 +1258,7 @@ ${generateLLMSTxt(llmsJson)}
         htmlContent,
         llmsJson,
         url.href,
-        isLoading,
+        isLoading
       );
 
       return new Response(htmlWithSidebar, {
