@@ -276,3 +276,12 @@ bonus: refresh openrouter models automatically every hour or so.
 ❌ I did NOT end up doing this. I decided to keep stripe-based user signup for now. We need the ability to have our own pricing models!
 
 > It May be better to keep stripe but rely on open router models as a more stable suite of models, then still allow to adding my own too.
+
+# New name (2025-10-19)
+
+- ✅ just 'contextarea.com'. attracts devs more. better name for monaco-based ux
+- ✅ Refactored and relocated all needed stuff
+- ✅ Improved design
+- ✅ Fixed og
+- ✅ Make it Open Source with MIT lisence
+- ✅ Seek Sponsor and be open about this!

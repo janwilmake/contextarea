@@ -1205,7 +1205,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       console.log("gonna do request ", fullUrl);
 
       const { fetchProxy } = chatCompletionsProxy(this.env, {
-        baseUrl: "https://letmeprompt.com",
+        baseUrl: "https://contextarea.com",
         userId: user?.client_reference_id,
         clientInfo: LMPIFY_CLIENT,
       });
@@ -1983,7 +1983,7 @@ The prompt will be URL-expanded and used as system prompt for the generation. UR
 ## OpenAI Compatible API
 
 \`\`\`sh
-curl -X POST "https://letmeprompt.com/${id}/chat/completions" \
+curl -X POST "https://contextarea.com/${id}/chat/completions" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer ${access_token}" \
   -d '{
@@ -2005,7 +2005,7 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({
     apiKey: "${access_token}",   // Your LMPIFY API key
-    baseURL: "https://letmeprompt.com/${id}",
+    baseURL: "https://contextarea.com/${id}",
 });
 
 const response = await openai.chat.completions.create({
@@ -2024,7 +2024,7 @@ You can also use this prompt as an MCP (Model Context Protocol) server. The MCP 
 
 **MCP Server Address:**
 \`\`\`
-https://letmeprompt.com/${id}/mcp
+https://contextarea.com/${id}/mcp
 \`\`\`
 
 **Using with Cursor:**
@@ -2035,7 +2035,7 @@ Add this to your Cursor MCP configuration:
 {
   "mcpServers": {
     "lmpify-${id}": {
-      "url": "https://letmeprompt.com/${id}/mcp",
+      "url": "https://contextarea.com/${id}/mcp",
       "headers": {
         "Authorization": "Bearer ${access_token}"
       }
@@ -2050,7 +2050,7 @@ The MCP server implements the standard Model Context Protocol and can be used wi
 
 ## Additional Options
 
-Optionally, it's possible to provide "store:true" in your API requests. This will store the final result in our cache, making it available at https://letmeprompt.com/{id}. The ID is part of the response JSON like normal.
+Optionally, it's possible to provide "store:true" in your API requests. This will store the final result in our cache, making it available at https://contextarea.com/{id}. The ID is part of the response JSON like normal.
 
 `;
 };
@@ -2144,7 +2144,7 @@ const requestHandler = async (
   const { user } = result;
 
   const { idpMiddleware } = chatCompletionsProxy(env, {
-    baseUrl: "https://letmeprompt.com",
+    baseUrl: "https://contextarea.com",
     userId: user?.client_reference_id,
     clientInfo: LMPIFY_CLIENT,
     pathPrefix: "/mcp",
@@ -2346,7 +2346,7 @@ const requestHandler = async (
               "WWW-Authenticate":
                 'Bearer realm="LMPIFY",' +
                 'error="rate_limit_exceeded",' +
-                'error_description="Rate limit exceeded. Please purchase credit at https://letmeprompt.com for higher limits"',
+                'error_description="Rate limit exceeded. Please purchase credit at https://contextarea.com for higher limits"',
             },
           }
         );

@@ -163,5 +163,32 @@
     "icon": "/providers/deepseek.png",
     "description": "Cheap and good quality",
     "features": []
+  },
+
+  {
+    "model": "speed",
+    "basePath": "https://beta.parallel.ai",
+    "providerSlug": "parallel",
+    "color": "#000000",
+    "pricePerMillionInput": 0.4,
+    "pricePerMillionOutput": 5,
+    "maxTokens": 64000,
+    "name": "Parallel Web Search",
+    "icon": "/providers/parallel.svg",
+    "features": ["search"]
+  },
+  {
+    "model": "openai-online-speculative",
+    "basePath": "https://maybesearch.p0web.com",
+    "providerSlug": "maybesearch",
+    "pricePerMillionInput": 3,
+    "pricePerMillionOutput": 15,
+    "premium": true,
+    "maxTokens": 64000,
+    "color": "#000000",
+    "name": "Parallel Speculative Dual-Stream",
+    "icon": "/providers/parallel.svg",
+    "description": "",
+    "features": ["search"]
   }
 ]

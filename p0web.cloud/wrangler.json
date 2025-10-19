@@ -1,7 +1,0 @@
-{
-  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
-  "name": "parallel-cloud",
-  "assets": { "directory": "./public" },
-  "compatibility_date": "2025-09-01",
-  "route": { "custom_domain": true, "pattern": "cloud.p0web.com" }
-}

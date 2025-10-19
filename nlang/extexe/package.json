@@ -1,7 +1,0 @@
-{
-  "type": "module",
-  "dependencies": {
-    "edge-util": "^0.0.70",
-    "marked-util": "^0.0.9"
-  }
-}

@@ -1,29 +1,49 @@
-# new name
+# HIGH LEVEL
 
-✅ just 'contextarea.com'. attracts devs more. better name for monaco-based ux
+- ❗️❗️❗️ Fix Payments. It's broken now!
+- Make MCP accessible! Huge for adoption
+- ContextArea - start using monaco! Huge for look & feel.
+- MCPUI
+- OpenRouter or CloudFlare
 
-# openrouter demo
+# Payments
+
+Fix stripeflare. If I get in the zone, also immediately add ability to pass `userId`!
+
+# MCP one-click install
+
+- To `index.html` add ?mcp&mcp&mcp which adds them to frontmatter.
+- Ensure system-prompt ends up AFTER frontmatter
+- Add to installthismcp.com
+- not sure if MCP is updated upon refresh, i think not. and there's no way to refresh it now. it'd be good to follow version from `initialize` and update if it's newer than the one we have.
+
+# ContextArea Monaco
+
+Finish [monacobro.js](https://github.com/janwilmake/monacobro) with functional paste-interceptor and token counter, then use this in contextarea.com. Then get back to [sunil](https://x.com/threepointone/status/1979536991869116585)
+
+It should show details on the mcps used!
+
+# MCP UI
+
+Huge if I can make this work nicely. Great for testing too.
+
+# MCP & OpenRouter
+
+- Have KV for all openrouter models that refreshes every hour. Map this to needed info for providers, and ensure it is exposed at `/all-providers.json` or so which concatenates that with my own.
+- Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
+- Seems that error handling broke. just getting blank pages sometimes for claude now.
+- Simplify implementation: We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
+
+# LLM cli
+
+https://github.com/simonw/llm
+
+Can I integrate with this?
+
+# Openrouter Demo
 
 - Duplicates https://openrouter.ai/chat but only minimal features of selecting models
 - Adds modal to add MCPs
-
-# Add OpenRouter Models
-
-Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
-
-# Open Sourcing
-
-- Make it Open Source with MIT lisence
-- Seek Sponsor and be open about this!
-
-# MCP
-
-- not sure if MCP is updated upon refresh, i think not. and there's no way to refresh it now. it'd be good to follow version from `initialize` and update if it's newer than the one we have.
-- seems that error handling broke. just getting blank pages sometimes for claude now.
-
-# Simplify implementation
-
-We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
 
 # MarkdownOps/NLANG
 
