@@ -1,6 +1,6 @@
 # Context Area - Fast, Smart Prompting for Devs
 
-> [!TIP] >
+> [!TIP]
 >
 > **Looking for Sponsor**
 > I'm looking for one or multiple sponsors that believe in context engineering and want me to build the best possible experience! Please [reach out on X](https://x.com/janwilmake)
