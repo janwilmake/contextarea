@@ -1,0 +1,13 @@
+name = "contextarea_context"
+compatibility_date = "2025-05-15"
+dev.port = 3000
+main = "./main.ts"
+assets.directory = "./"
+
+routes = [
+  { pattern = "context.contextarea.com", custom_domain = true },
+]
+
+[[kv_namespaces]]
+binding = "LINKS_KV"
+id = "43999fa31a3145979e69c066da55ab39"

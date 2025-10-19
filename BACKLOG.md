@@ -1,3 +1,7 @@
+# COOL
+
+https://llm.md
+
 # Simple tools
 
 https://letmeprompt.com/rules-httpsuithu-iuvmgx0

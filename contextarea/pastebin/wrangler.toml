@@ -1,0 +1,12 @@
+name = "contextarea_pastebin"
+compatibility_date = "2025-05-15"
+main = "pastebin.ts"
+dev.port = 3000
+assets.directory = "./"
+routes = [
+  { pattern = "pastebin.contextarea.com", custom_domain = true }
+]
+
+[[kv_namespaces]]
+binding = "PASTEBIN_KV"
+id = "b85cf4483846442fac738f98c33475e8"

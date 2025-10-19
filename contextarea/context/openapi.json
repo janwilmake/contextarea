@@ -1,0 +1,163 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ContextArea Context API",
+    "description": "API for retrieving metadata, content, and context information from URLs",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ContextArea",
+      "url": "https://contextarea.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://context.contextarea.com",
+      "description": "Production API server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Fetch URL metadata and content",
+        "description": "Returns metadata, content type information, and extracted text from a URL. Results are cached for 24 hours.",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "description": "The URL to fetch and analyze",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "example": "https://example.com/article"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved URL data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FootprintData"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid URL parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "URL parameter is required"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to fetch URL content"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "FootprintData": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Title of the page or document",
+            "example": "Example Article Title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the content from meta tags or first part of the content",
+            "example": "This is an example article that demonstrates the metadata extraction capabilities..."
+          },
+          "meta": {
+            "type": "object",
+            "description": "All extracted meta tags as key-value pairs",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "example": {
+              "description": "Page description",
+              "og:title": "Example Title",
+              "twitter:card": "summary_large_image"
+            }
+          },
+          "mime": {
+            "type": "string",
+            "description": "MIME type of the content",
+            "example": "text/html; charset=utf-8"
+          },
+          "type": {
+            "type": "string",
+            "description": "Simplified content type",
+            "enum": ["text", "image", "video"],
+            "example": "text"
+          },
+          "ogImageUrl": {
+            "type": "string",
+            "description": "Open Graph image URL if available",
+            "example": "https://example.com/images/preview.jpg"
+          },
+          "context": {
+            "type": "string",
+            "description": "Extracted text content from the page",
+            "example": "This is the full text content of the article or document..."
+          },
+          "tokens": {
+            "type": "integer",
+            "description": "Estimated token count of the extracted text",
+            "example": 1024
+          },
+          "githubOwner": {
+            "type": "string",
+            "description": "GitHub username if the URL is from GitHub",
+            "example": "janwilmake"
+          },
+          "twitterUsername": {
+            "type": "string",
+            "description": "Twitter username if available from meta tags or URL",
+            "example": "janwilmake"
+          },
+          "timestamp": {
+            "type": "integer",
+            "description": "Timestamp when the data was fetched or cached",
+            "example": 1646323200000
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "meta",
+          "mime",
+          "type",
+          "timestamp"
+        ]
+      }
+    }
+  }
+}
