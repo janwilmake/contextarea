@@ -4,7 +4,7 @@
     "dormroom": "1.0.1",
     "marked": "^16.0.0",
     "mcp-completions": "0.0.9",
-    "stripeflare": "0.0.41",
+    "stripeflare": "0.0.42",
     "workers-og": "^0.0.27"
   },
   "devDependencies": {

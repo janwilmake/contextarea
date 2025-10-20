@@ -2,6 +2,13 @@
 /// <reference lib="esnext" />
 //@ts-check
 
+import { OpenAI } from "openai";
+const client = new OpenAI({
+  apiKey: undefined,
+  baseURL: undefined,
+  defaultHeaders: {},
+});
+
 interface FootprintData {
   title: string;
   description: string;
@@ -22,7 +29,7 @@ export default {
     env: {
       LINKS_KV: KVNamespace;
     },
-    ctx: ExecutionContext,
+    ctx: ExecutionContext
   ): Promise<Response> {
     // Handle CORS
     if (request.method === "OPTIONS") {
@@ -51,7 +58,7 @@ export default {
         {
           headers: { "Content-Type": "application/json", ...corsHeaders },
           status: 400,
-        },
+        }
       );
     }
 
@@ -60,7 +67,7 @@ export default {
       const cacheKey = `footprint:${url}`;
       const cachedData = await env.LINKS_KV.get<{ timestamp: number }>(
         cacheKey,
-        "json",
+        "json"
       );
 
       // If cache exists and is not too old (less than 24 hours)
@@ -91,7 +98,7 @@ export default {
       const footprint = await fetchAndProcess(url);
       await env.LINKS_KV.put(
         cacheKey,
-        JSON.stringify({ ...footprint, timestamp: now }),
+        JSON.stringify({ ...footprint, timestamp: now })
       );
 
       return new Response(JSON.stringify(footprint, null, 2), {
@@ -115,13 +122,13 @@ export default {
 async function fetchAndCache(
   url: string,
   env: { LINKS_KV: KVNamespace },
-  cacheKey: string,
+  cacheKey: string
 ): Promise<void> {
   try {
     const footprint = await fetchAndProcess(url);
     await env.LINKS_KV.put(
       cacheKey,
-      JSON.stringify({ ...footprint, timestamp: Date.now() }),
+      JSON.stringify({ ...footprint, timestamp: Date.now() })
     );
   } catch (error) {
     console.error("Background fetch error:", error);

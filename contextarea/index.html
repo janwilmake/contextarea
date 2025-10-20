@@ -498,6 +498,32 @@
         const formView = document.getElementById('formView');
         const configButton = document.getElementById('configButton');
 
+        // Parse front matter from content
+        function parseFrontMatter(content) {
+            const frontMatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
+            const match = content.match(frontMatterRegex);
+
+            if (match) {
+                return {
+                    frontMatter: match[1],
+                    content: match[2]
+                };
+            }
+
+            return {
+                frontMatter: null,
+                content: content
+            };
+        }
+
+        // Build front matter from MCP parameters
+        function buildMcpFrontMatter(mcpList) {
+            if (!mcpList || mcpList.length === 0) {
+                return null;
+            }
+            return `---\nmcp: ${mcpList.join(' ')}\n---`;
+        }
+
         // System prompt functionality
         async function loadSystemPrompt() {
             try {
@@ -519,19 +545,28 @@
             }
         }
 
-        // Function to fill textarea with query parameter content
+        // Function to fill textarea with query and mcp parameters
         function fillTextareaFromQuery() {
             const textarea = document.getElementById('contextarea');
-            const queryContent = new URLSearchParams(window.location.search).get('q');
+            const params = new URLSearchParams(window.location.search);
+            const queryContent = params.get('q');
+            const mcpParam = params.getAll('mcp');
 
+            let finalContent = '';
+
+            // Add MCP front matter if present
+            if (mcpParam && mcpParam.length > 0) {
+                const mcpFrontMatter = buildMcpFrontMatter(mcpParam);
+                finalContent = mcpFrontMatter + '\n';
+            }
+
+            // Add query content if present
             if (queryContent) {
-                // Decode the content (in case it's URL encoded)
-                const decodedContent = queryContent;
+                finalContent += queryContent;
+            }
 
-                // Set the textarea value
-                textarea.value = decodedContent;
-
-                // Adjust height and enable submit button if content exists
+            if (finalContent) {
+                textarea.value = finalContent;
                 adjustTextareaHeight();
                 submitButton.disabled = false;
             }
@@ -629,14 +664,24 @@
             const selectedModel = localStorage.getItem('model') || 'claude-3-5-sonnet-20241022'; // Add fallback
             const systemPrompt = await loadSystemPrompt();
 
-            // Prepend system prompt if it exists and is not empty
-            let finalPrompt = promptText;
-            if (systemPrompt && systemPrompt.trim() !== '') {
-                finalPrompt = `${systemPrompt}${promptText}`;
+            // Parse front matter from current content
+            const { frontMatter, content } = parseFrontMatter(promptText);
+
+            // Build final prompt: front matter + system prompt + content
+            let finalPrompt = '';
+
+            if (frontMatter) {
+                finalPrompt = `---\n${frontMatter}\n---\n`;
             }
 
-            // Generate slug from first 20 characters of the original prompt
-            const first20 = promptText.substring(0, 20);
+            if (systemPrompt && systemPrompt.trim() !== '') {
+                finalPrompt += systemPrompt;
+            }
+
+            finalPrompt += content;
+
+            // Generate slug from first 20 characters of the original content (without front matter)
+            const first20 = content.substring(0, 20);
             const slug = slugify(first20);
             const hash = simpleHash(selectedModel + ':' + finalPrompt);
 

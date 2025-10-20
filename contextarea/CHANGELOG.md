@@ -285,3 +285,10 @@ bonus: refresh openrouter models automatically every hour or so.
 - ✅ Fixed og
 - ✅ Make it Open Source with MIT lisence
 - ✅ Seek Sponsor and be open about this!
+- ✅ Fix stripeflare. If I get in the zone, also immediately add ability to pass `userId`!
+
+# MCP one-click install (2025-10-19)
+
+- ✅ To `index.html` add ?mcp&mcp&mcp which adds them to frontmatter.
+- ✅ Ensure system-prompt ends up AFTER frontmatter
+- ✅ Add to installthismcp.com
