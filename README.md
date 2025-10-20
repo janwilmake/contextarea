@@ -62,8 +62,6 @@ Some recommend contexts are:
 - https://openapisearch.com for APIs
 - https://arxivmd.org for ArXiv papers
 
-Are you a high-agency product engineer? Join the [Context Building Club](https://contextbuilding.com) to get access to the most advanced and high-agency prompting techniques before everyone else.
-
 ## Result format
 
 Any contextarea URL is available as HTML, JSON, or Markdown. Browsers return HTML by default while developer or apis like `curl` or `fetch` default to markdown. You can control the output by appending `.json/.md/.html` or by specifying an `accept` header.
