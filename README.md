@@ -35,8 +35,6 @@ We are not aiming to match the UX non-technical folks need in any way.
 - Uploads
 - Tools
 
-## Context Area - Fast, Smart Prompting for Devs
-
 ## Why Context Area?
 
 contextarea offers several advantages over traditional AI assistants like Claude
@@ -52,8 +50,6 @@ contextarea offers several advantages over traditional AI assistants like Claude
 | **Sharing**          | ✓ One-click                | ✗ Multiple steps, buggy                                 | Instantly share prompts and results with a simple URL                                                       |
 | **Token Efficiency** | ✓ Incentivizes edit        | ✗ Designed as chat with history                         | Encourages prompt editing over replies, resulting in less token use and better results with the same model. |
 | **Long Output**      | ✓ Up to limit of model API | ✗ Limits at ±8k output tokens, continue button is buggy | Long outputs can be useful when generating long files.                                                      |
-
-# DOCS
 
 ## URL Context
 
@@ -80,19 +76,6 @@ Examples:
 - in your terminal, `curl https://contextarea.com/httpsuithubcomj-m8tfk00` returns markdown
 - in the browser, https://contextarea.com/httpsuithubcomj-m8tfk00 returns the UI (html) but it's easy to get markdown using https://contextarea.com/httpsuithubcomj-m8tfk00.md or json using https://contextarea.com/httpsuithubcomj-m8tfk00.json
 - if you need only the result or another part, you can use https://contextarea.com/httpsuithubcomj-m8tfk00.md?key=result
-
-## Chat Completions
-
-> [!IMPORTANT]
-> Coming soon
-
-Every prompt is made available as [chatcompletions endpoint](https://platform.openai.com/docs/guides/text-generation) at `POST https://contextarea.com/[id]/chat/completions`. This means you can use it by setting the base path in the [OpenAI SDK](https://platform.openai.com/docs/libraries) (or other ChatCompletion SDKs) to https://contextarea.com/[id], e.g. https://contextarea.com/httpsuithubcomj-m8tfk00. This will use the context as system prompt and the prompt as a fist 'model' message in the back.
-
-To use a model other than the default model, you can specify the model parameter. For available models, check [models.json](models.json)
-
-## Getting your API key
-
-You can get your API key by going to the developer console in your browser, and find the `access_token` value in your cookies storage. This serves as authentication to any API. There's currently no scopes or ability to rotate your key, so be careful, this key is meant to be private, if it gets compromised, all your balance may be used by third parties.
 
 ## `npx mdapply` CLI
 
@@ -149,42 +132,10 @@ Any shared links that were previously generated are free to be reached without r
 - After depositing $ through Stripe, users pay the model price + markup when executing new prompts.
 - The markup is 50% markup on top of model price to account for free usage, creator benefits (coming soon), and make this tool sustainable.
 
-## LOGIN TO DB
-
-Aggregate: https://contextarea.com/db/admin-readonly
-
-- Username: admin
-- Password: DB_SECRET
-
-User DB: https://letmeprompt.com/db/user-{client_reference_id}
-
-- Username: admin
-- Password: access_token
-
-# Why contextarea vs IDEs or other LLM clients like Claude?
-
-My personal reason was i want to replace claude because it's annoying:
-
-- Very slow to start up and TTFT is terrible. contextarea hits within 100ms and doesn't need to wait for pageload to start seeing result, result is already starting in DO as soon as you submit.
-- Claude doesn't support URLs out of the box. When i create a new app/worker, i usually add URLs as source of truth for context . with claude it was still a hassle to copy/paste afterwards. now, this is seamless and fast.
-- Claude can render HTML and React. I don't use React so I don't care. I use HTML. Claude HTML renders are super limited, as they can't run scripts. contextarea HTML renders render scripts and anything else, and can be easily opened in fullscreen.
-- Claude is generally slow, buggy, and unreliable on my machine. contextarea is snappy / fast
-- It's hard to share something with someone else in claude, requires several clicks. contextarea is optimised for sharing
-- contextarea incentivizes people to edit the prompt rather than reply, which usually gives better and less lengthy results as token windows become shorter from it. It also incentivizes people to reduce tokens. Claude does NOT do this
-
-I think this is my main list.
-
-Follow up posts (type them into markdown here, then just quote https://x.com/janwilmake/status/1924471476305932741) compare with claude on every aspect (6 posts).
-
-- how can it be so fast?
-- how does the monetisation and authentication work?
-- how do I build my workers?
-- why is edit workflow better than conversational?
-
 # Table of Contents
 
+- [contextarea](contextarea): makes chat completions stateful, monetized with stripe, and adds nice frontend
 - [connectconnector](connectconnector): simple landingpage for connectconnector.com
-- [letmeprompt](letmeprompt): makes chat completions stateful, monetized with stripe, and adds nice frontend
-- [letmeprompt.streamserve](letmeprompt.streamserve): way to quickly serve a UI streamed from a completion
+- [stream-server](stream-server): way to quickly serve a UI streamed from a completion
 - [mcp-completions](mcp-completions): chat completions proxy that adds authenticated mcp tools
 - [mcp-completions-demo](mcp-completions-demo)
