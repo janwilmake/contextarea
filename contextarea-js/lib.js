@@ -61,7 +61,7 @@
     textarea.addEventListener("paste", handlePaste);
     textarea.addEventListener(
       "input",
-      debounce(updateContextList, CONFIG.debounceDelay),
+      debounce(updateContextList, CONFIG.debounceDelay)
     );
     textarea.addEventListener("dragover", handleDragOver);
     textarea.addEventListener("dragleave", handleDragLeave);
@@ -117,13 +117,13 @@
         .catch((error) => {
           console.error("Error creating paste:", error);
           alert(
-            "Failed to create paste. The original text will be pasted instead.",
+            "Failed to create paste. The original text will be pasted instead."
           );
           textarea.setRangeText(
             text,
             textarea.selectionStart,
             textarea.selectionEnd,
-            "end",
+            "end"
           );
         });
     }
@@ -170,7 +170,7 @@
         text,
         textarea.selectionStart,
         textarea.selectionEnd,
-        "end",
+        "end"
       );
       textarea.dispatchEvent(new Event("input"));
     }
@@ -184,7 +184,7 @@
     const files = event.target.files;
     if (files && files.length > 0) {
       const textarea = event.target.parentNode.querySelector(
-        "textarea#contextarea",
+        "textarea#contextarea"
       );
       handleFiles(files, textarea);
     }
@@ -216,7 +216,7 @@
               .catch((error) => {
                 console.error("Error creating paste for file:", error);
                 alert(
-                  `Failed to upload ${file.name}. Inserting file name instead.`,
+                  `Failed to upload ${file.name}. Inserting file name instead.`
                 );
                 insertTextAtCursor(textarea, file.name);
               });
@@ -234,7 +234,7 @@
             .catch((error) => {
               console.error("Error uploading file:", error);
               alert(
-                `Failed to upload ${file.name}. Inserting file name instead.`,
+                `Failed to upload ${file.name}. Inserting file name instead.`
               );
               insertTextAtCursor(textarea, file.name);
             });
@@ -267,7 +267,7 @@
   function updateContextList(event) {
     const textarea = event.target;
     const contextList = textarea.parentNode.querySelector(
-      ".contextarea-context-list",
+      ".contextarea-context-list"
     );
 
     // Extract URLs from textarea
@@ -282,7 +282,7 @@
 
       // Check if we already have this URL in the list
       const existingItem = contextList.querySelector(
-        `[data-url="${encodeURIComponent(url)}"]`,
+        `[data-url="${encodeURIComponent(url)}"]`
       );
 
       if (!existingItem) {
@@ -295,7 +295,7 @@
                     <div class="contextarea-context-info">
                         <a href="${url}" target="_blank" class="contextarea-context-url">${truncateMiddle(
           url,
-          50,
+          50
         )}</a>
                         <div class="contextarea-context-details">Loading...</div>
                     </div>
@@ -310,7 +310,7 @@
           .catch((error) => {
             console.error("Error fetching context for URL:", url, error);
             contextItem.querySelector(
-              ".contextarea-context-details",
+              ".contextarea-context-details"
             ).textContent = "Failed to load context";
           });
       }
@@ -333,7 +333,7 @@
   function updateContextItem(contextItem, data) {
     const imgContainer = contextItem.querySelector(".contextarea-context-img");
     const detailsElement = contextItem.querySelector(
-      ".contextarea-context-details",
+      ".contextarea-context-details"
     );
 
     // Update image if available
@@ -369,7 +369,7 @@
       method: "POST",
       body: text,
       headers: {
-        "Content-Type": "text/plain",
+        "Content-Type": "text/plain;charset=utf8",
       },
     }).then((response) => {
       if (!response.ok) {

@@ -486,10 +486,6 @@
       "PublicUser": {
         "type": "object",
         "properties": {
-          "client_reference_id": {
-            "type": "string",
-            "description": "User's client reference ID"
-          },
           "balance": {
             "type": "number",
             "description": "User's current balance in cents"

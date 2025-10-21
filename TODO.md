@@ -8,6 +8,19 @@
 - llmtext! website context
 - understand WHO is trying it out (have X social login)
 
+# User-profiles
+
+- ✅ Add simplerauth with X login, require login to submit.
+- ✅ Created Simplified version of Stripeflare with required UserID.
+- Ensure to throw 401 when submitting chat completion unauthorized, ensure frontend requires login and redirects to `/authorize`
+- Ensure for balance, frontend uses `/user` and it returns ctx.user but also balance.
+- Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
+- Make UserContextDO! Each time you land at a chat, save its details into a user object: `{ history: {title, created at, url}[], resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
+- Render history button to easily go to other chats
+- For resources and tools, add easy toggle.
+
+This makes it a much more usable thing because context is hard to remember.
+
 # Make MCP functional in `contextarea`!
 
 Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
@@ -16,17 +29,21 @@ Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with 
 
 There's no way to refresh MCPs now. Follow version from `initialize` and update if it's newer than the one we have.
 
+Add `profile` frontmatter tag as well to switch who to login to for MCP.
+
+MCP Pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
+
 # Simplify Implementation
 
 We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
 
-Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}` to add MCP-login, urlExpansion header to expand URLs, store header to store the result.
+Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
 
 Also have `/responses` interface. Makes actually more sense for my UI because there are no messages.
 
-Expose API page that shows how to use it in all languages and clients.
+Expose OpenAPI and create some docs for it (Mintlify?)
 
-# Better readme
+# Better README
 
 Make screenshots for the features that differentiate contextarea from other LLM clients
 

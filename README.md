@@ -1,5 +1,7 @@
 # Context Area - Fast, Smart Prompting for Devs
 
+[Thread](https://x.com/janwilmake/status/1980588668826902890)
+
 > [!TIP]
 >
 > **Looking for Sponsor**

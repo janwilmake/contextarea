@@ -620,7 +620,7 @@
       // Set payment link
       document.getElementById(
         "paymentLink"
-      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${this.me?.client_reference_id}`;
+      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${this.me?.id}`;
 
       this.modalElement = document.getElementById("modelModalBackdrop");
     }

@@ -2,11 +2,13 @@
 /// <reference lib="esnext" />
 //@ts-check
 
+/** NB: 7 is enough but by making it 15 it is more secure for sensitive data if we have millions of them entries */
+const RANDOM_STRING_LENGTH = 15; //7
 export default {
   async fetch(
     request: Request,
     env: { PASTEBIN_KV: KVNamespace },
-    ctx: ExecutionContext,
+    ctx: ExecutionContext
   ): Promise<Response> {
     const url = new URL(request.url);
     const method = request.method;
@@ -59,7 +61,7 @@ async function handlePost(
   request: Request,
   env: { PASTEBIN_KV: KVNamespace },
   ctx: ExecutionContext,
-  corsHeaders: Record<string, string>,
+  corsHeaders: Record<string, string>
 ): Promise<Response> {
   const MAX_SIZE = 25 * 1024 * 1024; // 25MB
   const body = request.body;
@@ -99,7 +101,9 @@ async function handlePost(
           isBinary = !isValidUtf8(value);
 
           if (!contentType) {
-            contentType = isBinary ? "application/octet-stream" : "text/plain";
+            contentType = isBinary
+              ? "application/octet-stream"
+              : "text/plain;charset=utf8";
           }
         }
 
@@ -109,7 +113,7 @@ async function handlePost(
           // Check size limits
           if (isBinary && totalSize > MAX_SIZE) {
             await writer.write(
-              encoder.encode("Error: Binary content exceeds 25MB limit"),
+              encoder.encode("Error: Binary content exceeds 25MB limit")
             );
             await writer.close();
             return;
@@ -125,7 +129,7 @@ async function handlePost(
             if (overflow < lastChunk.length) {
               chunks[chunks.length - 1] = lastChunk.slice(
                 0,
-                lastChunk.length - overflow,
+                lastChunk.length - overflow
               );
             }
             break;
@@ -142,7 +146,7 @@ async function handlePost(
       const key = generateKey(
         request.headers.get("filename"),
         contentType,
-        isBinary,
+        isBinary
       );
 
       // Generate URL and send it immediately
@@ -156,7 +160,7 @@ async function handlePost(
             contentType: contentType,
             size: fullContent.length,
           },
-        }),
+        })
       );
 
       await writer.close();
@@ -174,7 +178,7 @@ async function handlePost(
   return new Response(readable, {
     headers: {
       ...corsHeaders,
-      "Content-Type": "text/plain",
+      "Content-Type": "text/plain;charset=utf8",
       "X-Content-Type-Options": "nosniff",
     },
   });
@@ -184,7 +188,7 @@ async function handleGetOrHead(
   key: string,
   method: string,
   env: { PASTEBIN_KV: KVNamespace },
-  corsHeaders: Record<string, string>,
+  corsHeaders: Record<string, string>
 ): Promise<Response> {
   const { value, metadata } = await env.PASTEBIN_KV.getWithMetadata(key, {
     type: "arrayBuffer",
@@ -215,14 +219,14 @@ async function handleGetOrHead(
 function generateKey(
   filename: string | null,
   contentType: string | null,
-  isBinary: boolean,
+  isBinary: boolean
 ): string {
-  const randomPart = randomString(7);
+  const randomPart = randomString(RANDOM_STRING_LENGTH);
 
   if (filename) {
     const extension = filename.split(".").pop();
     return `${slugify(filename.replace(/\.[^.]+$/, ""))}-${randomString(
-      14,
+      14
     )}.${extension}`;
   }
 
