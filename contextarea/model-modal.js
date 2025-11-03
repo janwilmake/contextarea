@@ -1,4 +1,5 @@
-// Model Modal Component
+// Modal that allows selecting the model and other configuration
+
 (function () {
   // Hardcoded models array
   const serverDataElement = document.getElementById("server-data");

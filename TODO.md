@@ -6,14 +6,14 @@
 - MCP-UI
 - OpenRouter (or CloudFlare)
 - llmtext! website context
-- understand WHO is trying it out (have X social login)
+- Understand WHO is trying it out (have X social login)
 
 # User-profiles
 
 - ✅ Add simplerauth with X login, require login to submit.
 - ✅ Created Simplified version of Stripeflare with required UserID.
 - Ensure to throw 401 when submitting chat completion unauthorized, ensure frontend requires login and redirects to `/authorize`
-- Ensure for balance, frontend uses `/user` and it returns ctx.user but also balance.
+- Ensure for balance, frontend uses `/user` and it returns `ctx.user` but also balance.
 - Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
 - Make UserContextDO! Each time you land at a chat, save its details into a user object: `{ history: {title, created at, url}[], resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
 - Render history button to easily go to other chats
@@ -32,6 +32,11 @@ There's no way to refresh MCPs now. Follow version from `initialize` and update 
 Add `profile` frontmatter tag as well to switch who to login to for MCP.
 
 MCP Pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
+
+# Low hanging fruit Parallel
+
+- Build in shadowlink suggestions so people learn whats up more easily
+- Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links.
 
 # Simplify Implementation
 
@@ -554,3 +559,8 @@ What I'd want is a custom link that redirects to the cached response, e.g. https
 4. Redirect user to `X-Result-URL` where the result is being streamed to, paid for them.
 
 After I have this, remove cheaper, smaller models; definitely discourage them. I can allow a budget of up to $5 free for anyone that puts a `context.json` file in their repo, but also should already have a way to see who's using it in a dashboard, and reach out to them easily.
+
+# Ability to more easily do multi-context queries
+
+A query like this can obviously be done with improved reasoning by splitting it up. we wanna be able to do foreach URL prompts and retrieve multiple results at once!
+https://contextarea.com/rules-httpsuithu-3lg0if2oc0hs3h

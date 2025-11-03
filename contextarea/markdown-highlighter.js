@@ -1,5 +1,3 @@
-// markdown-highlighter.js
-
 // Main class to handle markdown highlighting and code block functionality
 class MarkdownHighlighter {
   constructor() {

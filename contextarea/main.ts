@@ -2,15 +2,12 @@
 /// <reference types="@cloudflare/workers-types" />
 /// <reference lib="esnext" />
 
-const PRICE_MARKUP_FACTOR = 1.5;
-const LMPIFY_CLIENT = {
-  name: "Context Area",
-  title: "Context Area",
-  version: "1.0.0",
-};
 import { UserContext, withSimplerAuth } from "simplerauth-client";
 import { MCPProviders, chatCompletionsProxy } from "mcp-completions";
 import { ImageResponse } from "workers-og";
+import { Token, lexer } from "marked";
+import { DurableObject } from "cloudflare:workers";
+
 import {
   Env as StripeflareEnv,
   type StripeUser,
@@ -18,16 +15,101 @@ import {
   handleStripeWebhook,
   getStripeflareUser,
 } from "./stripeflare-simple";
-import { DurableObject } from "cloudflare:workers";
+
 //@ts-ignore
 import providers from "./providers.json";
 import { RatelimitDO } from "./ratelimiter.js";
+
 export { RatelimitDO };
-import { Token, lexer } from "marked";
 export { DORM };
 export { MCPProviders };
 
-const DORM_VERSION = "bare-stripeflare";
+const PRICE_MARKUP_FACTOR = 1.5;
+const LMPIFY_CLIENT = {
+  name: "Context Area",
+  title: "Context Area",
+  version: "1.0.0",
+};
+
+/**
+ * Extended environment interface including both stripeflare and original env variables
+ */
+interface Env extends StripeflareEnv {
+  RESULTS: KVNamespace; // KV namespace for storing results
+  SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
+  ANTHROPIC_SECRET: string;
+  OPENAI_SECRET: string;
+  ASSETS: Fetcher;
+  RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
+}
+
+/**
+ * KV data structure for storing request/result data
+ */
+interface KVData {
+  prompt: string;
+  model: string;
+  headline?: string;
+  context?: string | null;
+  result?: string;
+  error?: string;
+  timestamp?: number;
+}
+
+export interface SSEEvent {
+  type: "init" | "token" | "update" | "complete" | "error";
+  data:
+    | SSEInitData
+    | SSETokenData
+    | SSEUpdateData
+    | SSECompleteData
+    | SSEErrorData;
+  timestamp: number;
+}
+
+export interface SSEInitData {
+  type: "init";
+  prompt: string;
+  model: string;
+  context?: string | null;
+  status: "pending" | "streaming" | "complete" | "error";
+  result: string;
+  error?: string | null;
+}
+
+export interface SSETokenData {
+  type: "token";
+  text: string;
+  position: number;
+}
+
+export interface SSEUpdateData {
+  type: "update";
+  field: string;
+  value: string;
+}
+
+export interface SSECompleteData {
+  type: "complete";
+  result: string;
+}
+
+export interface SSEErrorData {
+  type: "error";
+  message: string;
+  stack?: string;
+}
+
+interface ModelConfig {
+  providerSlug: string;
+  pricePerMillionInput: number;
+  pricePerMillionOutput: number;
+  model: string;
+  basePath: string;
+  maxTokens: number;
+  premium?: boolean;
+  extra?: object;
+}
 
 /**
  * Recursively flatten a marked token and return something if a find function is met
@@ -120,12 +202,6 @@ export const flattenMarkdownString = (
 };
 /**
  * find all codeblocks  (stuff between triple bracket)
- *
- * ```
- * here
- * is
- * example
- * ```
  */
 export const findCodeblocks = (
   markdownString: string
@@ -216,9 +292,11 @@ async function generateTitleWithAI(
 
     // If request failed, log warning and return default
     if (!response.ok) {
-      const errorData: any = await response.json().catch(() => ({}));
+      const errorData: any = await response.json().catch(() => null);
       console.warn(
-        `OpenAI API error: ${errorData.error?.message || response.statusText}`
+        `OpenAI API error: ${
+          errorData.error?.message || errorData || response.statusText
+        }`
       );
       return defaultResponse;
     }
@@ -261,94 +339,6 @@ async function generateTitleWithAI(
   }
 }
 
-/**
- * Extended environment interface including both stripeflare and original env variables
- */
-interface Env extends StripeflareEnv {
-  RESULTS: KVNamespace; // KV namespace for storing results
-  SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
-  ANTHROPIC_SECRET: string;
-  OPENAI_SECRET: string;
-  ASSETS: Fetcher;
-  RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
-}
-
-/**
- * KV data structure for storing request/result data
- */
-interface KVData {
-  prompt: string;
-  model: string;
-  headline?: string;
-  context?: string | null;
-  result?: string;
-  error?: string;
-  timestamp?: number;
-}
-
-export interface SSEEvent {
-  type: "init" | "token" | "update" | "complete" | "error";
-  data:
-    | SSEInitData
-    | SSETokenData
-    | SSEUpdateData
-    | SSECompleteData
-    | SSEErrorData;
-  timestamp: number;
-}
-
-// Init event - sent when streaming starts
-export interface SSEInitData {
-  type: "init";
-  prompt: string;
-  model: string;
-  context?: string | null;
-  status: "pending" | "streaming" | "complete" | "error";
-  result: string;
-  error?: string | null;
-}
-
-// Token event - sent for each new token/chunk
-export interface SSETokenData {
-  type: "token";
-  text: string;
-  position: number;
-}
-
-// Update event - sent when fields are updated
-export interface SSEUpdateData {
-  type: "update";
-  field: string;
-  value: string;
-}
-
-// Complete event - sent when processing finishes
-export interface SSECompleteData {
-  type: "complete";
-  result: string;
-}
-
-// Error event - sent when an error occurs
-export interface SSEErrorData {
-  type: "error";
-  message: string;
-  stack?: string;
-}
-
-/**
- * Model configuration
- */
-interface ModelConfig {
-  providerSlug: string;
-  pricePerMillionInput: number;
-  pricePerMillionOutput: number;
-  model: string;
-  basePath: string;
-  maxTokens: number;
-  premium?: boolean;
-  extra?: object;
-}
-
 const generateContext = async (prompt: string) => {
   // Extract URLs from prompt
   const urlRegex =
@@ -366,7 +356,9 @@ const generateContext = async (prompt: string) => {
   const urlResults = await Promise.all(
     urls.map(async (url: string) => {
       try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          headers: { Accept: "text/markdown,text/plain,*/*" },
+        });
         const contentType = response.headers.get("content-type");
         const isHtml = contentType?.startsWith("text/html");
         if (isHtml) {
