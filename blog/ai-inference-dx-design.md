@@ -1,3 +1,7 @@
+---
+date: 2025-12-13
+---
+
 # Bringing all pieces together to be at the Frontier of AI inference design
 
 Right when everybody got used to `/chat/completions`, [OpenAI introduced a new direction: Responses](https://developers.openai.com/blog/responses-api/)
