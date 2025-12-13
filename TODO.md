@@ -1,13 +1,21 @@
 # HIGH LEVEL
 
-- ✅ Fix Payments. It's broken now!
-- Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
 - Start using monaco! Huge for look & feel.
 - Make MCP accessible! Huge for adoption.
 - MCP-UI
 - OpenRouter (or CloudFlare)
 - llmtext! website context
 - Find a way not to do this in the cloudflare worker such that the api will just work.
+
+# Simplify Implementation
+
+We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
+
+Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
+
+Also have `/responses` interface. Makes actually more sense for my UI because there are no messages.
+
+Expose OpenAPI and create some docs for it (Mintlify?)
 
 # User-profiles
 
@@ -30,32 +38,24 @@ Add `profile` frontmatter tag as well to switch who to login to for MCP.
 
 MCP Pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
 
+Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
+
+Huge if I can make 'MCP UI' work nicely. Great for testing too.
+
 # Low hanging fruit Parallel
 
 - Build in shadowlink suggestions so people learn whats up more easily
 - Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links.
 
-# Simplify Implementation
-
-We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
-
-Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
-
-Also have `/responses` interface. Makes actually more sense for my UI because there are no messages.
-
-Expose OpenAPI and create some docs for it (Mintlify?)
-
 # Better README
 
 Make screenshots for the features that differentiate contextarea from other LLM clients
 
-# ContextArea Monaco & MCP usability
+# ContextArea Monaco
 
 Finish [monacobro.js](https://github.com/janwilmake/monacobro) with functional paste-interceptor and token counter, then use this in contextarea.com. Then get back to [sunil](https://x.com/threepointone/status/1979536991869116585)
 
 It should show details on the mcps used (token count), as well as the context links.
-
-Huge if I can make 'MCP UI' work nicely. Great for testing too.
 
 # MCP & OpenRouter
 

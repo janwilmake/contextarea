@@ -3,7 +3,7 @@
     "chat-completions-mcp": "^0.0.2",
     "dormroom": "1.0.1",
     "marked": "^16.0.0",
-    "mcp-completions": "0.0.9",
+    "mcp-completions": "^0.0.10",
     "simplerauth-client": "0.0.20",
     "stripeflare": "0.0.42",
     "workers-og": "^0.0.27"

@@ -733,7 +733,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       this.ctx.waitUntil(
         generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
-          //   console.log("GOT HEADLINE", data.title);
+          console.log("GOT HEADLINE", data.title);
           this.set("headline", data.title);
         }),
       );
@@ -1587,7 +1587,7 @@ export default {
       if (user) {
         user.balance = stripeflareUser?.balance;
       }
-      console.log({ stripeMiddlewareMs: Date.now() - t, stripeflareUser });
+      console.log({ stripeMiddlewareMs: Date.now() - t });
 
       if (pathname === "/user") {
         return new Response(JSON.stringify(user || {}, undefined, 2), {});
@@ -1609,6 +1609,73 @@ export default {
       // Only accept POST and GET methods
       if (!["POST", "GET"].includes(request.method)) {
         return new Response("Method not allowed", { status: 405 });
+      }
+
+      if (pathname === "/chat/completions" && request.method === "POST") {
+        //submit
+        const {} = await request.json<{
+          store: boolean;
+          user: string;
+          tools: { type: "custom"; custom: { name: "url_context" | "mcp" } }[];
+          messages: {}[];
+        }>();
+        // TODO: connect this to creation of an item and immediately awaiting the response
+      } else if (
+        request.method === "GET" &&
+        pathname.startsWith("/chat/completions/")
+      ) {
+        //get item
+        const completion_id = pathname.slice("/chat/completions/".length);
+        const existingData = (await env.RESULTS.get(
+          completion_id,
+          "json",
+        )) as KVData | null;
+        console.log({ kvRequestMs: Date.now() - t });
+
+        if (!existingData) {
+          return new Response("Not found", { status: 404 });
+        }
+        return new Response(
+          JSON.stringify({
+            object: "chat.completion",
+            id: completion_id,
+            model: existingData.model,
+            // must be in seconds
+            created: existingData.timestamp,
+            request_id: `req_${crypto.randomUUID()}`,
+            choices: [
+              {
+                index: 0,
+                message: {
+                  content: existingData.result,
+                  role: "assistant",
+                  tool_calls: null,
+                  function_call: null,
+                },
+                finish_reason: "stop",
+                logprobs: null,
+              },
+            ],
+            tool_choice: null,
+            // TODO: make this data available too as much as possible
+            usage: {
+              total_tokens: 31,
+              completion_tokens: 18,
+              prompt_tokens: 13,
+            },
+            seed: 4944116822809979520,
+            top_p: 1.0,
+            temperature: 1.0,
+            presence_penalty: 0.0,
+            frequency_penalty: 0.0,
+            system_fingerprint: "fp_50cad350e4",
+            input_user: null,
+            service_tier: "default",
+            tools: null,
+            metadata: {},
+            response_format: null,
+          }),
+        );
       }
 
       const pathnameWithoutExt = pathname.split(".")[0];

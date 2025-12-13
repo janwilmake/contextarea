@@ -20,7 +20,6 @@ export default {
       // use your own oauth to get a user ID here to store mcp login per user
       // (or, if desired, add multiple profiles per user by adding a suffix to it)
       userId: "admin",
-
       clientInfo: {
         name: "MCP Completions Demo",
         title: "MCP Completions Demo",

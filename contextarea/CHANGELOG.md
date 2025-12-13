@@ -299,6 +299,7 @@ bonus: refresh openrouter models automatically every hour or so.
 - ✅ Created Simplified version of Stripeflare with required UserID.
 - ✅ Ensure for balance, frontend uses `/user` and it returns `ctx.user` but also balance.
 - ✅ Ensure to throw 401 when submitting chat completion unauthorized, ensure frontend requires login and redirects to `/authorize`.
+- ✅ Fix Payments. It's broken now!
 
 # Critical (2025-12-13)
 
