@@ -8,14 +8,8 @@
     "binding": "ASSETS"
   },
   "routes": [
-    {
-      "pattern": "contextarea.com",
-      "custom_domain": true
-    },
-    {
-      "pattern": "www.contextarea.com",
-      "custom_domain": true
-    }
+    { "pattern": "contextarea.com", "custom_domain": true },
+    { "pattern": "www.contextarea.com", "custom_domain": true }
   ],
   "kv_namespaces": [
     {

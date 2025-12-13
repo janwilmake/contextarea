@@ -1,19 +1,16 @@
 # HIGH LEVEL
 
 - ✅ Fix Payments. It's broken now!
-- Make MCP accessible! Huge for adoption
-- ContextArea - start using monaco! Huge for look & feel.
+- Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
+- Start using monaco! Huge for look & feel.
+- Make MCP accessible! Huge for adoption.
 - MCP-UI
 - OpenRouter (or CloudFlare)
 - llmtext! website context
-- Understand WHO is trying it out (have X social login)
+- Find a way not to do this in the cloudflare worker such that the api will just work.
 
 # User-profiles
 
-- ✅ Add simplerauth with X login, require login to submit.
-- ✅ Created Simplified version of Stripeflare with required UserID.
-- Ensure to throw 401 when submitting chat completion unauthorized, ensure frontend requires login and redirects to `/authorize`
-- Ensure for balance, frontend uses `/user` and it returns `ctx.user` but also balance.
 - Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
 - Make UserContextDO! Each time you land at a chat, save its details into a user object: `{ history: {title, created at, url}[], resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
 - Render history button to easily go to other chats

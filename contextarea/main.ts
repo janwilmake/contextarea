@@ -31,14 +31,13 @@ const LMPIFY_CLIENT = {
   version: "1.0.0",
 };
 
-/**
- * Extended environment interface including both stripeflare and original env variables
- */
-interface Env extends StripeflareEnv {
+type LLMSecrets = {
+  [key: `${string}_SECRET`]: string;
+};
+
+interface Env extends StripeflareEnv, LLMSecrets {
   RESULTS: KVNamespace; // KV namespace for storing results
   SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
-  ANTHROPIC_SECRET: string;
-  OPENAI_SECRET: string;
   ASSETS: Fetcher;
   RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
 }
@@ -111,12 +110,10 @@ interface ModelConfig {
   extra?: object;
 }
 
-/**
- * Recursively flatten a marked token and return something if a find function is met
- */
+/** Recursively flatten a marked token and return something if a find function is met */
 export const flattenMarkedTokenRecursive = (
   token: Token,
-  findFunction: (token: any) => boolean
+  findFunction: (token: any) => boolean,
 ): Token[] => {
   if (findFunction(token)) {
     return [token];
@@ -189,7 +186,7 @@ export const flattenMarkedTokenRecursive = (
  */
 export const flattenMarkdownString = (
   markdownString: string,
-  findFunction: (token: Token) => boolean
+  findFunction: (token: Token) => boolean,
 ): Token[] => {
   const tokenList = lexer(markdownString);
   const result = tokenList
@@ -204,7 +201,7 @@ export const flattenMarkdownString = (
  * find all codeblocks  (stuff between triple bracket)
  */
 export const findCodeblocks = (
-  markdownString: string
+  markdownString: string,
 ): {
   text: string;
   lang?: string;
@@ -212,7 +209,7 @@ export const findCodeblocks = (
 }[] => {
   const result = flattenMarkdownString(
     markdownString,
-    (token) => token.type === "code"
+    (token) => token.type === "code",
   );
 
   const codesblocks = result
@@ -233,7 +230,7 @@ export const findCodeblocks = (
           const value = isQuoted ? value0.slice(1, value0.length - 1) : value0;
 
           return [key, value];
-        })
+        }),
       );
 
       return { text, lang: ext, parameters };
@@ -249,8 +246,8 @@ export const findCodeblocks = (
  * Silently falls back to a default title if any errors occur
  */
 async function generateTitleWithAI(
-  contextContent,
-  apiKey
+  contextContent: string,
+  apiKey: string,
 ): Promise<{ title: string; description: string }> {
   // Default response in case of any errors
   const defaultResponse = {
@@ -296,7 +293,7 @@ async function generateTitleWithAI(
       console.warn(
         `OpenAI API error: ${
           errorData.error?.message || errorData || response.statusText
-        }`
+        }`,
       );
       return defaultResponse;
     }
@@ -311,7 +308,7 @@ async function generateTitleWithAI(
     if (!jsonMatch) {
       // Try to find any code block if json-specific one isn't found
       const codeBlockMatch = aiResponse.match(
-        /```(?:\w*\s*)?\s*([\s\S]*?)\s*```/
+        /```(?:\w*\s*)?\s*([\s\S]*?)\s*```/,
       );
 
       if (!codeBlockMatch) {
@@ -387,7 +384,7 @@ const generateContext = async (prompt: string) => {
           failed: true,
         };
       }
-    })
+    }),
   );
 
   // Construct context
@@ -396,7 +393,7 @@ const generateContext = async (prompt: string) => {
       `${previous}\n${url} (${tokens} tokens) \n${
         previous.length > 1024 * 1024 ? "Omitted due to context length." : text
       }\n`,
-    ""
+    "",
   );
 
   if (hasHtml || hasError) {
@@ -441,7 +438,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.sql.exec(
       `INSERT OR REPLACE INTO _kv (key, value) VALUES (?, ?)`,
       key,
-      jsonValue
+      jsonValue,
     );
   }
 
@@ -568,7 +565,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   stream = async (
     user: Omit<StripeUser, "charge"> | undefined,
-    isFirstRequest?: boolean
+    isFirstRequest?: boolean,
   ) => {
     const initialized = this.get<boolean>("initialized");
 
@@ -590,7 +587,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       "Starting SSE stream for:",
       pathname,
       //  prompt,
-      modelConfig?.model
+      modelConfig?.model,
     );
 
     // Create SSE stream
@@ -689,9 +686,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Handle SSE stream requests
       if (request.method === "GET" && url.pathname === "/stream") {
         const user = await request.json<StripeUser>().catch(() => undefined);
-
-        const TEMPORARY_TEST_STREAM_WITH_PAYMENT = true;
-        return this.stream(user, TEMPORARY_TEST_STREAM_WITH_PAYMENT);
+        return this.stream(user, false);
       }
 
       return new Response("Not Found", { status: 404 });
@@ -703,7 +698,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async processRequest(
     user: Omit<StripeUser, "charge"> | undefined,
-    isFirstRequest: boolean | undefined
+    isFirstRequest: boolean | undefined,
   ) {
     try {
       // Get stored state
@@ -719,7 +714,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const apiKey = this.env[envVariableName];
       if (!apiKey) {
         throw new Error(
-          `Missing API Key for ${modelConfig.model}: ${envVariableName}`
+          `Missing API Key for ${modelConfig.model}: ${envVariableName}`,
         );
       }
 
@@ -740,7 +735,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
           //   console.log("GOT HEADLINE", data.title);
           this.set("headline", data.title);
-        })
+        }),
       );
 
       // Fetch all URLs in parallel
@@ -806,7 +801,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         mcpUrls?.length && user?.userId
           ? mcpUrls.map((server_url) => ({ type: "mcp", server_url }))
           : undefined;
-      console.log({ tools });
+
       const llmResponse = await fetchProxy(fullUrl, {
         method: "POST",
         headers: {
@@ -819,7 +814,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           stream: true,
           stream_options: { include_usage: true },
           tools,
-
           ...(modelConfig.extra && { ...modelConfig.extra }),
           ...(isCloudflare
             ? {
@@ -833,14 +827,14 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       if (!llmResponse.ok) {
         throw new Error(
-          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`
+          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`,
         );
       }
 
       console.log(
         "Response OK",
         llmResponse.status,
-        llmResponse.headers.get("content-type")
+        llmResponse.headers.get("content-type"),
       );
 
       // Process SSE stream
@@ -936,14 +930,16 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             if (parsed.choices?.[0]?.delta?.content) {
               token = parsed.choices[0].delta.content;
             } else if (parsed.usage?.completion_tokens) {
-              console.log(
-                "chatgpt output tokens",
-                parsed.usage.completion_tokens
-              );
-
               priceAtOutput =
                 parsed.usage.completion_tokens *
                 (modelConfig.pricePerMillionOutput / 1000000);
+
+              console.log(
+                "chatgpt output tokens",
+                parsed.usage.completion_tokens,
+                "priceAtOutput",
+                priceAtOutput,
+              );
             } else if (parsed.type === "error") {
               throw new Error("Error during stream: " + JSON.stringify(parsed));
             }
@@ -1035,7 +1031,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async handleStreamComplete(
     user: Omit<StripeUser, "charge"> | undefined,
-    totalCost: number
+    totalCostUsd: number,
   ) {
     this.set("streamComplete", true);
 
@@ -1054,17 +1050,26 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
     console.log(
       "Request is done. User should be charged; total cost: ",
-      totalCost
+      totalCostUsd,
     );
 
+    console.log({ userId: user?.userId });
     if (user?.userId) {
-      const { charge } = await getStripeflareUser(
+      const ctx = { waitUntil: async (fn: Promise<any>) => await fn };
+
+      const stripeflareUser = await getStripeflareUser(
         user.userId,
         this.env,
-        this.ctx.waitUntil
+        ctx,
       );
 
-      const { charged, message } = await charge(totalCost, true);
+      if (stripeflareUser) {
+        const { charged, message } = await stripeflareUser.charge(
+          totalCostUsd * 100,
+          true,
+        );
+        console.log({ charged, message });
+      }
     } else {
       console.log("WARN; NO USER ACCESS TOKEN");
     }
@@ -1095,7 +1100,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   private async sendEvent(
     controller: ReadableStreamDefaultController<Uint8Array>,
     type: string,
-    data: any
+    data: any,
   ) {
     const event: SSEEvent = {
       type: type as any,
@@ -1189,7 +1194,7 @@ const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
   const title = sanitizeMetadataString(headline || rawTitle || "No title", 60);
   const description = sanitizeMetadataString(
     rawDescription || "No description",
-    160
+    160,
   );
 
   // Use the provided imageUrl or generate a default one if not provided
@@ -1254,7 +1259,7 @@ const getCrawler = (userAgent: string | null) => {
     { name: "Bing", userAgentRegex: /bingbot/ },
   ];
   const crawler = crawlers.find((item) =>
-    item.userAgentRegex.test(userAgent || "")
+    item.userAgentRegex.test(userAgent || ""),
   )?.name;
 
   return crawler;
@@ -1283,7 +1288,7 @@ export const getFormat = (request: Request): AllowedFormat | null => {
   if (ext && Object.keys(allowedFormats).includes(ext)) {
     // allow path to determine format. comes before crawler since this allows easy changing
     return Object.entries(allowedFormats).find(
-      (entry) => entry[0] === ext
+      (entry) => entry[0] === ext,
     )?.[1]!;
   }
 
@@ -1300,7 +1305,7 @@ export const getFormat = (request: Request): AllowedFormat | null => {
     .split(",")
     .map((f) => f.trim().split(";")[0].trim());
   const allowedFomat = acceptedFormats.find((format) =>
-    Object.values(allowedFormats).includes(format as AllowedFormat)
+    Object.values(allowedFormats).includes(format as AllowedFormat),
   ) as AllowedFormat | undefined;
 
   return allowedFomat || null;
@@ -1310,7 +1315,7 @@ const getMarkdownResponse = (
   pathname: string,
   data: KVData,
   key?: string | null,
-  codeblock?: string | null
+  codeblock?: string | null,
 ) => {
   if (key) {
     // allow returning a specific key
@@ -1389,7 +1394,7 @@ const getResult = async (
   env: Env,
   data: KVData,
   status: string,
-  headers: any
+  headers: any,
 ) => {
   const format = getFormat(request);
   const url = new URL(request.url);
@@ -1503,9 +1508,9 @@ const getResult = async (
         url.pathname,
         data,
         url.searchParams.get("key"),
-        url.searchParams.get("codeblock")
+        url.searchParams.get("codeblock"),
       ),
-      { headers }
+      { headers },
     );
   }
 
@@ -1520,7 +1525,7 @@ const getResult = async (
       // })
       {
         headers,
-      }
+      },
     );
   }
 
@@ -1538,7 +1543,7 @@ const getResultHTML = async (
   env: Env,
   data: any,
   headers: Headers,
-  requestUrl: string
+  requestUrl: string,
 ) => {
   const url = new URL(requestUrl);
 
@@ -1561,229 +1566,235 @@ const getResultHTML = async (
   return new Response(resultHTML.body, { headers });
 };
 
-const requestHandler = async (
-  request: Request,
-  env: Env,
-  ctx: UserContext
-): Promise<Response> => {
-  const url = new URL(request.url);
-  const pathname = url.pathname;
-  const acceptHeader = request.headers.get("Accept") || "*/*";
-
-  // Get model configuration
-
-  const userId = ctx.user?.id || null;
-
-  const t = Date.now();
-  // Apply stripeflare middleware
-  const { charge, ...user } = await getStripeflareUser(
-    userId,
-    env,
-    ctx.waitUntil
-  );
-
-  console.log({ stripeMiddlewareMs: Date.now() - t, user });
-
-  const { idpMiddleware } = chatCompletionsProxy(env, {
-    baseUrl: "https://contextarea.com",
-    userId,
-    clientInfo: LMPIFY_CLIENT,
-    pathPrefix: "/mcp",
-  });
-
-  const idpResponse = await idpMiddleware(request, env, ctx);
-  if (idpResponse) {
-    return idpResponse;
-  }
-
-  // Only accept POST and GET methods
-  if (!["POST", "GET"].includes(request.method)) {
-    return new Response("Method not allowed", { status: 405 });
-  }
-
-  const pathnameWithoutExt = pathname.split(".")[0];
-
-  try {
-    const t = Date.now();
-    // Check if result already exists in KV
-    const existingData = (await env.RESULTS.get(
-      pathnameWithoutExt,
-      "json"
-    )) as KVData | null;
-    console.log({ kvRequestMs: Date.now() - t });
-
-    if (existingData) {
-      return getResult(
-        request,
-        env,
-        existingData,
-        existingData.error ? "error" : "complete",
-        new Headers()
-      );
-    }
-
-    const isEventStream = acceptHeader?.includes("text/event-stream");
-
-    // Handle EventSource GET requests
-    if (request.method === "GET" && isEventStream) {
-      const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
-      const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
-
-      // Connect to the Durable Object SSE stream
-      const doRequest = new Request("https://do/stream", {
-        method: "GET",
-        headers: { Accept: "text/event-stream" },
-      });
-
-      const response = await doStub.fetch(doRequest);
-
-      // Forward the SSE response with CORS headers
-      const sseHeaders = new Headers(response.headers);
-      sseHeaders.set("Access-Control-Allow-Origin", "*");
-      sseHeaders.set("Access-Control-Allow-Headers", "*");
-
-      return new Response(response.body, {
-        status: response.status,
-        headers: sseHeaders,
-      });
-    }
-
-    // Process POST request
-
-    // Get or create Durable Object
-    const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
-    const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
-    const result = await doStub.details();
-
-    let model: string | undefined = undefined;
-    let prompt: string | undefined = undefined;
-    let context: string | null | undefined = undefined;
-
-    // Logged out should get 5 requests per hour, then login first.
-    const requestLimit = (user?.balance || 0) <= 0 ? 5 : 1000;
-
-    if (request.method === "POST" && !result.prompt) {
-      const formData = await request.formData();
-      prompt = formData?.get("prompt")?.toString();
-      const modelName = formData?.get("model")?.toString();
-      console.log("received submission", modelName);
-
-      // NB: submit this to /chat/completions from here!
-      if (!prompt) {
-        console.log("missing prompt");
-        return new Response("Missing prompt", { status: 400, headers: {} });
-      }
-
-      const modelConfig =
-        providers.find((m) => m.model === modelName) || providers[0];
-
-      model = modelConfig?.model;
-
-      const userNeedsPayment =
-        (modelConfig.premium || (user && user.balance > 0)) &&
-        (!user?.balance || user.balance <= 0);
-
-      const clientIp =
-        request.headers.get("CF-Connecting-IP") ||
-        request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
-        "127.0.0.1";
-
-      const ratelimited = await env.RATELIMIT_DO.get(
-        env.RATELIMIT_DO.idFromName("v2." + clientIp)
-      ).checkRateLimit({
-        requestLimit,
-        resetIntervalMs: 3600 * 1000,
-      });
-
-      // console.log("middleware 2:", Date.now() - t + "ms", {
-      //   requestLimit,
-      //   ratelimited,
-      // });
-
-      const acceptHtml = request.headers.get("accept")?.includes("text/html");
-      const TEST_RATELIMIT_PAGE = false;
-      const hasWaitTime = (ratelimited?.waitTime || 0) > 0;
-      // console.log({ requestLimit, ratelimited, hasWaitTime, hasNegativeBalance });
-      if (hasWaitTime || TEST_RATELIMIT_PAGE || userNeedsPayment) {
-        if (acceptHtml) {
-          const scriptData = {
-            model,
-            prompt,
-            user,
-            status: "error",
-            ratelimited: true,
-            error: hasWaitTime
-              ? "You have reached the ratelimit. Please purchase tokens to continue."
-              : "You have spent all your tokens. Please purchase tokens to continue.",
-            streaming: false,
-          };
-
-          return getResultHTML(
-            env,
-            scriptData,
-            new Headers(ratelimited.headers),
-            request.url
-          );
-        }
-
-        // can only exceed ratelimit if balance is negative
-        return new Response(
-          "Ratelimit exceeded\n\n" + ratelimited?.headers
-            ? JSON.stringify(ratelimited?.headers, undefined, 2)
-            : undefined,
-          {
-            status: 429,
-            headers: {
-              ...ratelimited?.headers,
-              "WWW-Authenticate":
-                'Bearer realm="LMPIFY",' +
-                'error="rate_limit_exceeded",' +
-                'error_description="Rate limit exceeded. Please purchase credit at https://contextarea.com for higher limits"',
-            },
-          }
-        );
-      }
-
-      await doStub.setup({
-        pathname: pathnameWithoutExt,
-        prompt,
-        model: modelConfig,
-        user,
-      });
-    } else {
-      prompt = result.prompt!;
-      model = result.model;
-      context = result.context;
-      console.log("GET METHOD got details", {
-        promptLength: prompt?.length || 0,
-        model,
-      });
-    }
-
-    const data: KVData = {
-      model: model || providers[0].model,
-      prompt,
-      context,
-      headline: result.headline || undefined,
-    };
-    return getResult(request, env, data, "pending", new Headers());
-  } catch (error) {
-    console.error("Error in fetch handler:", error);
-    return new Response("Internal server error", { status: 500, headers: {} });
-  }
-};
-
 export default {
   fetch: withSimplerAuth<Env>(
     async (request: Request, env: Env, ctx: UserContext) => {
       const url = new URL(request.url);
       const pathname = url.pathname;
-      console.log({ pathname });
+      const acceptHeader = request.headers.get("Accept") || "*/*";
       if (pathname === "/stripe-webhook") {
         return handleStripeWebhook(request, env, ctx);
       }
 
-      return requestHandler(request as any, env, ctx);
-    }
+      // Get model configuration
+      const userId = ctx.user?.id || null;
+
+      const t = Date.now();
+      // Apply stripeflare middleware
+      const stripeflareUser = await getStripeflareUser(userId, env, ctx);
+      const user = ctx.user;
+
+      if (user) {
+        user.balance = stripeflareUser?.balance;
+      }
+      console.log({ stripeMiddlewareMs: Date.now() - t, stripeflareUser });
+
+      if (pathname === "/user") {
+        return new Response(JSON.stringify(user || {}, undefined, 2), {});
+      }
+
+      const { idpMiddleware, fetchProxy, getProviders, removeMcp } =
+        chatCompletionsProxy(env, {
+          baseUrl: "https://contextarea.com",
+          userId,
+          clientInfo: LMPIFY_CLIENT,
+          pathPrefix: "/mcp",
+        });
+
+      const idpResponse = await idpMiddleware(request, env, ctx);
+      if (idpResponse) {
+        return idpResponse;
+      }
+
+      // Only accept POST and GET methods
+      if (!["POST", "GET"].includes(request.method)) {
+        return new Response("Method not allowed", { status: 405 });
+      }
+
+      const pathnameWithoutExt = pathname.split(".")[0];
+
+      try {
+        const t = Date.now();
+        // Check if result already exists in KV
+        const existingData = (await env.RESULTS.get(
+          pathnameWithoutExt,
+          "json",
+        )) as KVData | null;
+        console.log({ kvRequestMs: Date.now() - t });
+
+        if (existingData) {
+          return getResult(
+            request,
+            env,
+            existingData,
+            existingData.error ? "error" : "complete",
+            new Headers(),
+          );
+        }
+
+        const isEventStream = acceptHeader?.includes("text/event-stream");
+
+        // Handle EventSource GET requests
+        if (request.method === "GET" && isEventStream) {
+          const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
+          const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+
+          // Connect to the Durable Object SSE stream
+          const doRequest = new Request("https://do/stream", {
+            method: "GET",
+            headers: { Accept: "text/event-stream" },
+          });
+
+          const response = await doStub.fetch(doRequest);
+
+          // Forward the SSE response with CORS headers
+          const sseHeaders = new Headers(response.headers);
+          sseHeaders.set("Access-Control-Allow-Origin", "*");
+          sseHeaders.set("Access-Control-Allow-Headers", "*");
+
+          return new Response(response.body, {
+            status: response.status,
+            headers: sseHeaders,
+          });
+        }
+
+        // Process POST request
+
+        // Get or create Durable Object
+        const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
+        const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+        const result = await doStub.details();
+
+        let model: string | undefined = undefined;
+        let prompt: string | undefined = undefined;
+        let context: string | null | undefined = undefined;
+
+        // Logged out should get 5 requests per hour, then login first.
+        const requestLimit = (stripeflareUser?.balance || 0) <= 0 ? 5 : 1000;
+
+        if (request.method === "POST" && !result.prompt) {
+          const formData = await request.formData();
+          prompt = formData?.get("prompt")?.toString();
+          const modelName = formData?.get("model")?.toString();
+          console.log("Received submission", modelName);
+
+          // NB: submit this to /chat/completions from here!
+          if (!prompt) {
+            console.log("missing prompt");
+            return new Response("Missing prompt", { status: 400, headers: {} });
+          }
+
+          const modelConfig =
+            providers.find((m) => m.model === modelName) || providers[0];
+
+          model = modelConfig?.model;
+
+          const userNeedsPayment =
+            (modelConfig.premium ||
+              (stripeflareUser && stripeflareUser.balance > 0)) &&
+            (!stripeflareUser?.balance || stripeflareUser.balance <= 0);
+
+          const clientIp =
+            request.headers.get("CF-Connecting-IP") ||
+            request.headers.get("X-Forwarded-For")?.split(",")[0].trim() ||
+            "127.0.0.1";
+
+          const ratelimited = await env.RATELIMIT_DO.get(
+            env.RATELIMIT_DO.idFromName("v2." + clientIp),
+          ).checkRateLimit({
+            requestLimit,
+            resetIntervalMs: 3600 * 1000,
+          });
+
+          // console.log("middleware 2:", Date.now() - t + "ms", {
+          //   requestLimit,
+          //   ratelimited,
+          // });
+
+          const acceptHtml = request.headers
+            .get("accept")
+            ?.includes("text/html");
+          const TEST_RATELIMIT_PAGE = false;
+          const hasWaitTime = (ratelimited?.waitTime || 0) > 0;
+          // console.log({ requestLimit, ratelimited, hasWaitTime, hasNegativeBalance });
+          if (hasWaitTime || TEST_RATELIMIT_PAGE || userNeedsPayment) {
+            if (acceptHtml) {
+              const scriptData = {
+                model,
+                prompt,
+                user,
+                status: "error",
+                ratelimited: true,
+                error: !user?.id
+                  ? "You need to login first."
+                  : hasWaitTime
+                  ? "You have reached the ratelimit. Please purchase tokens to continue."
+                  : "You have spent all your tokens. Please purchase tokens to continue.",
+                streaming: false,
+              };
+
+              return getResultHTML(
+                env,
+                scriptData,
+                new Headers(ratelimited.headers),
+                request.url,
+              );
+            }
+
+            // can only exceed ratelimit if balance is negative
+            return new Response(
+              "Ratelimit exceeded\n\n" + ratelimited?.headers
+                ? JSON.stringify(ratelimited?.headers, undefined, 2)
+                : undefined,
+              {
+                status: 429,
+                headers: {
+                  ...ratelimited?.headers,
+                  "WWW-Authenticate":
+                    'Bearer realm="LMPIFY",' +
+                    'error="rate_limit_exceeded",' +
+                    'error_description="Rate limit exceeded. Please purchase credit at https://contextarea.com for higher limits"',
+                },
+              },
+            );
+          }
+
+          await doStub.setup({
+            pathname: pathnameWithoutExt,
+            prompt,
+            model: modelConfig,
+            user: stripeflareUser,
+          });
+        } else {
+          prompt = result.prompt!;
+          model = result.model;
+          context = result.context;
+          console.log("GET METHOD got details", {
+            promptLength: prompt?.length || 0,
+            model,
+          });
+        }
+
+        const data: KVData = {
+          model: model || providers[0].model,
+          prompt,
+          context,
+          headline: result.headline || undefined,
+        };
+        if (!result.prompt && request.method === "GET") {
+          return new Response(null, {
+            headers: { Location: "/" },
+            status: 302,
+          });
+        }
+        return getResult(request, env, data, "pending", new Headers());
+      } catch (error) {
+        console.error("Error in fetch handler:", error);
+        return new Response("Internal server error", {
+          status: 500,
+          headers: {},
+        });
+      }
+    },
   ),
 };

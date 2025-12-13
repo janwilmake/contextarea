@@ -1,5 +1,33 @@
 [
   {
+    "model": "deepseek-chat",
+    "basePath": "https://api.deepseek.com/v1",
+    "providerSlug": "deepseek",
+    "pricePerMillionInput": 0.14,
+    "pricePerMillionOutput": 0.28,
+    "maxTokens": 64000,
+    "color": "#4d6bff",
+    "name": "Deepseek - Deepseek Chat v3",
+    "icon": "/providers/deepseek.png",
+    "description": "Cheap and good quality",
+    "features": []
+  },
+
+  {
+    "model": "deepseek-reasoner",
+    "basePath": "https://api.deepseek.com/v1",
+    "providerSlug": "deepseek",
+    "pricePerMillionInput": 0.55,
+    "pricePerMillionOutput": 2.19,
+    "premium": true,
+    "maxTokens": 64000,
+    "color": "#4d6bff",
+    "name": "Deepseek - Deepseek R1",
+    "icon": "/providers/deepseek.png",
+    "description": "Cheap and good quality",
+    "features": []
+  },
+  {
     "model": "claude-haiku-4-5-20251001",
     "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
@@ -133,35 +161,6 @@
     "name": "Google - Gemini 2.5 Flash Preview",
     "icon": "/providers/google.png",
     "description": "Best price-performance with thinking capabilities",
-    "features": []
-  },
-
-  {
-    "model": "deepseek-chat",
-    "basePath": "https://api.deepseek.com/v1",
-    "providerSlug": "deepseek",
-    "pricePerMillionInput": 0.14,
-    "pricePerMillionOutput": 0.28,
-    "maxTokens": 64000,
-    "color": "#4d6bff",
-    "name": "Deepseek - Deepseek Chat v3",
-    "icon": "/providers/deepseek.png",
-    "description": "Cheap and good quality",
-    "features": []
-  },
-
-  {
-    "model": "deepseek-reasoner",
-    "basePath": "https://api.deepseek.com/v1",
-    "providerSlug": "deepseek",
-    "pricePerMillionInput": 0.55,
-    "pricePerMillionOutput": 2.19,
-    "premium": true,
-    "maxTokens": 64000,
-    "color": "#4d6bff",
-    "name": "Deepseek - Deepseek R1",
-    "icon": "/providers/deepseek.png",
-    "description": "Cheap and good quality",
     "features": []
   },
 

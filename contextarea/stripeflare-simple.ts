@@ -32,14 +32,6 @@ const AGGREGATE_NAME = "aggregate";
 
 export interface Env {
   DORM_NAMESPACE: DurableObjectNamespace<DORM & QueryableHandler>;
-  STRIPE_WEBHOOK_SIGNING_SECRET: string;
-  STRIPE_SECRET: string;
-  STRIPE_PAYMENT_LINK: string;
-  STRIPEFLARE_VERSION: string;
-}
-
-export interface StripeflareConfig {
-  DORM_NAMESPACE: DurableObjectNamespace<DORM & QueryableHandler>;
   STRIPE_PAYMENT_LINK: string;
   STRIPE_SECRET: string;
   STRIPE_WEBHOOK_SIGNING_SECRET: string;
@@ -54,7 +46,7 @@ export type StripeUser = {
   paymentLink: string;
   charge: (
     amountCent: number,
-    allowNegativeBalance: boolean
+    allowNegativeBalance: boolean,
   ) => Promise<{
     charged: boolean;
     message: string;
@@ -62,7 +54,7 @@ export type StripeUser = {
 };
 
 const streamToBuffer = async (
-  readableStream: ReadableStream<Uint8Array>
+  readableStream: ReadableStream<Uint8Array>,
 ): Promise<Uint8Array> => {
   const chunks: Uint8Array[] = [];
   const reader = readableStream.getReader();
@@ -93,28 +85,30 @@ const streamToBuffer = async (
  * Get user balance and payment information
  */
 export async function getStripeflareUser(
-  userId: string,
-  config: StripeflareConfig,
-  waitUntil: (promise: Promise<any>) => void
-): Promise<StripeUser> {
+  userId: string | null,
+  env: Env,
+  ctx: ExecutionContext,
+): Promise<StripeUser | null> {
+  if (!userId) {
+    return null;
+  }
   if (
-    !config.STRIPE_PAYMENT_LINK ||
-    !config.STRIPE_SECRET ||
-    !config.STRIPEFLARE_VERSION ||
-    !config.STRIPE_WEBHOOK_SIGNING_SECRET
+    !env.STRIPE_PAYMENT_LINK ||
+    !env.STRIPE_SECRET ||
+    !env.STRIPEFLARE_VERSION ||
+    !env.STRIPE_WEBHOOK_SIGNING_SECRET
   ) {
     throw new Error("Missing Stripe configuration");
   }
 
-  const ctx = { waitUntil } as ExecutionContext;
-
+  const stubName = `${env.STRIPEFLARE_VERSION}-user-${userId}`;
   const client = getMultiStub(
-    config.DORM_NAMESPACE,
+    env.DORM_NAMESPACE,
     [
-      { name: `${config.STRIPEFLARE_VERSION}-user-${userId}` },
-      { name: `${config.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
+      { name: stubName },
+      { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
     ],
-    ctx
+    ctx,
   );
 
   let user: StripeUser | null = null;
@@ -122,28 +116,29 @@ export async function getStripeflareUser(
   try {
     const userResult = (await client.exec(
       "SELECT * FROM users WHERE user_id = ?",
-      userId
+      userId,
     )) as unknown as { array: StripeUser[] };
 
     user = userResult.array?.[0] || null;
-  } catch {
+  } catch (e: any) {
     // User not found, will create a record when they make first payment
+    console.log({ err: e.message });
   }
 
   const balance = user?.balance || 0;
   const email = user?.email || null;
   const name = user?.name || null;
   const paymentLink = `${
-    config.STRIPE_PAYMENT_LINK
+    env.STRIPE_PAYMENT_LINK
   }?client_reference_id=${encodeURIComponent(userId)}`;
 
-  const charge = async (
+  async function charge(
     amountCent: number,
-    allowNegativeBalance: boolean
+    allowNegativeBalance: boolean,
   ): Promise<{
     charged: boolean;
     message: string;
-  }> => {
+  }> {
     if (!user) {
       return {
         charged: false,
@@ -151,17 +146,26 @@ export async function getStripeflareUser(
       };
     }
 
+    const client = getMultiStub(
+      env.DORM_NAMESPACE,
+      [
+        { name: stubName },
+        { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
+      ],
+      ctx,
+    );
+
     const result = allowNegativeBalance
       ? await client.exec(
           "UPDATE users SET balance = balance - ? WHERE user_id = ?",
           amountCent,
-          userId
+          userId,
         )
       : await client.exec(
           "UPDATE users SET balance = balance - ? WHERE user_id = ? AND balance >= ?",
           amountCent,
           userId,
-          amountCent
+          amountCent,
         );
 
     if (result.rowsWritten === 0) {
@@ -169,7 +173,7 @@ export async function getStripeflareUser(
     }
 
     return { charged: true, message: "Successfully charged" };
-  };
+  }
 
   return { userId, balance, email, name, paymentLink, charge };
 }
@@ -179,8 +183,8 @@ export async function getStripeflareUser(
  */
 export async function handleStripeWebhook(
   request: Request,
-  config: StripeflareConfig,
-  ctx: ExecutionContext
+  env: Env,
+  ctx: ExecutionContext,
 ): Promise<Response> {
   if (!request.body) {
     return new Response(JSON.stringify({ error: "No body" }), {
@@ -192,7 +196,7 @@ export async function handleStripeWebhook(
   const rawBody = await streamToBuffer(request.body);
   const rawBodyString = new TextDecoder().decode(rawBody);
 
-  const stripe = new Stripe(config.STRIPE_SECRET, {
+  const stripe = new Stripe(env.STRIPE_SECRET, {
     apiVersion: "2025-09-30.clover",
   });
 
@@ -209,9 +213,9 @@ export async function handleStripeWebhook(
     event = await stripe.webhooks.constructEventAsync(
       rawBodyString,
       stripeSignature,
-      config.STRIPE_WEBHOOK_SIGNING_SECRET
+      env.STRIPE_WEBHOOK_SIGNING_SECRET,
     );
-  } catch (err) {
+  } catch (err: any) {
     console.log("Webhook error:", err.message);
     return new Response(`Webhook error: ${String(err)}`, { status: 400 });
   }
@@ -236,18 +240,18 @@ export async function handleStripeWebhook(
     const userId = client_reference_id;
 
     const client = getMultiStub(
-      config.DORM_NAMESPACE,
+      env.DORM_NAMESPACE,
       [
-        { name: `${config.STRIPEFLARE_VERSION}-user-${userId}` },
-        { name: `${config.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
+        { name: `${env.STRIPEFLARE_VERSION}-user-${userId}` },
+        { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
       ],
-      ctx
+      ctx,
     );
 
     // Check if user exists
     const userResult: any = await client.exec(
       "SELECT * FROM users WHERE user_id = ?",
-      userId
+      userId,
     );
 
     const existingUser = userResult.array?.[0] as StripeUser | undefined;
@@ -259,7 +263,7 @@ export async function handleStripeWebhook(
         amount_total,
         customer_details.email,
         customer_details.name || null,
-        userId
+        userId,
       );
     } else {
       // Create new user
@@ -268,7 +272,7 @@ export async function handleStripeWebhook(
         userId,
         amount_total,
         customer_details.email,
-        customer_details.name || null
+        customer_details.name || null,
       );
     }
 

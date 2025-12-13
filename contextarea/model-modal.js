@@ -26,6 +26,9 @@
     filter:
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
     lock: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    user: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    logout:
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
   };
 
   // CSS styles
@@ -204,11 +207,90 @@
         font-weight: 500;
         cursor: pointer;
         text-decoration: none;
+        display: inline-block;
         transition: background-color 0.2s ease;
     }
 
     .model-modal-upgrade-button:hover {
         background-color: var(--accent-secondary);
+    }
+
+    .model-modal-upgrade-button:disabled {
+        background-color: var(--bg-tertiary);
+        color: var(--text-muted);
+        cursor: not-allowed;
+    }
+
+    .model-modal-login-button {
+        background-color: #1da1f2;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: background-color 0.2s ease;
+    }
+
+    .model-modal-login-button:hover {
+        background-color: #1a91da;
+    }
+
+    .model-modal-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-primary);
+    }
+
+    .model-modal-user-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .model-modal-user-details {
+        flex: 1;
+    }
+
+    .model-modal-user-name {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--text-primary);
+        margin: 0 0 4px 0;
+    }
+
+    .model-modal-user-username {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin: 0;
+    }
+
+    .model-modal-logout-button {
+        background-color: transparent;
+        color: var(--text-muted);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .model-modal-logout-button:hover {
+        background-color: var(--bg-tertiary);
+        color: var(--text-primary);
+        border-color: var(--border-secondary);
     }
 
     .model-modal-list {
@@ -358,8 +440,31 @@
     document.head.appendChild(styleElement);
   }
 
+  // Create user info section
+  function createUserInfoHTML(me) {
+    if (!me || Object.keys(me).length === 0) {
+      return ``;
+    }
+
+    return `
+      <div class="model-modal-user-info">
+        <img src="${me.profile_image_url}" alt="${me.name}" class="model-modal-user-avatar" />
+        <div class="model-modal-user-details">
+          <p class="model-modal-user-name">${me.name}</p>
+          <p class="model-modal-user-username">@${me.username}</p>
+        </div>
+        <a href="/logout" class="model-modal-logout-button">
+          ${ICONS.logout}
+          Logout
+        </a>
+      </div>
+    `;
+  }
+
   // Create modal HTML
   function createModalHTML(models, selectedModelId = null, me) {
+    const isLoggedIn = me && Object.keys(me).length > 0;
+
     const modalHTML = `
               <div class="model-modal-backdrop" id="modelModalBackdrop">
                   <div class="model-modal">
@@ -385,33 +490,45 @@
                       </div>
   
                       <div class="model-modal-content">
-                          ${
-                            me && me.balance > 0
-                              ? `<div class="model-modal-upgrade">
-                              <div class="model-modal-upgrade-title">Your balance is $${(
-                                me.balance / 100
-                              ).toFixed(2)}.${
-                                  me.balance < 100
-                                    ? `<p style="color:orange;">Your balance is getting low. To avoid hitting limits, please add more.</p>`
-                                    : ""
-                                }</div>
-                              <div class="model-modal-upgrade-price"></div>
-                              <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Add more</a>
-                          </div>`
-                              : `<div class="model-modal-upgrade">
+                          <div class="model-modal-upgrade">
+                              ${createUserInfoHTML(me)}
+                              
                               ${
-                                data.ratelimited
-                                  ? me && me.balance < 0
-                                    ? `<p style="color:red;">You don't have any balance left. Please purchase tokens to continue.</p>`
-                                    : `<p style="color:red;">You have been ratelimited! Try again in a bit, or please purchase tokens to continue</p>`
-                                  : ""
+                                !isLoggedIn
+                                  ? `
+                                <div class="model-modal-upgrade-title">Login to start using Context Area</div>
+                                <div class="model-modal-upgrade-price">Connect with X</div>
+                                <a href="/authorize" target="_blank" class="model-modal-login-button">
+                                  ${ICONS.user}
+                                  Login with X
+                                </a>
+                              `
+                                  : me.balance > 0
+                                  ? `
+                                <div class="model-modal-upgrade-title">Your balance is $${(
+                                  me.balance / 100
+                                ).toFixed(2)}.${
+                                      me.balance < 100
+                                        ? `<p style="color:orange;">Your balance is getting low. To avoid hitting limits, please add more.</p>`
+                                        : ""
+                                    }</div>
+                                <div class="model-modal-upgrade-price"></div>
+                                <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Add more</a>
+                              `
+                                  : `
+                                ${
+                                  data.ratelimited
+                                    ? me.balance < 0
+                                      ? `<p style="color:red;">You don't have any balance left. Please purchase tokens to continue.</p>`
+                                      : `<p style="color:red;">You have been ratelimited! Try again in a bit, or please purchase tokens to continue</p>`
+                                    : ""
+                                }
+                                <div class="model-modal-upgrade-title">Unlock premium models</div>
+                                <div class="model-modal-upgrade-price">one-time payment</div>
+                                <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Pay with Stripe</a>
+                              `
                               }
-                              <div class="model-modal-upgrade-title">Unlock premium models</div>
-                              <div class="model-modal-upgrade-price">one-time payment</div>
-
-                              <a href="#" target="_blank" class="model-modal-upgrade-button" id="paymentLink">Pay with Stripe</a>
-                          </div>`
-                          }
+                          </div>
   
                           <ul class="model-modal-list" id="modelModalList">
                               ${models
@@ -433,7 +550,8 @@
   function createModelItem(model, selectedModelId, me) {
     const isSelected = model.model === selectedModelId;
     const isPremium = model.premium === true;
-    const isDisabled = (!me || me.balance <= 0) && isPremium;
+    const isLoggedIn = me && Object.keys(me).length > 0;
+    const isDisabled = (!isLoggedIn || me.balance <= 0) && isPremium;
     const features = model.features
       .map((feature) => ICONS[feature] || "")
       .join("");
@@ -508,12 +626,12 @@
           return models;
         });
 
-      const mePromise = fetch("/me")
+      const mePromise = fetch("/user")
         .then(async (res) => {
           if (!res.ok) {
             console.log("Not ok", res.status);
             console.log(await res.text());
-            return;
+            return {};
           }
           const json = await res.json();
           return json;
@@ -618,10 +736,13 @@
       // Append to body to ensure it's not constrained by parent containers
       document.body.appendChild(modalContainer.firstElementChild);
 
-      // Set payment link
-      document.getElementById(
-        "paymentLink"
-      ).href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${this.me?.id}`;
+      // Set payment link if user is logged in
+      const paymentLink = document.getElementById("paymentLink");
+      const isLoggedIn = this.me && Object.keys(this.me).length > 0;
+
+      if (paymentLink && isLoggedIn) {
+        paymentLink.href = `https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${this.me?.id}`;
+      }
 
       this.modalElement = document.getElementById("modelModalBackdrop");
     }
@@ -669,9 +790,10 @@
 
     selectModel(modelId) {
       const model = this.models?.find((m) => m.model === modelId);
+      const isLoggedIn = this.me && Object.keys(this.me).length > 0;
 
-      // Don't select if it's a premium model
-      if (model.premium && (!this.me || this.me.balance <= 0)) {
+      // Don't select if it's a premium model and user is not logged in or has no balance
+      if (model.premium && (!isLoggedIn || this.me.balance <= 0)) {
         return;
       }
 

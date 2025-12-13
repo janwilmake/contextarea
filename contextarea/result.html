@@ -865,7 +865,8 @@
             <h1>CONTEXTAREA</h1>
         </div>
         <div class="nav-links">
-            <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank">Why ContextArea?</a>
+            <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank">Why Context
+                Area?</a>
             <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank">Privacy</a>
         </div>
     </div>
@@ -879,7 +880,7 @@
             </a>
             <div class="header-links">
                 <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank"
-                    title="Documentation">Why ContextArea?</a>
+                    title="Documentation">Why Context Area?</a>
                 <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank"
                     title="Privacy Policy">Privacy</a>
             </div>
@@ -1742,7 +1743,7 @@
         // Main application initialization
         const data = JSON.parse(document.getElementById('server-data').textContent || '{}');
 
-        if (data.ratelimited) {
+        if (data.ratelimited) {//|| !data.user
             setTimeout(() => window.openModelModal(), 400)
         }
 

@@ -1,3 +1,4 @@
+// @ts-check
 import {
   getAuthorization,
   getMCPProviders,
@@ -240,7 +241,7 @@ export const chatCompletionsProxy = (
   env: any,
   config: {
     baseUrl: string;
-    userId: string;
+    userId: string | null;
     pathPrefix?: string;
     clientInfo: {
       name: string;
@@ -276,15 +277,7 @@ export const chatCompletionsProxy = (
 
   // Create MCP OAuth handler
   const { middleware, getProviders, refreshProviders, removeMcp } =
-    createMCPOAuthHandler(
-      {
-        userId,
-        clientInfo,
-        baseUrl,
-        pathPrefix,
-      },
-      env
-    );
+    createMCPOAuthHandler({ userId, clientInfo, baseUrl, pathPrefix }, env);
 
   const idpMiddleware = async (
     request: Request,

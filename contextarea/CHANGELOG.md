@@ -292,3 +292,16 @@ bonus: refresh openrouter models automatically every hour or so.
 - ✅ To `index.html` add ?mcp&mcp&mcp which adds them to frontmatter.
 - ✅ Ensure system-prompt ends up AFTER frontmatter
 - ✅ Add to installthismcp.com
+
+# Finish refactor
+
+- ✅ Add simplerauth with X login, require login to submit.
+- ✅ Created Simplified version of Stripeflare with required UserID.
+- ✅ Ensure for balance, frontend uses `/user` and it returns `ctx.user` but also balance.
+- ✅ Ensure to throw 401 when submitting chat completion unauthorized, ensure frontend requires login and redirects to `/authorize`.
+
+# Critical (2025-12-13)
+
+- ✅ Fix payment after usage
+- ✅ Fix modal opening when that's not needed (complete chat)
+- ✅ Fix Login and onboarding for new users.
