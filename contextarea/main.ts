@@ -4,6 +4,7 @@
 
 import { UserContext, withSimplerAuth } from "simplerauth-client";
 import { MCPProviders, chatCompletionsProxy } from "mcp-completions";
+import { generateTitleWithAI } from "./generateTitle.js";
 import { ImageResponse } from "workers-og";
 import { Token, lexer } from "marked";
 import { DurableObject } from "cloudflare:workers";
@@ -241,101 +242,6 @@ export const findCodeblocks = (
   return codesblocks;
 };
 
-/**
- * Generates a catchy title for an AI interaction using OpenAI's GPT-4.1 Mini
- * Silently falls back to a default title if any errors occur
- */
-async function generateTitleWithAI(
-  contextContent: string,
-  apiKey: string,
-): Promise<{ title: string; description: string }> {
-  // Default response in case of any errors
-  const defaultResponse = {
-    title: "AI Conversation",
-    description: "Generated conversation summary",
-  };
-
-  // Guard against missing API key
-  if (!apiKey) {
-    console.warn("OpenAI API key is missing");
-    return defaultResponse;
-  }
-
-  try {
-    // Construct the title generation prompt
-    const titlePrompt = `Generate a catchy, concise title (maximum 60 characters) that captures the essence of this complete AI interaction. Consider all components below to create a title that represents the full journey and value provided.
-  
-  Format your response as:
-  
-  \`\`\`json
-  {
-    "title": "Your Compelling Title Here",
-    "description": "A one-sentence explanation of why this title works (for my reference)"
-  }
-  \`\`\`${contextContent}`;
-
-    // Make the API request to OpenAI
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-5-mini-2025-08-07",
-        messages: [{ role: "user", content: titlePrompt }],
-      }),
-    });
-
-    // If request failed, log warning and return default
-    if (!response.ok) {
-      const errorData: any = await response.json().catch(() => null);
-      console.warn(
-        `OpenAI API error: ${
-          errorData.error?.message || errorData || response.statusText
-        }`,
-      );
-      return defaultResponse;
-    }
-
-    // Parse the response
-    const data: any = await response.json();
-    const aiResponse = data.choices[0].message.content;
-
-    // Extract JSON from the first code block
-    const jsonMatch = aiResponse.match(/```json\s*([\s\S]*?)\s*```/);
-
-    if (!jsonMatch) {
-      // Try to find any code block if json-specific one isn't found
-      const codeBlockMatch = aiResponse.match(
-        /```(?:\w*\s*)?\s*([\s\S]*?)\s*```/,
-      );
-
-      if (!codeBlockMatch) {
-        console.warn("Could not find JSON data in the AI response");
-        return defaultResponse;
-      }
-
-      try {
-        return JSON.parse(codeBlockMatch[1]);
-      } catch (e) {
-        console.warn(`Invalid JSON in AI response: ${e.message}`);
-        return defaultResponse;
-      }
-    }
-
-    try {
-      return JSON.parse(jsonMatch[1]);
-    } catch (e) {
-      console.warn(`Invalid JSON in AI response: ${e.message}`);
-      return defaultResponse;
-    }
-  } catch (error) {
-    console.warn("Error generating title:", error);
-    return defaultResponse;
-  }
-}
-
 const generateContext = async (prompt: string) => {
   // Extract URLs from prompt
   const urlRegex =
@@ -464,9 +370,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     prompt: string;
     model: ModelConfig;
     user?: Omit<StripeUser, "charge">;
+    store?: boolean;
   }) {
     // Save each field to storage
     this.set("pathname", data.pathname);
+    this.set("store", data.store !== false); // Default to true
     const prompt = data.prompt.slice(0, 1024 * 1024);
     this.set("frontMatter", this.parseFrontMatter(prompt).frontMatter);
 
@@ -733,7 +641,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       this.ctx.waitUntil(
         generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
-          console.log("GOT HEADLINE", data.title);
+          console.log("GOT HEADLINE", data);
           this.set("headline", data.title);
         }),
       );
@@ -976,15 +884,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         ? (inputPrice + titlePrice + (priceAtOutput || 0)) * PRICE_MARKUP_FACTOR
         : 0;
 
-      if (isFirstRequest) {
-        console.log({
-          inputPrice,
-          titlePrice,
-          priceAtOutput,
-          PRICE_MARKUP_FACTOR,
-        });
-      }
-
       await this.handleStreamComplete(user, totalCost);
     } catch (error: any) {
       console.error("Error processing request:", error);
@@ -1034,7 +933,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     totalCostUsd: number,
   ) {
     this.set("streamComplete", true);
-
+    const shouldStore = this.get<boolean>("store") !== false;
+    console.log({ shouldStore });
     // Send complete event
     this.broadcastEvent("complete", {
       type: "complete",
@@ -1074,7 +974,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       console.log("WARN; NO USER ACCESS TOKEN");
     }
 
-    if (pathname && prompt && modelConfig) {
+    if (shouldStore && pathname && prompt && modelConfig) {
       const kvData: KVData = {
         prompt,
         model: modelConfig.model,
@@ -1129,7 +1029,6 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
  * - Escapes special characters
  * - Removes newlines and excess whitespace
  * - Trims to specified length
- *
  */
 function sanitizeMetadataString(str: string, maxLength = 160) {
   if (!str || typeof str !== "string") return "";
@@ -1612,20 +1511,144 @@ export default {
       }
 
       if (pathname === "/chat/completions" && request.method === "POST") {
-        //submit
-        const {} = await request.json<{
-          store: boolean;
-          user: string;
-          tools: { type: "custom"; custom: { name: "url_context" | "mcp" } }[];
-          messages: {}[];
+        const body = await request.json<{
+          model: string;
+          messages: { role: string; content: string }[];
+          stream?: boolean;
+          store?: boolean;
+          tools?: { type: string; server_url?: string }[];
         }>();
-        // TODO: connect this to creation of an item and immediately awaiting the response
+
+        // Validate user is logged in
+        if (!userId) {
+          return new Response(
+            JSON.stringify({ error: "Authentication required" }),
+            { status: 401, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        // Check if user has sufficient credit
+        if (!stripeflareUser || stripeflareUser.balance <= 0) {
+          return new Response(
+            JSON.stringify({ error: "Insufficient credit" }),
+            { status: 402, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        // Find model configuration
+        const modelConfig = providers.find((m) => m.model === body.model);
+        if (!modelConfig) {
+          return new Response(JSON.stringify({ error: "Model not found" }), {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+
+        // Extract prompt from last user message
+        const lastMessage = body.messages[body.messages.length - 1];
+        if (!lastMessage || lastMessage.role !== "user") {
+          return new Response(
+            JSON.stringify({ error: "Last message must be from user" }),
+            { status: 400, headers: { "Content-Type": "application/json" } },
+          );
+        }
+
+        const prompt = lastMessage.content;
+
+        // Generate unique ID for this completion
+        const completionId = crypto.randomUUID();
+        const completionPath = `/chat/completions/${completionId}`;
+
+        // Create Durable Object
+        const doId = env.SQL_STREAM_PROMPT_DO.idFromName(completionPath);
+        const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+
+        // Setup the DO with store flag
+        await doStub.setup({
+          pathname: completionPath,
+          prompt,
+          model: modelConfig,
+          user: stripeflareUser,
+          store: body.store !== false, // Default to true
+        });
+
+        // If streaming, return SSE stream
+        if (body.stream) {
+          const streamRequest = new Request("https://do/stream", {
+            method: "GET",
+            headers: { Accept: "text/event-stream" },
+          });
+
+          const streamResponse = await doStub.fetch(streamRequest);
+
+          const headers = new Headers(streamResponse.headers);
+          headers.set("Access-Control-Allow-Origin", "*");
+          headers.set("X-Completion-ID", completionId);
+
+          return new Response(streamResponse.body, {
+            status: streamResponse.status,
+            headers,
+          });
+        }
+
+        // If not streaming, wait for completion and return result
+        // Poll the DO until complete
+        let attempts = 0;
+        const maxAttempts = 300; // 5 minutes max
+
+        while (attempts < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          const currentRequest = new Request("https://do/current", {
+            method: "GET",
+          });
+
+          const currentResponse = await doStub.fetch(currentRequest);
+          const currentData = await currentResponse.json<any>();
+
+          if (currentData.status === "complete") {
+            return new Response(
+              JSON.stringify({
+                id: completionId,
+                object: "chat.completion",
+                created: Math.floor(Date.now() / 1000),
+                model: body.model,
+                choices: [
+                  {
+                    index: 0,
+                    message: {
+                      role: "assistant",
+                      content: currentData.result,
+                    },
+                    finish_reason: "stop",
+                  },
+                ],
+              }),
+              { headers: { "Content-Type": "application/json" } },
+            );
+          }
+
+          if (currentData.status === "error") {
+            return new Response(JSON.stringify({ error: currentData.error }), {
+              status: 500,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+
+          attempts++;
+        }
+
+        return new Response(
+          JSON.stringify({ error: "Timeout waiting for completion" }),
+          { status: 408, headers: { "Content-Type": "application/json" } },
+        );
       } else if (
         request.method === "GET" &&
         pathname.startsWith("/chat/completions/")
       ) {
         //get item
-        const completion_id = pathname.slice("/chat/completions/".length);
+        const completion_id = pathname.slice("/chat/completions".length);
+        console.log({ completion_id });
         const existingData = (await env.RESULTS.get(
           completion_id,
           "json",
@@ -1636,50 +1659,54 @@ export default {
           return new Response("Not found", { status: 404 });
         }
         return new Response(
-          JSON.stringify({
-            object: "chat.completion",
-            id: completion_id,
-            model: existingData.model,
-            // must be in seconds
-            created: existingData.timestamp,
-            request_id: `req_${crypto.randomUUID()}`,
-            choices: [
-              {
-                index: 0,
-                message: {
-                  content: existingData.result,
-                  role: "assistant",
-                  tool_calls: null,
-                  function_call: null,
+          JSON.stringify(
+            {
+              object: "chat.completion",
+              id: completion_id,
+              model: existingData.model,
+              // must be in seconds
+              created: existingData.timestamp,
+              request_id: `req_${crypto.randomUUID()}`,
+              choices: [
+                {
+                  index: 0,
+                  message: {
+                    content: existingData.result,
+                    role: "assistant",
+                    tool_calls: null,
+                    function_call: null,
+                  },
+                  finish_reason: "stop",
+                  logprobs: null,
                 },
-                finish_reason: "stop",
-                logprobs: null,
+              ],
+              tool_choice: null,
+              // TODO: make this data available too as much as possible
+              usage: {
+                total_tokens: 31,
+                completion_tokens: 18,
+                prompt_tokens: 13,
               },
-            ],
-            tool_choice: null,
-            // TODO: make this data available too as much as possible
-            usage: {
-              total_tokens: 31,
-              completion_tokens: 18,
-              prompt_tokens: 13,
+              seed: 4944116822809979520,
+              top_p: 1.0,
+              temperature: 1.0,
+              presence_penalty: 0.0,
+              frequency_penalty: 0.0,
+              system_fingerprint: "fp_50cad350e4",
+              input_user: null,
+              service_tier: "default",
+              tools: null,
+              metadata: {},
+              response_format: null,
             },
-            seed: 4944116822809979520,
-            top_p: 1.0,
-            temperature: 1.0,
-            presence_penalty: 0.0,
-            frequency_penalty: 0.0,
-            system_fingerprint: "fp_50cad350e4",
-            input_user: null,
-            service_tier: "default",
-            tools: null,
-            metadata: {},
-            response_format: null,
-          }),
+            null,
+            2,
+          ),
         );
       }
 
       const pathnameWithoutExt = pathname.split(".")[0];
-
+      console.log({ pathnameWithoutExt });
       try {
         const t = Date.now();
         // Check if result already exists in KV

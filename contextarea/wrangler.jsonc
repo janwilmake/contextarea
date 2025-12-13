@@ -54,6 +54,14 @@
     {
       "tag": "v5",
       "new_sqlite_classes": ["MCPProviders"]
+    },
+    {
+      "tag": "v6",
+      "new_sqlite_classes": ["UserContextDO"]
+    },
+    {
+      "tag": "v6",
+      "deleted_classes": ["UserContextDO"]
     }
   ]
 }

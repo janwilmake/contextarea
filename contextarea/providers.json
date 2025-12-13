@@ -60,7 +60,7 @@
   },
 
   {
-    "model": "claude-opus-4-1-20250805",
+    "model": "claude-opus-4-5-20251101",
     "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
@@ -68,7 +68,7 @@
     "pricePerMillionInput": 15,
     "pricePerMillionOutput": 75,
     "maxTokens": 64000,
-    "name": "Anthropic - Claude Opus 4.1",
+    "name": "Anthropic - Claude Opus 4.5",
     "description": "",
     "color": "#da7250",
     "icon": "/providers/anthropic.png",

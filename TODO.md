@@ -9,9 +9,17 @@
 
 # Simplify Implementation
 
-We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
+✅ We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
 
-Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
+✅ Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
+
+✅ Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
+
+Test `/chat/completions`. I'm interested in making different UIs for this as well as integration with several CLIs, so let's see if I can do this. Maybe it's also better to seperate the backend from the front-end?
+
+https://github.com/simonw/llm Can I integrate with this?
+
+Duplicates https://openrouter.ai/chat but only minimal features of selecting models
 
 Also have `/responses` interface. Makes actually more sense for my UI because there are no messages.
 
@@ -19,7 +27,6 @@ Expose OpenAPI and create some docs for it (Mintlify?)
 
 # User-profiles
 
-- Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
 - Make UserContextDO! Each time you land at a chat, save its details into a user object: `{ history: {title, created at, url}[], resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
 - Render history button to easily go to other chats
 - For resources and tools, add easy toggle.
@@ -63,15 +70,8 @@ It should show details on the mcps used (token count), as well as the context li
 - Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
 - Seems that error handling broke. just getting blank pages sometimes for claude now.
 
-# LLM CLI
-
-https://github.com/simonw/llm
-
-Can I integrate with this?
-
 # Openrouter Demo
 
-- Duplicates https://openrouter.ai/chat but only minimal features of selecting models
 - Adds modal to add MCPs
 
 # MarkdownOps/NLANG
