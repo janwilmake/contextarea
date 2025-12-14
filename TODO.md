@@ -7,6 +7,24 @@
 - llmtext! website context
 - Find a way not to do this in the cloudflare worker such that the api will just work.
 
+# Make MCP functional in `contextarea`!
+
+✅ Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
+
+✅ Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with https or multiple is buggy now)
+
+Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links
+
+There's no way to refresh MCPs now. Follow version from `initialize` and update if it's newer than the one we have.
+
+Add `profile` frontmatter tag as well to switch who to login to for MCP.
+
+MCP Pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
+
+Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
+
+Huge if I can make 'MCP UI' work nicely. Great for testing too.
+
 # Simplify Implementation
 
 ✅ We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
@@ -32,27 +50,6 @@ Expose OpenAPI and create some docs for it (Mintlify?)
 - For resources and tools, add easy toggle.
 
 This makes it a much more usable thing because context is hard to remember.
-
-# Make MCP functional in `contextarea`!
-
-Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
-
-Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with https or multiple is buggy now)
-
-There's no way to refresh MCPs now. Follow version from `initialize` and update if it's newer than the one we have.
-
-Add `profile` frontmatter tag as well to switch who to login to for MCP.
-
-MCP Pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
-
-Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
-
-Huge if I can make 'MCP UI' work nicely. Great for testing too.
-
-# Low hanging fruit Parallel
-
-- Build in shadowlink suggestions so people learn whats up more easily
-- Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links.
 
 # Better README
 

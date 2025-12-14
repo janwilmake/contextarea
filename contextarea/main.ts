@@ -693,8 +693,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       const mcpUrls = frontMatter?.mcp
         ? frontMatter.mcp
-            .split(",")
-            .map((x) => "https://" + x.trim())
+            .split(/[,\s]+/) // Split by comma OR whitespace (one or more)
+            .map((x) =>
+              x.startsWith("https://") ? x.trim() : "https://" + x.trim(),
+            )
             .filter((x) => {
               try {
                 new URL(x);

@@ -521,7 +521,12 @@
             if (!mcpList || mcpList.length === 0) {
                 return null;
             }
-            return `---\nmcp: ${mcpList.join(' ')}\n---`;
+            return `---\nmcp: ${mcpList.join(',')}\n---`;
+        }
+
+        // Normalize MCP URL by removing https:// prefix
+        function normalizeMcpUrl(url) {
+            return url.replace(/^https?:\/\//, '');
         }
 
         // System prompt functionality
@@ -556,7 +561,9 @@
 
             // Add MCP front matter if present
             if (mcpParam && mcpParam.length > 0) {
-                const mcpFrontMatter = buildMcpFrontMatter(mcpParam);
+                // Normalize MCP URLs by removing https:// prefix
+                const normalizedMcpList = mcpParam.map(normalizeMcpUrl);
+                const mcpFrontMatter = buildMcpFrontMatter(normalizedMcpList);
                 finalContent = mcpFrontMatter + '\n';
             }
 
