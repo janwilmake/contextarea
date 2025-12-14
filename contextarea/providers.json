@@ -69,7 +69,7 @@
     "pricePerMillionOutput": 75,
     "maxTokens": 64000,
     "name": "Anthropic - Claude Opus 4.5",
-    "description": "",
+    "description": "Smartest",
     "color": "#da7250",
     "icon": "/providers/anthropic.png",
     "features": []
