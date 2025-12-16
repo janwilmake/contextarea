@@ -7,13 +7,26 @@
 - llmtext! website context
 - Find a way not to do this in the cloudflare worker such that the api will just work.
 
+# uithub pricing
+
+Low Hanging Fruit - Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links and uithub links.
+
+uithub as well as ContextArea: better pricing page explaining advantage better
+
+uithub: it seems like curl still works! make sure to handle this according to the oauth spec so it stops working without auth, giving 401 and 402
+
+# bug in file paths
+
+https://contextarea.com/httpspastebincon-v88taesm3uo0t5
+https://contextarea.com/rules-httpsuithu-qlei2s9rl7uo6e
+
+if space, doesnt work. if mentioning that thats' a problem it getsx even worse.
+
 # Make MCP functional in `contextarea`!
 
 ✅ Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
 
 ✅ Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with https or multiple is buggy now)
-
-Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links
 
 There's no way to refresh MCPs now. Follow version from `initialize` and update if it's newer than the one we have.
 
