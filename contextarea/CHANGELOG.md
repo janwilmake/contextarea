@@ -306,3 +306,7 @@ bonus: refresh openrouter models automatically every hour or so.
 - ✅ Fix payment after usage
 - ✅ Fix modal opening when that's not needed (complete chat)
 - ✅ Fix Login and onboarding for new users.
+
+# cleanup (2025-12-24)
+
+- clean up the code creating a `src` folder and splitting it up a bit more

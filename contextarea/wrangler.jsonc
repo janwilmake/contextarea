@@ -2,7 +2,7 @@
   "name": "lmpify3",
   "compatibility_date": "2025-04-21",
   "dev": { "port": 3000 },
-  "main": "main.ts",
+  "main": "src/main.ts",
   "assets": {
     "directory": "./",
     "binding": "ASSETS"
