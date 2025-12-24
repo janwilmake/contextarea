@@ -1,19 +1,24 @@
-# HIGH LEVEL
+# CRITICAL 🌶️
 
-- Start using monaco! Huge for look & feel.
-- Make MCP accessible! Huge for adoption.
-- MCP-UI
-- OpenRouter (or CloudFlare)
-- llmtext! website context
-- Find a way not to do this in the cloudflare worker such that the api will just work.
+Add oauth for pasting as well. This is currently free and can be abused easily.
 
-# uithub pricing
+uithub as well as ContextArea: better pricing page explaining advantage better. uithub has 500 unique logged-in users
 
-Low Hanging Fruit - Add oauth for context as well so people are requested to login into parallel for https://llmtext.com links and uithub links.
+uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to just remove these.
 
-uithub as well as ContextArea: better pricing page explaining advantage better
+the mcp also doesn't work. try the mcp and make it make sense,the whole flow.
 
 uithub: it seems like curl still works! make sure to handle this according to the oauth spec so it stops working without auth, giving 401 and 402
+
+A paste->url can be done by anyone. change that so it can only be done by logged in X accounts, and the user pasting is charged a minimal amount (because this thing is left there forever).
+
+# HIGH LEVEL
+
+- llmtext! website context
+- Start using monaco! Huge for look & feel.
+- OpenRouter (or CloudFlare)
+- Make MCP accessible! Huge for adoption.
+- Find a way not to do this in the cloudflare worker such that the api will just work.
 
 # bug in file paths
 

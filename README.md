@@ -37,6 +37,22 @@ We are not aiming to match the UX non-technical folks need in any way.
 - Uploads
 - Tools
 
+## Contents of this repo
+
+ContextArea frontend-element:
+
+- [contextarea-js](contextarea-js) - js lib for a frontend element to easily work with context in a textarea
+- [context](context) - where the context from the `<contextarea>` is stored
+- [pastebin](pastebin) - a place where pastes get stored and made accessible as small url
+
+Utilities
+
+- [stream-server](stream-server) - serves the output files as they are generated
+
+Other:
+
+- [redirects](redirects) - redirect from old names lmpify.com and letmeprompt.com
+
 ## Why Context Area?
 
 contextarea offers several advantages over traditional AI assistants like Claude
