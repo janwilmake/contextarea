@@ -39,6 +39,10 @@ We are not aiming to match the UX non-technical folks need in any way.
 
 ## Contents of this repo
 
+ContextArea itself
+
+- [contextarea](contextarea)
+
 ContextArea frontend-element:
 
 - [contextarea-js](contextarea-js) - js lib for a frontend element to easily work with context in a textarea
