@@ -32,8 +32,8 @@
         "class_name": "RatelimitDO"
       },
       {
-        "name": "MCPProviders",
-        "class_name": "MCPProviders"
+        "name": "OAuthProviders",
+        "class_name": "OAuthProviders"
       }
     ]
   },
@@ -54,6 +54,11 @@
     {
       "tag": "v6",
       "new_sqlite_classes": ["MCPProviders"]
+    },
+    {
+      "tag": "v7",
+      "new_sqlite_classes": ["OAuthProviders"],
+      "deleted_classes": ["MCPProviders"]
     }
   ]
 }

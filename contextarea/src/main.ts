@@ -3,8 +3,7 @@
 /// <reference lib="esnext" />
 
 import { UserContext, withSimplerAuth } from "simplerauth-client";
-import { MCPProviders, chatCompletionsProxy } from "mcp-completions";
-import { generateTitleWithAI } from "./generateTitle.js";
+import { chatCompletionsProxy, OAuthProviders } from "mcp-completions";
 import { ImageResponse } from "workers-og";
 import { DurableObject } from "cloudflare:workers";
 
@@ -15,6 +14,7 @@ import {
   handleStripeWebhook,
   getStripeflareUser,
 } from "./stripeflare-simple";
+import { generateTitleWithAI } from "./generateTitle.js";
 
 //@ts-ignore
 import providers from "../providers.json";
@@ -23,10 +23,10 @@ import { getMarkdownResponse } from "./getMarkdownResponse.js";
 
 export { RatelimitDO };
 export { DORM };
-export { MCPProviders };
+export { OAuthProviders };
 
 const PRICE_MARKUP_FACTOR = 1.5;
-const LMPIFY_CLIENT = {
+const CLIENT_INFO = {
   name: "Context Area",
   title: "Context Area",
   version: "1.0.0",
@@ -111,76 +111,6 @@ interface ModelConfig {
   extra?: object;
 }
 
-const generateContext = async (prompt: string) => {
-  // Extract URLs from prompt
-  const urlRegex =
-    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
-  const urls = prompt.match(urlRegex) || [];
-
-  let context: string | undefined = undefined;
-
-  if (urls?.length === 0) {
-    return { context };
-  }
-
-  let hasHtml = false;
-  let hasError = false;
-  const urlResults = await Promise.all(
-    urls.map(async (url: string) => {
-      try {
-        const response = await fetch(url, {
-          headers: { Accept: "text/markdown,text/plain,*/*" },
-        });
-        const contentType = response.headers.get("content-type");
-        const isHtml = contentType?.startsWith("text/html");
-        if (isHtml) {
-          hasHtml = true;
-          const appendix = url.startsWith("https://github.com/")
-            ? "For github code, use https://uithub.com/owner/repo"
-            : url.startsWith("https://x.com")
-            ? "For x threads, use xymake.com/status/..."
-            : "For blogs/docs, use firecrawl or https://jina.ai/reader";
-          return {
-            url,
-            text: "HTML urls are not supported. " + appendix,
-            tokens: 0,
-          };
-        }
-        const text = await response.text();
-        const mime = contentType?.split(";")[0].split("/")[1];
-        const tokens = Math.round(text.length / 5);
-        return { url, text: `\`\`\`${mime}\n${text}\n\n\`\`\`\n`, tokens };
-      } catch (error: any) {
-        hasError = true;
-        return {
-          url,
-          text: `Failed to fetch: ${error.message}. To get context for any url, use jina.ai, firecrawl.dev, uithub.com (for code), or xymake.com (for x threads), or any alternative.`,
-          tokens: 0,
-          failed: true,
-        };
-      }
-    }),
-  );
-
-  // Construct context
-  context = urlResults.reduce(
-    (previous, { url, text, tokens }) =>
-      `${previous}\n${url} (${tokens} tokens) \n${
-        previous.length > 1024 * 1024 ? "Omitted due to context length." : text
-      }\n`,
-    "",
-  );
-
-  if (hasHtml || hasError) {
-    context =
-      context +
-      `\n\nThere were one of more URLs pasted that returned ${
-        hasHtml ? "HTML" : "an error"
-      }. If these URLs are needed to answer the user request, please instruct the user to use the suggested alternatives.`;
-  }
-
-  return { context };
-};
 /**
  * Durable Object for handling streaming LLM responses
  */
@@ -495,17 +425,11 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         );
       }
 
-      let { context } = await generateContext(prompt);
-      //overwite prompt_id
-      context = context?.replaceAll("{{prompt_id}}", pathname.slice(1));
-
-      console.log("GOT CONTEXT", context?.length);
       // generate title after we have the context
-
       const markdown = getMarkdownResponse(pathname, {
         model: modelConfig.model,
         prompt: prompt,
-        context: context,
+        // context: context,
       });
 
       this.ctx.waitUntil(
@@ -515,25 +439,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         }),
       );
 
-      // Fetch all URLs in parallel
-      if (context) {
-        this.set("context", context);
-        this.set("prompt", prompt.slice(0, 1024 * 1024));
-        // Send context update
-        this.broadcastEvent("update", {
-          type: "update",
-          field: "context",
-          value: context,
-        });
-      }
-
       const isCloudflare = modelConfig.providerSlug === "cloudflare";
 
       const content = prompt.replaceAll("{{prompt_id}}", pathname.slice(1));
 
       // Prepare LLM request
       const messages = [
-        ...(context ? [{ role: "system", content: context }] : []),
         {
           role: "user",
           content: this.parseFrontMatter(content).content,
@@ -546,8 +457,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const titleCostPerToken = 0.5 / 1000000;
       const titlePrice = titleTokens * titleCostPerToken;
 
-      const inputTokens =
-        Math.round((context?.length || 0) / 5) + Math.round(prompt.length / 5);
+      const inputTokens = Math.round(prompt.length / 5);
       const inputPrice =
         inputTokens * (modelConfig.pricePerMillionInput / 1000000);
       const fullUrl = `${modelConfig.basePath}/chat/completions`;
@@ -557,7 +467,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const { fetchProxy } = chatCompletionsProxy(this.env, {
         baseUrl: "https://contextarea.com",
         userId: user?.userId,
-        clientInfo: LMPIFY_CLIENT,
+        clientInfo: CLIENT_INFO,
+        extractUrl: {
+          url: "https://llmtext.com",
+          bearerToken: this.env.PARALLEL_SECRET,
+        },
+        shadowUrls: { "github.com": "uithub.com", "x.com": "xymake.com" },
       });
 
       const mcpUrls = frontMatter?.mcp
@@ -579,7 +494,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const tools =
         mcpUrls?.length && user?.userId
           ? mcpUrls.map((server_url) => ({ type: "mcp", server_url }))
-          : undefined;
+          : [];
 
       const llmResponse = await fetchProxy(fullUrl, {
         method: "POST",
@@ -592,7 +507,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           messages,
           stream: true,
           stream_options: { include_usage: true },
-          tools,
+          tools: [{ type: "url_context" }, ...tools],
           ...(modelConfig.extra && { ...modelConfig.extra }),
           ...(isCloudflare
             ? {
@@ -1283,13 +1198,12 @@ export default {
         return new Response(JSON.stringify(user || {}, undefined, 2), {});
       }
 
-      const { idpMiddleware, fetchProxy, getProviders, removeMcp } =
-        chatCompletionsProxy(env, {
-          baseUrl: "https://contextarea.com",
-          userId,
-          clientInfo: LMPIFY_CLIENT,
-          pathPrefix: "/mcp",
-        });
+      const { idpMiddleware } = chatCompletionsProxy(env, {
+        baseUrl: "https://contextarea.com",
+        userId,
+        clientInfo: CLIENT_INFO,
+        pathPrefix: "/mcp",
+      });
 
       const idpResponse = await idpMiddleware(request, env, ctx);
       if (idpResponse) {
@@ -1301,200 +1215,8 @@ export default {
         return new Response("Method not allowed", { status: 405 });
       }
 
-      if (pathname === "/chat/completions" && request.method === "POST") {
-        const body = await request.json<{
-          model: string;
-          messages: { role: string; content: string }[];
-          stream?: boolean;
-          store?: boolean;
-          tools?: { type: string; server_url?: string }[];
-        }>();
-
-        // Validate user is logged in
-        if (!userId) {
-          return new Response(
-            JSON.stringify({ error: "Authentication required" }),
-            { status: 401, headers: { "Content-Type": "application/json" } },
-          );
-        }
-
-        // Check if user has sufficient credit
-        if (!stripeflareUser || stripeflareUser.balance <= 0) {
-          return new Response(
-            JSON.stringify({ error: "Insufficient credit" }),
-            { status: 402, headers: { "Content-Type": "application/json" } },
-          );
-        }
-
-        // Find model configuration
-        const modelConfig = providers.find((m) => m.model === body.model);
-        if (!modelConfig) {
-          return new Response(JSON.stringify({ error: "Model not found" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-
-        // Extract prompt from last user message
-        const lastMessage = body.messages[body.messages.length - 1];
-        if (!lastMessage || lastMessage.role !== "user") {
-          return new Response(
-            JSON.stringify({ error: "Last message must be from user" }),
-            { status: 400, headers: { "Content-Type": "application/json" } },
-          );
-        }
-
-        const prompt = lastMessage.content;
-
-        // Generate unique ID for this completion
-        const completionId = crypto.randomUUID();
-        const completionPath = `/chat/completions/${completionId}`;
-
-        // Create Durable Object
-        const doId = env.SQL_STREAM_PROMPT_DO.idFromName(completionPath);
-        const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
-
-        // Setup the DO with store flag
-        await doStub.setup({
-          pathname: completionPath,
-          prompt,
-          model: modelConfig,
-          user: stripeflareUser,
-          store: body.store !== false, // Default to true
-        });
-
-        // If streaming, return SSE stream
-        if (body.stream) {
-          const streamRequest = new Request("https://do/stream", {
-            method: "GET",
-            headers: { Accept: "text/event-stream" },
-          });
-
-          const streamResponse = await doStub.fetch(streamRequest);
-
-          const headers = new Headers(streamResponse.headers);
-          headers.set("Access-Control-Allow-Origin", "*");
-          headers.set("X-Completion-ID", completionId);
-
-          return new Response(streamResponse.body, {
-            status: streamResponse.status,
-            headers,
-          });
-        }
-
-        // If not streaming, wait for completion and return result
-        // Poll the DO until complete
-        let attempts = 0;
-        const maxAttempts = 300; // 5 minutes max
-
-        while (attempts < maxAttempts) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-
-          const currentRequest = new Request("https://do/current", {
-            method: "GET",
-          });
-
-          const currentResponse = await doStub.fetch(currentRequest);
-          const currentData = await currentResponse.json<any>();
-
-          if (currentData.status === "complete") {
-            return new Response(
-              JSON.stringify({
-                id: completionId,
-                object: "chat.completion",
-                created: Math.floor(Date.now() / 1000),
-                model: body.model,
-                choices: [
-                  {
-                    index: 0,
-                    message: {
-                      role: "assistant",
-                      content: currentData.result,
-                    },
-                    finish_reason: "stop",
-                  },
-                ],
-              }),
-              { headers: { "Content-Type": "application/json" } },
-            );
-          }
-
-          if (currentData.status === "error") {
-            return new Response(JSON.stringify({ error: currentData.error }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" },
-            });
-          }
-
-          attempts++;
-        }
-
-        return new Response(
-          JSON.stringify({ error: "Timeout waiting for completion" }),
-          { status: 408, headers: { "Content-Type": "application/json" } },
-        );
-      } else if (
-        request.method === "GET" &&
-        pathname.startsWith("/chat/completions/")
-      ) {
-        //get item
-        const completion_id = pathname.slice("/chat/completions".length);
-        console.log({ completion_id });
-        const existingData = (await env.RESULTS.get(
-          completion_id,
-          "json",
-        )) as KVData | null;
-        console.log({ kvRequestMs: Date.now() - t });
-
-        if (!existingData) {
-          return new Response("Not found", { status: 404 });
-        }
-        return new Response(
-          JSON.stringify(
-            {
-              object: "chat.completion",
-              id: completion_id,
-              model: existingData.model,
-              // must be in seconds
-              created: existingData.timestamp,
-              request_id: `req_${crypto.randomUUID()}`,
-              choices: [
-                {
-                  index: 0,
-                  message: {
-                    content: existingData.result,
-                    role: "assistant",
-                    tool_calls: null,
-                    function_call: null,
-                  },
-                  finish_reason: "stop",
-                  logprobs: null,
-                },
-              ],
-              tool_choice: null,
-              // TODO: make this data available too as much as possible
-              usage: {
-                total_tokens: 31,
-                completion_tokens: 18,
-                prompt_tokens: 13,
-              },
-              seed: 4944116822809979520,
-              top_p: 1.0,
-              temperature: 1.0,
-              presence_penalty: 0.0,
-              frequency_penalty: 0.0,
-              system_fingerprint: "fp_50cad350e4",
-              input_user: null,
-              service_tier: "default",
-              tools: null,
-              metadata: {},
-              response_format: null,
-            },
-            null,
-            2,
-          ),
-        );
-      }
+      // EVENT STREAM HERE
+      const isEventStream = acceptHeader?.includes("text/event-stream");
 
       const pathnameWithoutExt = pathname.split(".")[0];
       console.log({ pathnameWithoutExt });
@@ -1513,14 +1235,12 @@ export default {
             env,
             existingData,
             existingData.error ? "error" : "complete",
-            new Headers(),
+            new Headers({ accept: "text/event-stream" }),
           );
         }
 
-        const isEventStream = acceptHeader?.includes("text/event-stream");
-
         // Handle EventSource GET requests
-        if (request.method === "GET" && isEventStream) {
+        if (isEventStream && request.method === "GET") {
           const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathnameWithoutExt);
           const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
 
