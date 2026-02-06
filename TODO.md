@@ -1,31 +1,16 @@
 # NEXT TIME
 
-Add oauth for pasting as well. This is currently free and can be abused easily.
+✅ Add oauth for pasting as well. This is currently free and can be abused easily. A paste->url can be done by anyone. change that so it can only be done by logged in X accounts
 
-uithub as well as ContextArea: better pricing page explaining advantage better. uithub has 3500 unique logged-in users
+✅ uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to make it raw.githubusercontent.com for now.
 
-uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to make it raw.githubusercontent.com for now.
+✅ uithub: it seems like curl still works! make sure to handle this according to the oauth spec so it stops working without auth, giving 401 and 402
 
-the mcp also doesn't work. try the mcp and make it make sense,the whole flow.
+# ContextArea Monaco
 
-uithub: it seems like curl still works! make sure to handle this according to the oauth spec so it stops working without auth, giving 401 and 402
+✅ Finish [monacobro.js](https://github.com/janwilmake/monacobro) with functional paste-interceptor and token counter, then use this in contextarea.com. Then get back to [sunil](https://x.com/threepointone/status/1979536991869116585)
 
-A paste->url can be done by anyone. change that so it can only be done by logged in X accounts, and the user pasting is charged a minimal amount (because this thing is left there forever).
-
-# HIGH LEVEL
-
-- llmtext! website context
-- Start using monaco! Huge for look & feel.
-- OpenRouter (or CloudFlare) for all models. make a pitch to them too to build this product for them.
-- Make MCP accessible! Huge for adoption.
-- Find a way not to do this in the cloudflare worker such that the api will just work.
-
-# bug in file paths
-
-https://contextarea.com/httpspastebincon-v88taesm3uo0t5
-https://contextarea.com/rules-httpsuithu-qlei2s9rl7uo6e
-
-if space, doesnt work. if mentioning that thats' a problem it getsx even worse.
+✅ It should show details on the mcps used (token count), as well as the context links.
 
 # Make MCP functional in `contextarea`!
 
@@ -42,6 +27,13 @@ MCP pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
 Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
 
 Huge if I can make 'MCP UI' work nicely. Great for testing too.
+
+# bug in file paths
+
+https://contextarea.com/httpspastebincon-v88taesm3uo0t5
+https://contextarea.com/rules-httpsuithu-qlei2s9rl7uo6e
+
+if space, doesnt work. if mentioning that thats' a problem it getsx even worse.
 
 # Simplify Implementation
 
@@ -73,21 +65,13 @@ This makes it a much more usable thing because context is hard to remember.
 
 Make screenshots for the features that differentiate contextarea from other LLM clients
 
-# ContextArea Monaco
-
-Finish [monacobro.js](https://github.com/janwilmake/monacobro) with functional paste-interceptor and token counter, then use this in contextarea.com. Then get back to [sunil](https://x.com/threepointone/status/1979536991869116585)
-
-It should show details on the mcps used (token count), as well as the context links.
-
 # MCP & OpenRouter
+
+OpenRouter/Cloudflare/Portkey for all models. make a pitch to them too to build this product in collaboration with them.
 
 - Have KV for all openrouter models that refreshes every hour. Map this to needed info for providers, and ensure it is exposed at `/all-providers.json` or so which concatenates that with my own.
 - Using an MCP proxy around that will give all models of openrouter (that have function tools) MCP access. This is a huge valueprop for them!
 - Seems that error handling broke. just getting blank pages sometimes for claude now.
-
-# Openrouter Demo
-
-- Adds modal to add MCPs
 
 # MarkdownOps/NLANG
 
@@ -123,13 +107,6 @@ What if it were a 'background agent' that could be made interoperable with sever
 - Ability to hold running the API waiting for a human to authorize, then continue fulfilling the request after that's solved. Potentially, a parameter `onUserMessage:(details)=>Promise<void>` could be added, which would send the authorization request (just an url and message) to that endpoint, with the same secret. That function could then send email, w'app, or notify in UI. Anything.
 - Expose chat completions as async MCP tool with oauth (basically a sub-agent!)
 
-## Other useful exploration
-
-- Build in the same url expansion with different configuration (all urls or urls with prefix @) and IDP.
-- Allow simplifying the response into text-only (reduce from reasoning, error messages, tool data, etc etc)
-- Build a CLI that has the frontmatter
-- A tool to search MCPs and continue the chat with different MCPs
-
 ## Skill router
 
 This may not need to be something fully chained to the chat completions endpoint, but definitely a great thing to offer as well. A company should be able to list all their tools centrally so all employees can use all tools every prompt. A pre-selector prompt can do this.
@@ -142,16 +119,11 @@ Questions:
   - Slack: everyone who's in Slack arguably is inside of the org.
 - Do we need to let users be approved/invited into an org, or can the skill routing configuration be made public? May be more POC to be public. Also has benefits.
 
-TODO:
-
-- Create a super simple template for parallel
-
 ## Parallel:
 
 - Create Integration-friendly Task API with MCP IDP built-in (by passing stable `user: string` ID) that instantly responds with a markdown-URL and JSON-URL on which the result will be able to be found without auth (`store:true` indefinitely, `store:false` for 24 hours)
 - Create task API as chat completions endpoint.
 
-<!--
 # LMPIFY for Parallel
 
 Why I can't post much about Parallel yet: Because I can't use it yet as part of the products I'm building. These are all things that will let me prototype faster:
@@ -172,7 +144,6 @@ What is interesting:
 This is 'top-down' approach
 
 Bottom-up is small exapmles in cookbook, won't go as viral, won't be usable for daily use. But also doing that.
--->
 
 # LMPIFY LAUNCH
 
@@ -301,67 +272,6 @@ limit:  5
 
 This would be super cool! Especially if it would stream each of them after each other in the response.
 
-# With-money refactor
-
-Check `withMoney` again and see what context would be needed to do a drop-in replacement with that from what I have now
-
-Replace Stripeflare with X Money (more reliable for all users, allows to see who created something with nice X profile pic, etc)
-
-https://github.com/janwilmake/with-money
-
-To simplify, let's also just require login; ideally after filling first prompt (Should temporarily store prompt in cookie).
-
-Ensure it doesn't logout quickly.
-
-This would also allow getting an API KEY and more securely deposit lots of cash. To easily to build against LMPIFY with XYTEXT. also will allow closed-loop monetary system between creators and generations of these prompts, etc.
-
-Then, `agent-architecture.drawio.png`
-
-# Flaredream Improvements
-
-Create a flaredream template that uses typescript and packages! Do the bundling as separate step using esbuild. I should start doing all my own projects in this way. Also, attaching a local CLI for `flaredream build` will be nice, simply adding in the "durable-worker" idea. Great to introduce.
-
-Also needed:
-
-1. pass wrangler and export defaulted config to build.
-2. have default entrypoint if wrangler not provided
-3. generate types from flaredream types from remote url
-4. use it to know what to do at deployment
-5. ability to add formdata properties like name, pattern[], not query-params.
-
-# Flaredream MCP
-
-I can now already turn https://flaredream.com/system.md into an MCP, albeit with manual auth. Post about it?
-
-First MCPs I want:
-
-- **Iterate Agent** `deploy` tool at the end: `deploy.flaredream.com/download.flaredream.com/id` for Flaredreams initial generation, using `deploy` tool after it's done (deploy tool must have access to intermediate result)
-- **Feedback agent** for Testing a flaredream deployment (`test(evaloncloudID,request,criteria)=>feedback` tool that processes request into feedback, and `final_feedback(feedback, replace_feedback:boolean, status: "ok"|"fail"|"retry")` will end the agent)
-
-This is a great first milestone having the 2 MCPs separately. With this I can verify manually if this works. After that, a looping agent can use both in a loop!
-
-# Deployment MCP
-
-- ✅ Improve cloudflare provider, create `login-with-cloudflare` package.
-- Use that in https://deploy.flaredream.com and make it an MCP using `withMcp`
-- Use deploy.flaredream.com/mcp as MCP tool with flaredream LMPIFY FormData stream, from within flaredreams landingpage. This requires login with Cloudflare as well as my personal API key for LMPIFY (for now)
-
-I should now be able to start the entire request from flaredream.com, and let users look into the response if they want to (but not require that). I can now just add XMoney to flaredream and use XYText as interface.
-
-Idea - allow context of the generation to include MCP urls! This way the tools used become part of the definition. Logical! Imagine having a tweet MCP, all it'd take would be something like this:
-
-```md
-https://xymake.com/mcp
-
-Hey, this is a tweet. It can literally just be understood one on one
-```
-
-# Make the tailproxy MCP work!!!
-
-- ❌ Why doesn't this work sometimes? Is it permissions? is it the route?
-- What else can I make to make this more user friendly? I wanna be able to manually test in this way in the browser, and see logs somehow. In a header is great, but what if a script can be injected into each html output that has a sw.js that observes all requests and adds tail logs? This could potentially be very insightful.
-- The deployment API --> Tailproxy should also functions as MCPs and should be first made possible from contextarea.com
-
 # Idea of simplification of the `text/event-stream`
 
 Why don't I just make an endpoint `POST|GET /{id}/simple` that just returns a plain/markdown ReadableStream? This is much easier to use and stack, and could eventually replace the `text/event-stream` which should not be needed.
@@ -379,10 +289,6 @@ Landingpage flaredream.com should retrieve all `featured:true` from benchmark an
 # COOL
 
 https://llm.md
-
-# Simple tools
-
-https://letmeprompt.com/rules-httpsuithu-iuvmgx0
 
 # Make `/chat/completions` with cache making it intelligently cheaper
 
@@ -514,47 +420,7 @@ Problem: re-rendering entire text for every output token makes it slow, especial
 https://x.com/__morse/status/1945589927820902562
 https://github.com/remorses/fumabase/blob/main/contesto/src/lib/incremental-markdown-parser.ts
 
-# Analytics & revshare idea (May 23, 2025)
-
-See also `faircompletions`
-
-🛑 talk with what OSS repo-owners want. make profit, or pay for larger free tier (and make profit elsewhere)? https://x.com/janwilmake/status/1926518646785917107
-
-IDEA: to enable Rev-sharing with repo owners, X users, and knowledge-base builders
-
-https://github.com/iannuttall/mcp-boilerplate/pull/8 <-- boilerplate owners should be able to earn money with it
-
-I need to make them easily understand they can with this! One step to still do though, is to track the original location from where the payment was initiated, and which contexts were used for this... We can group these contexts on a per-owner basis, then get an overview on how much was added for each.
-
-If this works out, it becomes easy way for viral github users to make money. Besides, it'd be a great idea anyway to track visitors on a per-github-owner-level.
-
-Every day, let's go over these: https://www.lmpify.com/httpspopularforg-7mck8v0 and see if there are tweets I can mirror.
-
-What about idea-guys? Can I search X with filter on this? Should make a monetised socialdata.tools search monitor cronjob and have these things made public.
-
-Another one is the people that create the contexts and share them. It doesn't always need to be their context. What if the original creator of the prompt gets made public too? We can simply use the `client_reference_id` for this and expose it (also makes it possible to pay others).
-
-Measure actions:
-
-- Pageview
-- Prompt or other action from page (spending money)
-- New balance upgrade
-
-Measure them with owners:
-
-- `?ref`
-- the prompt-page itself
-- the creator of the prompt
-- the creator of previous version(s) of the prompt
-- the creators of the context (github accounts, x accounts linked)
-
-Revshare with the creators is super epic. Can be done directly to client_reference_ids for users and to claimable accounts (x/github) in another table. can't believe this worked: https://github.com/janwilmake/stripeflare-p2p-demo
-
-- **Edit history**; either by storing a single previous link, all previous links in array, only all previous metadata, or all previous contents. Sidebar to scroll through the edit history.
-
-- **Add models and other mediatypes**: Add Gemini 2.5 Pro w/ video upload - https://x.com/tryingET/status/1924810864260960271. Add image urls as images for claude/chatgpt. Also grok would be nice. Also, let's use some cerebras models.
-
-## Proper way to let REPO-OWNERS pay for generations, not users.
+# Proper way to let REPO-OWNERS pay for generations, not users.
 
 🤔 Ultimately I'd want to be able to set worker-name, repo-name, branch, and have these deployments happen automatically, instantly. For this to work, I require `Login with Cloudflare` and `Login with GitHub` to be a part of letmeprompt.com, and allow for generation-configs (name, repo, branch, worker-name). It's not clear to me yet if this should be a completely new app that uses letmeprompt.com? Maybe better; niched towards easy workers: flaredream!
 
