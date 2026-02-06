@@ -1,0 +1,227 @@
+/**
+ * ContextArea Styles
+ * Modern styling for the ContextArea component
+ * Namespace: .contextarea-*
+ */
+
+/* Container for the entire component */
+.contextarea-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  margin-bottom: 20px;
+}
+
+/* Textarea styling */
+#contextarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  border: none; /* Removed border */
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 1.5;
+  resize: vertical;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+#contextarea:focus {
+  outline: none;
+  border: none; /* No border on focus */
+  box-shadow: none; /* No box shadow on focus */
+}
+
+/* Drag and drop styling */
+#contextarea.contextarea-dragover {
+  border: 2px dashed #ffffff; /* White dotted border only when drag area is active */
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+/* Upload button styling */
+.contextarea-upload-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #607d8b;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.contextarea-upload-btn:hover {
+  background-color: #f5f5f5;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  color: #2196f3;
+}
+
+.contextarea-upload-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (min-width: 768px) {
+  .contextarea-upload-btn {
+    display: none;
+  }
+}
+
+/* Hide file input */
+.contextarea-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Context list container */
+.contextarea-context-list {
+  margin-top: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Context item styling */
+.contextarea-context-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #e0e0e0;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.contextarea-context-item:last-child {
+  border-bottom: none;
+}
+
+.contextarea-context-item:hover {
+  background-color: rgba(
+    240,
+    240,
+    240,
+    0.2
+  ); /* More subtle transparent hover effect */
+}
+
+/* Context image container */
+.contextarea-context-img {
+  width: 57px;
+  height: 30px;
+  margin-right: 12px;
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e0e0e0;
+}
+
+.contextarea-context-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Placeholder for when no image is available */
+.contextarea-context-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #e0e0e0;
+}
+
+/* Context info container */
+.contextarea-context-info {
+  flex: 1;
+  min-width: 0; /* Ensures text truncation works */
+}
+
+/* URL display */
+.contextarea-context-url {
+  font-size: 14px;
+  color: #2196f3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+  cursor: pointer; /* Added pointer cursor for clickable links */
+}
+
+/* Details line */
+.contextarea-context-details {
+  font-size: 12px;
+  color: #757575;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Content type icons */
+.contextarea-context-icon {
+  width: 20px;
+  height: 20px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.contextarea-icon-text::before {
+  content: "T";
+  font-weight: bold;
+  color: #455a64;
+}
+
+.contextarea-icon-image::before {
+  content: "I";
+  font-weight: bold;
+  color: #4caf50;
+}
+
+.contextarea-icon-video::before {
+  content: "V";
+  font-weight: bold;
+  color: #f44336;
+}
+
+/* Loading state */
+.contextarea-context-item.loading .contextarea-context-details {
+  color: #9e9e9e;
+  font-style: italic;
+}
+
+/* Error state */
+.contextarea-context-item.error .contextarea-context-details {
+  color: #f44336;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .contextarea-context-url {
+    font-size: 13px;
+  }
+
+  .contextarea-context-details {
+    font-size: 11px;
+  }
+
+  .contextarea-context-img {
+    width: 32px;
+    height: 24px;
+    margin-right: 8px;
+  }
+}

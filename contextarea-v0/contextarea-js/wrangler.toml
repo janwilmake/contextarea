@@ -1,0 +1,8 @@
+name = "contextarea-js"
+compatibility_date = "2025-05-15"
+dev.port = 3000
+assets.directory = "./"
+
+routes = [
+  { pattern = "js.contextarea.com", custom_domain = true },
+]

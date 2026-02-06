@@ -1,10 +1,9 @@
 {
   "name": "lmpify3",
   "compatibility_date": "2025-04-21",
-  "dev": { "port": 3000 },
   "main": "src/main.ts",
   "assets": {
-    "directory": "./",
+    "directory": "./public",
     "binding": "ASSETS"
   },
   "routes": [
@@ -15,6 +14,10 @@
     {
       "binding": "RESULTS",
       "id": "e698f458a5c0411b8998f335bd24dc11"
+    },
+    {
+      "binding": "PASTES",
+      "id": "c582dfcc2f034037beb67658c17bf9a8"
     }
   ],
   "durable_objects": {

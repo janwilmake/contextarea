@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <script type="application/json" id="server-data"></script>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="/markdown-highlighter.js"></script>
+    <link rel="stylesheet" href="https://js.contextarea.com/style.css">
+    <script src="https://js.contextarea.com/lib.js" defer></script>
+
+    <style>
+        /* System theme variables - VS Code style */
+        :root {
+            color-scheme: light dark;
+        }
+
+        /* Light theme (default) */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8f8;
+            --bg-tertiary: #f0f0f0;
+            --bg-quaternary: #e8e8e8;
+            --text-primary: #1e1e1e;
+            --text-secondary: #2d2d2d;
+            --text-muted: #666666;
+            --border-primary: #d4d4d4;
+            --border-secondary: #c4c4c4;
+            --accent-primary: #007acc;
+            --accent-secondary: #005a9e;
+            --success-color: #007acc;
+            --error-color: #d73a49;
+            --warning-color: #f9c513;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --backdrop-blur: rgba(248, 248, 248, 0.95);
+        }
+
+        /* Dark theme */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1e1e1e;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3c3c3c;
+                --bg-quaternary: #4a4a4a;
+                --text-primary: #cccccc;
+                --text-secondary: #d4d4d4;
+                --text-muted: #858585;
+                --border-primary: #3c3c3c;
+                --border-secondary: #4a4a4a;
+                --accent-primary: #0e639c;
+                --accent-secondary: #1177bb;
+                --success-color: #0e639c;
+                --error-color: #f48771;
+                --warning-color: #ffcc02;
+                --shadow: rgba(0, 0, 0, 0.3);
+                --backdrop-blur: rgba(45, 45, 45, 0.95);
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            /* Remove body padding and adjust container */
+            body {
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow-x: hidden;
+                height: auto;
+                min-height: 100vh;
+                background-color: var(--bg-primary) !important;
+            }
+
+            .container {
+                height: auto !important;
+                min-height: auto !important;
+                display: block;
+                gap: 0 !important;
+                padding-bottom: 0 !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                max-width: 100%;
+                margin: 0 !important;
+                padding-top: 60px;
+            }
+
+            .content-container {
+                flex-direction: column;
+            }
+
+            /* Adjust header */
+            .header-logo h1 {
+                font-size: 14px !important;
+                margin: 0;
+                padding: 0;
+                text-align: left;
+                display: flex;
+                align-items: center;
+            }
+
+            .header-logo img {
+                width: 20px !important;
+                height: 20px !important;
+                margin-right: 8px !important;
+                background-color: transparent !important;
+            }
+
+            /* Make content container stack vertically with auto height */
+            .content-container {
+                display: block !important;
+                height: auto !important;
+                min-height: auto !important;
+                flex: none !important;
+                gap: 0;
+                margin-bottom: 0;
+            }
+
+            /* Column mobile adjustments - remove all styling */
+            .column {
+                overflow: visible !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
+                flex: none !important;
+                margin: 0;
+                padding: 0;
+                border: none !important;
+                background-color: transparent !important;
+                border-radius: 0 !important;
+            }
+
+            /* Column header adjustments */
+            .column-header {
+                font-size: 16px;
+                margin-bottom: 8px;
+                padding: 16px;
+                border-bottom: 1px solid var(--border-primary);
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start !important;
+                border-radius: 0 !important;
+            }
+
+            /* Column content adjustments */
+            .column-content {
+                padding: 0;
+            }
+
+            /* Mobile sticky adjustments - remove background styling */
+            .sticky-header,
+            .sticky-bottom {
+                position: relative !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                border: none !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border-radius: 0 !important;
+            }
+
+            /* Sticky header content */
+            .sticky-header .column-header {
+                background-color: var(--bg-primary);
+                padding: 16px;
+                border-bottom: 1px solid var(--border-primary);
+                border-radius: 0 !important;
+            }
+
+            /* Sticky bottom content */
+            .sticky-bottom .share-section,
+            .sticky-bottom .prompt-actions {
+                background-color: var(--bg-primary);
+                padding: 16px;
+                border-top: 1px solid var(--border-primary);
+                border-radius: 0 !important;
+            }
+
+            .submit-button {
+                padding: 8px 16px !important;
+                font-size: 14px !important;
+                width: 100% !important;
+                justify-content: center !important;
+                border-radius: 8px !important;
+            }
+
+            .footer-copy-button {
+                padding: 8px 12px !important;
+                font-size: 14px !important;
+                min-height: auto !important;
+                border-radius: 8px !important;
+            }
+
+            .footer-copy-button svg {
+                width: 16px !important;
+                height: 16px !important;
+            }
+
+            button {
+                min-height: 36px;
+                padding: 6px 8px;
+                border-radius: 8px !important;
+            }
+
+            #tokenCounter {
+                position: static !important;
+                font-size: 12px !important;
+                margin-top: 4px !important;
+                margin-bottom: 8px !important;
+            }
+
+            /* Result content mobile adjustments */
+            .result-content {
+                overflow: visible !important;
+                max-height: none !important;
+                word-break: break-word;
+                font-size: 14px;
+                padding-bottom: 80px;
+            }
+
+            /* Result buttons container for mobile */
+            .result-buttons-container {
+                position: relative !important;
+                top: auto !important;
+                right: auto !important;
+                margin-top: 8px !important;
+                margin-bottom: 8px !important;
+                display: flex !important;
+                flex-wrap: wrap !important;
+                gap: 6px !important;
+                justify-content: flex-start !important;
+            }
+
+            .result-button {
+                padding: 6px 8px !important;
+                font-size: 12px !important;
+                border-radius: 8px !important;
+                min-width: auto !important;
+            }
+
+            .result-button svg {
+                width: 16px;
+                height: 16px;
+                transition: transform 0.3s ease;
+            }
+
+            .result-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            .result-button.clicked {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+
+            /* Navigation bar for mobile */
+            .nav-bar {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                background-color: var(--bg-primary) !important;
+                border-bottom: 1px solid var(--border-primary) !important;
+                padding: 12px 16px !important;
+                z-index: 1000 !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                height: 60px !important;
+                box-sizing: border-box !important;
+            }
+
+            .nav-links {
+                display: flex !important;
+                gap: 8px !important;
+            }
+
+            .nav-links a {
+                background-color: var(--bg-secondary) !important;
+                color: var(--text-primary) !important;
+                padding: 8px 12px !important;
+                border-radius: 8px !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                text-decoration: none !important;
+                transition: background-color 0.2s ease !important;
+            }
+
+            .nav-links a:hover {
+                background-color: var(--bg-tertiary) !important;
+                color: var(--text-primary) !important;
+            }
+
+
+        }
+
+        @supports (container-type: inline-size) {
+            .container {
+                container-type: inline-size;
+            }
+
+            @container (max-width: 768px) {
+                .content-container {
+                    display: block !important;
+                }
+
+                .column {
+                    overflow: visible !important;
+                    height: auto !important;
+                }
+            }
+        }
+
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            width: fit-content;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            background-color: #000000;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #333333;
+            flex-shrink: 0;
+            height: fit-content;
+        }
+
+        .header-logo img {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .header-logo h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+
+
+        .header-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-primary);
+            background-color: var(--bg-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .header-links a:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        .content-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* Updated column styles with sticky headers and bottoms */
+        .column {
+            flex: 1;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sticky header styles */
+        .sticky-header {
+            position: sticky;
+            display: flex;
+            align-items: center;
+            top: 0;
+            background-color: var(--backdrop-blur);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-primary);
+            padding: 12px 24px 12px 24px;
+            z-index: 10;
+            height: 60px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .column-header {
+            font-size: 18px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            justify-content: space-between;
+            color: var(--text-primary);
+        }
+
+        /* Scrollable content area */
+        .column-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 24px;
+        }
+
+        /* Sticky bottom styles */
+        .sticky-bottom {
+            position: sticky;
+            bottom: 0;
+            background-color: var(--backdrop-blur);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-primary);
+            padding: 16px 24px 24px 24px;
+            z-index: 10;
+            height: 60px;
+            border-radius: 0 0 8px 8px;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: var(--text-primary);
+        }
+
+        .prompt-textarea {
+            width: 100%;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
+            padding: 16px;
+            resize: vertical;
+            outline: none;
+            font-family: inherit;
+            line-height: 1.6;
+            min-height: 200px;
+            transition: border-color 0.2s ease;
+            height: auto;
+        }
+
+        .prompt-textarea:focus {
+            border-color: var(--accent-primary);
+        }
+
+        /* Prompt actions container */
+        .prompt-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .model-modal-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .submit-button {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .submit-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow);
+        }
+
+        .submit-button:active {
+            transform: translateY(0);
+        }
+
+        .submit-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .submit-button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .result-content {
+            color: var(--text-primary);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            flex: 1;
+        }
+
+        .pending {
+            color: var(--warning-color);
+            font-style: italic;
+        }
+
+        .error {
+            color: var(--error-color);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .spinner:after {
+            content: " ";
+            display: block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 3px solid var(--warning-color);
+            border-color: var(--warning-color) transparent var(--warning-color) transparent;
+            animation: spinner 1.2s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-button {
+            background-color: transparent;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            text-decoration: none;
+            min-width: 80px;
+            justify-content: center;
+        }
+
+        .result-button:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .result-button.copied {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        .result-button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .result-button.hidden {
+            display: none;
+        }
+
+        .result-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .result-button.clicked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Result buttons container for mobile */
+        .result-buttons-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            top: auto;
+            right: auto;
+            margin-top: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        /* Token counter in prompt header */
+        #tokenCounter {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .share-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .footer-copy-button {
+            background-color: transparent;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        .footer-copy-button:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .footer-copy-button.copied {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+            color: white;
+        }
+
+        button {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            border: 0.5px solid var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease;
+            color: var(--text-primary);
+        }
+
+        button:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        /* Scrollbar styling */
+        textarea::-webkit-scrollbar,
+        .column-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        textarea::-webkit-scrollbar-track,
+        .column-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        textarea::-webkit-scrollbar-thumb,
+        .column-content::-webkit-scrollbar-thumb {
+            background-color: var(--bg-quaternary);
+            border-radius: 4px;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover,
+        .column-content::-webkit-scrollbar-thumb:hover {
+            background-color: var(--border-secondary);
+        }
+
+        .chat-api-container {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+
+        /* Desktop navigation - hide on mobile */
+        .desktop-nav {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none !important;
+            }
+        }
+
+        /* Mobile navigation - hide on desktop */
+        .nav-bar {
+            display: none;
+        }
+
+        /* Code blocks and syntax highlighting adjustments for light mode */
+        @media (prefers-color-scheme: light) {
+            pre {
+                background-color: var(--bg-secondary) !important;
+                border: 1px solid var(--border-primary) !important;
+            }
+
+            code {
+                background-color: var(--bg-secondary) !important;
+                color: var(--text-primary) !important;
+            }
+
+            /* Override highlight.js styles for light mode */
+            .hljs {
+                background-color: var(--bg-secondary) !important;
+                color: var(--text-primary) !important;
+            }
+
+            .model-modal-trigger {
+                color: var(--text-primary) !important;
+                border-color: var(--border-primary) !important;
+            }
+
+            .model-modal-trigger:hover {
+                background-color: var(--bg-tertiary) !important;
+                color: var(--text-primary) !important;
+            }
+        }
+
+        /* Mobile optimization */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+            }
+
+            .header-logo {
+                padding: 6px 10px;
+            }
+
+            .header-logo h1 {
+                font-size: 14px;
+            }
+
+            .header-logo img {
+                width: 18px;
+                height: 18px;
+                margin-right: 6px;
+            }
+
+            .header-links a {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-links {
+                gap: 8px;
+            }
+
+            .header-links a {
+                font-size: 11px;
+                padding: 3px 6px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile navigation bar -->
+    <div class="nav-bar">
+        <div class="header-logo">
+            <img src="/apple-touch-icon.png" alt="CONTEXTAREA" />
+            <h1>CONTEXTAREA</h1>
+        </div>
+        <div class="nav-links">
+            <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank">Why Context
+                Area?</a>
+            <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank">Privacy</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Desktop header -->
+        <div class="header desktop-nav">
+            <a href="/" class="header-logo">
+                <img src="/apple-touch-icon.png" alt="CONTEXTAREA" />
+                <h1>CONTEXTAREA</h1>
+            </a>
+            <div class="header-links">
+                <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank"
+                    title="Documentation">Why Context Area?</a>
+                <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank"
+                    title="Privacy Policy">Privacy</a>
+            </div>
+        </div>
+
+        <div class="content-container">
+            <!-- Prompt Column -->
+            <div class="column">
+                <!-- Sticky Header -->
+                <div class="sticky-header">
+                    <div class="column-header">
+                        <span>Prompt</span>
+                        <span id="tokenCounter"></span>
+                    </div>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div class="column-content">
+                    <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
+                </div>
+
+                <!-- Sticky Bottom -->
+                <div class="sticky-bottom">
+                    <div class="prompt-actions">
+                        <div class="model-modal-container">
+                            <div id="model-modal"></div>
+                        </div>
+
+                        <div class="chat-api-container">
+
+
+                            <button type="button" class="submit-button" id="tryAgainButton"
+                                title="Shortcut to submit: Shift + Enter">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M7 17l9.5-9.5M17 17V7.5h-9.5" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                <span>Submit</span>
+                            </button>
+
+
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Column -->
+            <div class="column">
+                <!-- Sticky Header -->
+                <div class="sticky-header">
+                    <div class="column-header">
+                        <span>Result</span>
+                        <div class="result-buttons-container" id="resultButtonsContainer">
+                            <!-- Download button (hidden initially) -->
+                            <button class="result-button hidden" id="downloadButton" title="Download">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                                    <polyline points="7,10 12,15 17,10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>Download</span>
+                            </button>
+
+                            <!-- Deploy button (hidden initially) -->
+                            <button class="result-button hidden" id="deployButton" title="Deploy">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M12 1v6m0 6v6"></path>
+                                    <path d="M21 12h-6m-6 0H3"></path>
+                                </svg>
+                                <span>Deploy</span>
+                            </button>
+
+                            <!-- Iterate button (visible immediately) -->
+                            <button type="button" class="result-button" id="iterateButton">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-left: 4px;">
+                                    <path d="M7 17l9-9M17 17V8h-9" stroke-linecap="round" stroke-linejoin="round">
+                                    </path>
+                                </svg>
+                                <span>Iterate</span>
+                            </button>
+
+                            <!-- Preview button (visible immediately) -->
+                            <button class="result-button" id="previewButton" title="Preview">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"></path>
+                                    <path d="M15 3h6v6"></path>
+                                    <path d="M10 14L21 3"></path>
+                                </svg>
+                                <span>Preview</span>
+                            </button>
+
+                            <!-- Copy button (visible immediately) -->
+                            <button class="result-button" id="copyButton" title="Copy result">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scrollable Content -->
+                <div class="column-content">
+                    <pre class="result-content" id="resultContent">Loading...</pre>
+                </div>
+
+                <!-- Sticky Bottom -->
+                <div class="sticky-bottom">
+                    <div class="share-section">
+                        <div class="share-container">
+                            <input type="hidden" class="share-input" id="shareInput" readonly>
+                            <button class="footer-copy-button" id="footerCopyButton" title="Copy link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Share</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/model-modal.js"></script>
+
+    <!-- Module definitions -->
+    <script>
+        // Helper functions
+        function escapeHTML(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // 1. Fetch-based SSE Handler Module
+        class FetchSSEHandler {
+            constructor(options) {
+                this.path = options.path;
+                this.onMessage = options.onMessage;
+                this.onError = options.onError;
+                this.onOpen = options.onOpen;
+                this.onComplete = options.onComplete;
+                this.abortController = null;
+                this.retryCount = 0;
+                this.maxRetries = options.maxRetries || 3;
+                this.retryDelay = options.retryDelay || 1000;
+            }
+
+            async initialize() {
+                try {
+                    this.abortController = new AbortController();
+
+                    const response = await fetch(this.path, {
+                        headers: {
+                            'Accept': 'text/event-stream',
+                        },
+                        signal: this.abortController.signal
+                    });
+
+                    if (!response.ok) {
+                        // Handle HTTP errors
+                        const errorText = await response.text();
+                        let errorMessage = `HTTP ${response.status}: ${errorText}`;
+
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMessage = errorJson.error || errorJson.message || errorMessage;
+                        } catch (e) {
+                            // Not JSON, use text as-is
+                        }
+
+                        if (this.onError) {
+                            this.onError(new Error(errorMessage));
+                        }
+                        return;
+                    }
+
+                    if (this.onOpen) {
+                        this.onOpen();
+                    }
+
+                    this.retryCount = 0;
+
+                    // Process the stream
+                    await this.processStream(response.body);
+
+                    if (this.onComplete) {
+                        this.onComplete();
+                    }
+
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('Stream aborted');
+                        return;
+                    }
+
+                    console.error('Fetch SSE error:', error);
+                    this.retry(error);
+                }
+            }
+
+            async processStream(body) {
+                const reader = body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+
+                        if (done) {
+                            break;
+                        }
+
+                        buffer += decoder.decode(value, { stream: true });
+
+                        // Process complete events from buffer
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const data = line.slice(6);
+
+                                try {
+                                    const message = JSON.parse(data);
+
+                                    // Check for error in message
+                                    if (message.type === 'error' || message.error) {
+                                        const errorMsg = message.error || message.data?.message || 'Unknown error';
+                                        if (this.onError) {
+                                            this.onError(new Error(errorMsg));
+                                        }
+                                        reader.cancel();
+                                        return;
+                                    }
+
+                                    if (this.onMessage) {
+                                        this.onMessage(message);
+                                    }
+                                } catch (e) {
+                                    console.error('Error parsing SSE message:', e, data);
+                                }
+                            }
+                        }
+                    }
+                } finally {
+                    reader.releaseLock();
+                }
+            }
+
+            retry(error) {
+                if (this.retryCount < this.maxRetries) {
+                    this.retryCount++;
+                    setTimeout(() => {
+                        console.log(`Retrying SSE connection (${this.retryCount}/${this.maxRetries})...`);
+                        this.initialize();
+                    }, this.retryDelay * this.retryCount);
+                } else if (this.onError) {
+                    this.onError(error);
+                }
+            }
+
+            close() {
+                if (this.abortController) {
+                    this.abortController.abort();
+                    this.abortController = null;
+                }
+            }
+        }
+
+        // Title Management Module
+        class TitleManager {
+            constructor() {
+                this.originalTitle = document.title;
+                this.isTabVisible = !document.hidden;
+                this.loadingInterval = null;
+                this.loadingState = 0;
+                this.loadingStates = ['Generating..', 'Generating...', 'Generating.'];
+                this.wasStreamingWhenHidden = false;
+                this.streamingCompleted = false;
+
+                this.setupVisibilityListener();
+            }
+
+            setupVisibilityListener() {
+                document.addEventListener('visibilitychange', () => {
+                    this.isTabVisible = !document.hidden;
+
+                    if (this.isTabVisible) {
+                        this.handleTabActive();
+                    } else {
+                        this.handleTabInactive();
+                    }
+                });
+            }
+
+            async fetchOwnTitle() {
+                try {
+                    const cacheBustedUrl = `${window.location.href}?t=${Date.now()}`;
+
+                    const response = await fetch(cacheBustedUrl, { cache: "no-store", headers: { "accept": "text/html" } });
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const title = doc.querySelector('title')?.textContent || this.originalTitle;
+                    console.log({ title })
+                    return title;
+                } catch (error) {
+                    console.error('Failed to fetch own title:', error);
+                    return this.originalTitle;
+                }
+            }
+
+            handleTabActive() {
+                console.log('active', this.wasStreamingWhenHidden)
+                this.stopLoadingAnimation();
+
+                this.fetchOwnTitle().then(title => {
+                    document.title = title;
+                });
+            }
+
+            handleTabInactive() {
+                if (uiManager?.isStreaming) {
+                    this.wasStreamingWhenHidden = true;
+                    this.startLoadingAnimation();
+                }
+            }
+
+            startLoadingAnimation() {
+                if (this.loadingInterval) return;
+
+                this.loadingState = 0;
+                document.title = this.loadingStates[this.loadingState];
+
+                this.loadingInterval = setInterval(() => {
+                    document.title = this.loadingStates[this.loadingState];
+                    this.loadingState = (this.loadingState + 1) % this.loadingStates.length;
+                }, 2000);
+            }
+
+            stopLoadingAnimation() {
+                if (this.loadingInterval) {
+                    clearInterval(this.loadingInterval);
+                    this.loadingInterval = null;
+                }
+            }
+
+            setCompletionState() {
+                this.stopLoadingAnimation();
+                document.title = '✅ Generated';
+
+                this.setFavicon('data:image/svg+xml;base64,' + btoa(`
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 12l2 2 4-4" stroke="green" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="green" fill="none"/>
+            </svg>
+        `));
+            }
+
+            setFavicon(href) {
+                const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+                link.type = 'image/svg+xml';
+                link.rel = 'shortcut icon';
+                link.href = href;
+                document.getElementsByTagName('head')[0].appendChild(link);
+            }
+
+            onStreamingComplete() {
+                this.streamingCompleted = true;
+
+                if (!this.isTabVisible) {
+                    this.setCompletionState();
+                } else {
+                    this.fetchOwnTitle().then(title => {
+                        document.title = title;
+                    });
+                }
+
+                this.wasStreamingWhenHidden = false;
+            }
+
+            onStreamingStart() {
+                this.streamingCompleted = false;
+                this.wasStreamingWhenHidden = false;
+
+                if (!this.isTabVisible) {
+                    this.startLoadingAnimation();
+                }
+            }
+        }
+
+        // UIManager class
+        class UIManager {
+            constructor() {
+                this.contextarea = document.getElementById('contextarea');
+                this.resultContent = document.getElementById('resultContent');
+                this.currentResult = "";
+                this.isStreaming = false;
+                this.userHasScrolled = false;
+                this.lastScrollTop = 0;
+                this.initialLoad = true;
+                this.setupScrollListener();
+            }
+
+            setupScrollListener() {
+                const scrollContainer = this.resultContent.parentElement;
+
+                scrollContainer.addEventListener('scroll', () => {
+                    const currentScrollTop = scrollContainer.scrollTop;
+                    const maxScroll = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+
+                    if (currentScrollTop < maxScroll - 50) {
+                        this.userHasScrolled = true;
+                    } else if (currentScrollTop >= maxScroll - 10) {
+                        this.userHasScrolled = false;
+                    }
+
+                    this.lastScrollTop = currentScrollTop;
+                });
+            }
+
+            scrollToBottom() {
+                const scrollContainer = this.resultContent.parentElement;
+                scrollContainer.scrollTop = scrollContainer.scrollHeight;
+            }
+
+            preserveScrollPosition() {
+                const scrollContainer = this.resultContent.parentElement;
+                return {
+                    scrollTop: scrollContainer?.scrollTop,
+                    scrollHeight: scrollContainer?.scrollHeight
+                };
+            }
+
+            restoreScrollPosition(savedPosition) {
+                const scrollContainer = this.resultContent.parentElement;
+                const heightDiff = scrollContainer.scrollHeight - savedPosition.scrollHeight;
+                scrollContainer.scrollTop = savedPosition.scrollTop + heightDiff;
+            }
+
+            handleSSEMessage(message) {
+                switch (message.type) {
+                    case 'init':
+                        if (message.data.status === "pending") {
+                            this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                            this.currentResult = message.data.result || "";
+                        } else {
+                            this.updateUI(message.data);
+                        }
+                        break;
+
+                    case 'token':
+                        if (!this.isStreaming) {
+                            this.isStreaming = true;
+                            this.resultContent.textContent = "";
+                            this.userHasScrolled = false;
+                            if (window.titleManager) {
+                                window.titleManager.onStreamingStart();
+                            }
+                        }
+
+                        this.currentResult += message.data.text;
+                        const loading = true;
+                        markdownHighlighter.processContent(
+                            this.resultContent,
+                            this.currentResult,
+                            loading);
+
+                        if (!this.userHasScrolled) {
+                            this.scrollToBottom();
+                        }
+                        break;
+
+                    case 'update':
+                        if (message.data.field === 'context') {
+                            console.log('Context updated');
+                        }
+                        break;
+
+                    case 'complete':
+                        const savedPosition = this.preserveScrollPosition();
+
+                        this.currentResult = message.data.result;
+                        this.isStreaming = false;
+
+                        markdownHighlighter.processContent(this.resultContent, this.currentResult);
+
+                        requestAnimationFrame(() => {
+                            this.restoreScrollPosition(savedPosition);
+                        });
+
+                        if (window.resultButtonsManager) {
+                            window.resultButtonsManager.onResultComplete();
+                        }
+
+                        if (window.titleManager) {
+                            window.titleManager.onStreamingComplete();
+                        }
+                        break;
+
+                    case 'error':
+                        this.resultContent.innerHTML = `<span class="error">Error: ${escapeHTML(message.data.message)}</span>`;
+                        this.isStreaming = false;
+                        break;
+                }
+            }
+
+            handleError(error) {
+                this.resultContent.innerHTML = `<span class="error">Error: ${escapeHTML(error.message)}</span>`;
+                this.isStreaming = false;
+
+                if (window.titleManager) {
+                    window.titleManager.stopLoadingAnimation();
+                }
+            }
+
+            updateUI(state, isEscaped) {
+                if (state.prompt) {
+                    const unescapedPrompt = state.prompt
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#39;/g, "'")
+                        .replace(/&amp;/g, '&');
+
+                    this.contextarea.value = unescapedPrompt;
+                    this.adjustTextareaHeight();
+                }
+
+                const secondPanelView = localStorage.getItem("secondPanelView")
+                const content = secondPanelView ? state[secondPanelView] : state.result;
+
+                if (state.status === "pending" && data.streaming && !this.isStreaming) {
+                    this.resultContent.innerHTML = '<span class="pending"><span class="spinner"></span>Streaming response...</span>';
+                } else if (state.status === "error" || state.error) {
+                    this.resultContent.innerHTML = `<span class="error">Error: ${escapeHTML(state.error || 'Unknown error')}</span>`;
+                } else if (content) {
+                    const savedPosition = this.initialLoad ? null : this.preserveScrollPosition();
+
+                    if (isEscaped) {
+                        this.currentResult = content?.replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&#39;/g, "'")
+                            .replace(/&amp;/g, '&');
+                    } else {
+                        this.currentResult = content;
+                    }
+
+                    markdownHighlighter.processContent(this.resultContent, this.currentResult);
+
+                    requestAnimationFrame(() => {
+                        this.restoreScrollPosition(savedPosition);
+                    });
+                    this.initialLoad = false;
+                }
+            }
+
+            adjustTextareaHeight() {
+                this.contextarea.style.height = 'auto';
+                this.contextarea.style.height = this.contextarea.scrollHeight + 'px';
+            }
+        }
+
+        // 3. Result Buttons Module
+        class ResultButtonsManager {
+            constructor() {
+                this.downloadButton = document.getElementById('downloadButton');
+                this.deployButton = document.getElementById('deployButton');
+                this.previewButton = document.getElementById('previewButton');
+                this.copyButton = document.getElementById('copyButton');
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.downloadButton.addEventListener('click', () => {
+                    window.open('https://download.flaredream.com' + window.location.pathname);
+                });
+
+                this.deployButton.addEventListener('click', () => {
+                    let domain = prompt('Which domain do you want this to be deployed? Leave empty to get a standard worker-domain.')
+                    window.open(`https://deploy.flaredream.com/https://download.flaredream.com${window.location.pathname}.formdata${domain ? '?pattern=' + domain : ''}`);
+                });
+
+                this.previewButton.addEventListener('click', () => {
+                    const subdomain = window.location.pathname.slice(1);
+                    window.open(`https://${subdomain}.letmeprompt.com`, '_blank');
+                });
+
+                this.copyButton.addEventListener('click', async () => {
+                    if (!uiManager.currentResult) return;
+                    await this.copyToClipboard(uiManager.currentResult, this.copyButton);
+                });
+            }
+
+            async copyToClipboard(text, button) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    button.classList.add('copied');
+                    const span = button.querySelector('span');
+                    const originalText = span.textContent;
+                    span.textContent = 'Copied!';
+
+                    setTimeout(() => {
+                        button.classList.remove('copied');
+                        span.textContent = originalText;
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            }
+
+            onResultComplete() {
+                this.downloadButton.classList.remove('hidden');
+                this.deployButton.classList.remove('hidden');
+            }
+
+            initializeButtonVisibility() {
+                if (data.result && data.status !== "pending") {
+                    this.onResultComplete();
+                }
+            }
+        }
+
+        // 4. Copy Functionality Module
+        class CopyManager {
+            constructor() {
+                this.footerCopyButton = document.getElementById('footerCopyButton');
+                this.shareInput = document.getElementById('shareInput');
+                this.currentUrl = window.location.href;
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.shareInput.value = this.currentUrl;
+
+                this.footerCopyButton.addEventListener('click', async () => {
+                    await this.copyToClipboard(this.currentUrl, this.footerCopyButton);
+                });
+            }
+
+            async copyToClipboard(text, button) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    button.classList.add('copied');
+                    button.querySelector('span').textContent = 'URL Copied';
+
+                    setTimeout(() => {
+                        button.classList.remove('copied');
+                        button.querySelector('span').textContent = 'Share';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                    this.shareInput.select();
+                    document.execCommand('copy');
+                    alert('Link copied to clipboard!');
+                }
+            }
+        }
+
+        // 5. Token Counter Module
+        class TokenCounter {
+            constructor() {
+                this.contextarea = document.getElementById('contextarea');
+                this.tokenCounter = document.getElementById('tokenCounter');
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.contextarea.addEventListener('input', () => this.updateTokenCount());
+                setTimeout(() => this.updateTokenCount(), 0);
+            }
+
+            updateTokenCount() {
+                const promptText = this.contextarea.value;
+                const tokenCount = Math.round(promptText.length / 5);
+                const contextCount = data.context ? Math.round(data.context.length / 5) : null;
+
+                if (contextCount) {
+                    this.tokenCounter.textContent = `(${tokenCount} prompt tokens, ${contextCount} context tokens)`;
+                } else {
+                    this.tokenCounter.textContent = `(${tokenCount} prompt tokens)`;
+                }
+            }
+        }
+
+        // 6. Action Buttons Module
+        class ActionButtons {
+            constructor() {
+                this.tryAgainButton = document.getElementById('tryAgainButton');
+                this.iterateButton = document.getElementById('iterateButton');
+                this.contextarea = document.getElementById('contextarea');
+                this.iterateClicked = false;
+
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.tryAgainButton.addEventListener('click', () => this.handleTryAgain());
+                this.iterateButton.addEventListener('click', () => this.handleIterate());
+
+                this.contextarea.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' && event.shiftKey) {
+                        event.preventDefault();
+                        this.tryAgainButton.click();
+                    }
+                });
+            }
+
+            slugify(text) {
+                return text
+                    .toLowerCase()
+                    .trim()
+                    .replace(/[^\w\s-]/g, '')
+                    .replace(/[\s_-]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+
+            simpleHash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+
+                let result = '';
+                let currentHash = Math.abs(hash);
+
+                while (result.length < 14) {
+                    result += currentHash.toString(36);
+                    currentHash = ((currentHash * 1103515245) + 12345) & 0x7fffffff;
+                }
+
+                return result.substring(0, 14);
+            }
+
+            handleTryAgain() {
+                const promptText = this.contextarea.value.trim();
+                if (!promptText) return;
+                const model = window.localStorage.getItem('model');
+                const first20 = promptText.substring(0, 20);
+                const slug = this.slugify(first20);
+                const hash = this.simpleHash(model + ":" + promptText);
+                const path = `/${slug}-${hash}`;
+
+                const formData = new FormData();
+                formData.append('prompt', promptText);
+                formData.append('model', model);
+
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = path;
+                form.style.display = 'none';
+
+                for (const [key, value] of formData.entries()) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                }
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+
+            handleIterate() {
+                if (this.iterateClicked) {
+                    return;
+                }
+
+                this.iterateClicked = true;
+
+                const svg = this.iterateButton.querySelector('svg');
+                if (svg) {
+                    svg.style.transition = 'transform 0.6s ease';
+                    svg.style.transform = 'rotate(180deg)';
+                }
+
+                this.iterateButton.style.opacity = '0.6';
+                this.iterateButton.style.cursor = 'not-allowed';
+
+                const currentPath = window.location.pathname;
+                const answerText = `\n\nANSWER: https://contextarea.com${currentPath}?key=result\n\n`;
+
+                const currentValue = this.contextarea.value;
+                this.contextarea.value = currentValue + answerText;
+
+                this.contextarea.focus();
+                this.contextarea.setSelectionRange(this.contextarea.value.length, this.contextarea.value.length);
+
+                if (uiManager && uiManager.adjustTextareaHeight) {
+                    uiManager.adjustTextareaHeight();
+                }
+
+                if (window.tokenCounter && window.tokenCounter.updateTokenCount) {
+                    window.tokenCounter.updateTokenCount();
+                }
+            }
+        }
+
+        // Main application initialization
+        const data = JSON.parse(document.getElementById('server-data').textContent || '{}');
+        console.log({ data })
+
+        if (data.ratelimited) {
+            setTimeout(() => window.openModelModal(), 400)
+        }
+
+        // Initialize modules
+        const uiManager = new UIManager();
+        const resultButtonsManager = new ResultButtonsManager();
+        const copyManager = new CopyManager();
+        const tokenCounter = new TokenCounter();
+        const actionButtons = new ActionButtons();
+        const titleManager = new TitleManager();
+        window.titleManager = titleManager;
+        window.resultButtonsManager = resultButtonsManager;
+
+        // Initialize fetch-based SSE if needed
+        if (data.streaming && data.status === "pending") {
+            const sseHandler = new FetchSSEHandler({
+                path: window.location.pathname,
+                onMessage: (message) => uiManager.handleSSEMessage(message),
+                onError: (error) => {
+                    console.error('SSE connection failed:', error);
+                    uiManager.handleError(error);
+                },
+                onComplete: () => {
+                    console.log('Stream completed');
+                },
+                maxRetries: 3,
+                retryDelay: 1000
+            });
+
+            sseHandler.initialize();
+
+            window.addEventListener('beforeunload', () => {
+                sseHandler.close();
+            });
+        }
+
+        uiManager.contextarea.addEventListener('input', () => {
+            uiManager.adjustTextareaHeight();
+        });
+
+        // Initial UI update
+        uiManager.updateUI(data, true);
+        resultButtonsManager.initializeButtonVisibility();
+        setTimeout(() => uiManager.adjustTextareaHeight(), 0);
+    </script>
+</body>
+
+</html>
