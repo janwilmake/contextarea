@@ -1330,6 +1330,12 @@ export default {
       }
 
       if (pathname === "/paste" && request.method === "POST") {
+        if (!ctx.user?.id) {
+          return new Response("Login required to create pastes", {
+            status: 401,
+            headers: corsHeaders
+          });
+        }
         return handlePaste(request, env, url);
       }
 

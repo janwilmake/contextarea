@@ -392,7 +392,11 @@
                         body: pastedText,
                         headers: { 'Content-Type': 'text/plain' },
                     });
-                    if (!r.ok) throw new Error(r.status);
+                    if (!r.ok) {
+                        const msg = await r.text().catch(() => '');
+                        if (r.status === 401) throw new Error(msg || 'Login required to paste');
+                        throw new Error(msg || r.status);
+                    }
                     const url = await r.text();
                     self._insertTextAtCursor(url);
                     self.editor.setScrollTop(self.scrollTopBeforePaste);
@@ -445,7 +449,11 @@
                             body,
                             headers: { 'Content-Type': typeof body === 'string' ? 'text/plain' : body.type },
                         });
-                        if (!r.ok) throw new Error(r.status);
+                        if (!r.ok) {
+                            const msg = await r.text().catch(() => '');
+                            if (r.status === 401) throw new Error(msg || 'Login required to upload');
+                            throw new Error(msg || r.status);
+                        }
                         urls.push(await r.text());
                     }
                     self._insertTextAtCursor(urls.join('\n') + '\n');
