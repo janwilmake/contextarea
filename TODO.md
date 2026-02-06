@@ -1,10 +1,10 @@
-# CRITICAL 🌶️
+# NEXT TIME
 
 Add oauth for pasting as well. This is currently free and can be abused easily.
 
-uithub as well as ContextArea: better pricing page explaining advantage better. uithub has 500 unique logged-in users
+uithub as well as ContextArea: better pricing page explaining advantage better. uithub has 3500 unique logged-in users
 
-uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to just remove these.
+uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to make it raw.githubusercontent.com for now.
 
 the mcp also doesn't work. try the mcp and make it make sense,the whole flow.
 
@@ -16,7 +16,7 @@ A paste->url can be done by anyone. change that so it can only be done by logged
 
 - llmtext! website context
 - Start using monaco! Huge for look & feel.
-- OpenRouter (or CloudFlare)
+- OpenRouter (or CloudFlare) for all models. make a pitch to them too to build this product for them.
 - Make MCP accessible! Huge for adoption.
 - Find a way not to do this in the cloudflare worker such that the api will just work.
 
@@ -37,7 +37,7 @@ There's no way to refresh MCPs now. Follow version from `initialize` and update 
 
 Add `profile` frontmatter tag as well to switch who to login to for MCP.
 
-MCP Pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
+MCP pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
 
 Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
 

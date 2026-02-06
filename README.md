@@ -9,7 +9,7 @@
 
 ## Goals
 
-Create the best possible Cloud-Based Context Engineering Experience for Developers
+Create the best possible Cloud-Based Context Engineering Experience for Developers that can be self-hosted (on Cloudflare)
 
 - **Easy to Share** configurations and results with team
 - **Good MCP integration**

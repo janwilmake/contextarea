@@ -12,12 +12,12 @@ import {
   type StripeUser,
   DORM,
   handleStripeWebhook,
-  getStripeflareUser,
+  getStripeflareUser
 } from "./stripeflare-simple";
 import { generateTitleWithAI } from "./generateTitle.js";
 
 //@ts-ignore
-import providers from "../providers.json";
+import providers from "../public/providers.json";
 import { RatelimitDO } from "./ratelimiter.js";
 import { getMarkdownResponse } from "./getMarkdownResponse.js";
 
@@ -29,7 +29,7 @@ const PRICE_MARKUP_FACTOR = 1.5;
 const CLIENT_INFO = {
   name: "Context Area",
   title: "Context Area",
-  version: "1.0.0",
+  version: "1.0.0"
 };
 
 type LLMSecrets = {
@@ -38,8 +38,10 @@ type LLMSecrets = {
 
 interface Env extends StripeflareEnv, LLMSecrets {
   RESULTS: KVNamespace; // KV namespace for storing results
+  PASTES: KVNamespace; // KV namespace for paste storage
   SQL_STREAM_PROMPT_DO: DurableObjectNamespace<SQLStreamPromptDO>; // Durable Object namespace
   ASSETS: Fetcher;
+  FETCHER: Fetcher; // Self service binding to avoid 522 on same-domain fetches
   RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
 }
 
@@ -143,7 +145,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.sql.exec(
       `INSERT OR REPLACE INTO _kv (key, value) VALUES (?, ?)`,
       key,
-      jsonValue,
+      jsonValue
     );
   }
 
@@ -186,7 +188,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     this.state.waitUntil(this.stream(data.user, true));
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     });
   }
 
@@ -272,7 +274,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   stream = async (
     user: Omit<StripeUser, "charge"> | undefined,
-    isFirstRequest?: boolean,
+    isFirstRequest?: boolean
   ) => {
     const initialized = this.get<boolean>("initialized");
 
@@ -294,7 +296,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       "Starting SSE stream for:",
       pathname,
       //  prompt,
-      modelConfig?.model,
+      modelConfig?.model
     );
 
     // Create SSE stream
@@ -310,7 +312,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           context,
           status: error ? "error" : streamComplete ? "complete" : "pending",
           result: this.accumulatedData,
-          error,
+          error
         });
 
         // If already complete or error, close
@@ -331,7 +333,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         if (index > -1) {
           this.activeControllers.splice(index, 1);
         }
-      },
+      }
     });
 
     return new Response(stream, {
@@ -340,8 +342,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         "Cache-Control": "no-cache",
         Connection: "keep-alive",
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "*",
-      },
+        "Access-Control-Allow-Headers": "*"
+      }
     });
   };
 
@@ -369,16 +371,16 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       status: error
         ? "error"
         : streamComplete
-        ? "complete"
-        : isProcessing
-        ? "streaming"
-        : "pending",
+          ? "complete"
+          : isProcessing
+            ? "streaming"
+            : "pending",
       error,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
 
     return new Response(JSON.stringify(currentResult), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     });
   }
 
@@ -405,7 +407,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async processRequest(
     user: Omit<StripeUser, "charge"> | undefined,
-    isFirstRequest: boolean | undefined,
+    isFirstRequest: boolean | undefined
   ) {
     try {
       // Get stored state
@@ -421,14 +423,14 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const apiKey = this.env[envVariableName];
       if (!apiKey) {
         throw new Error(
-          `Missing API Key for ${modelConfig.model}: ${envVariableName}`,
+          `Missing API Key for ${modelConfig.model}: ${envVariableName}`
         );
       }
 
       // generate title after we have the context
       const markdown = getMarkdownResponse(pathname, {
         model: modelConfig.model,
-        prompt: prompt,
+        prompt: prompt
         // context: context,
       });
 
@@ -436,7 +438,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         generateTitleWithAI(markdown, this.env.OPENAI_SECRET).then((data) => {
           console.log("GOT HEADLINE", data);
           this.set("headline", data.title);
-        }),
+        })
       );
 
       const isCloudflare = modelConfig.providerSlug === "cloudflare";
@@ -447,8 +449,8 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const messages = [
         {
           role: "user",
-          content: this.parseFrontMatter(content).content,
-        },
+          content: this.parseFrontMatter(content).content
+        }
       ];
 
       let priceAtOutput: number | undefined = undefined;
@@ -470,16 +472,16 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         clientInfo: CLIENT_INFO,
         extractUrl: {
           url: "https://llmtext.com",
-          bearerToken: this.env.PARALLEL_SECRET,
+          bearerToken: this.env.PARALLEL_SECRET
         },
-        shadowUrls: { "github.com": "uithub.com", "x.com": "xymake.com" },
+        shadowUrls: { "github.com": "uithub.com", "x.com": "xymake.com" }
       });
 
       const mcpUrls = frontMatter?.mcp
         ? frontMatter.mcp
             .split(/[,\s]+/) // Split by comma OR whitespace (one or more)
             .map((x) =>
-              x.startsWith("https://") ? x.trim() : "https://" + x.trim(),
+              x.startsWith("https://") ? x.trim() : "https://" + x.trim()
             )
             .filter((x) => {
               try {
@@ -500,7 +502,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           model: modelConfig.model,
@@ -513,22 +515,22 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
             ? {
                 max_tokens:
                   modelConfig.maxTokens -
-                  Math.round(JSON.stringify(messages).length / 5),
+                  Math.round(JSON.stringify(messages).length / 5)
               }
-            : {}),
-        }),
+            : {})
+        })
       });
 
       if (!llmResponse.ok) {
         throw new Error(
-          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`,
+          `LLM API error: ${llmResponse.status} ${await llmResponse.text()}`
         );
       }
 
       console.log(
         "Response OK",
         llmResponse.status,
-        llmResponse.headers.get("content-type"),
+        llmResponse.headers.get("content-type")
       );
 
       // Process SSE stream
@@ -585,7 +587,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                   this.broadcastEvent("token", {
                     type: "token",
                     text: quotedReasoning + "\n\n",
-                    position: position++,
+                    position: position++
                   });
 
                   reasoningBuffer = "";
@@ -612,7 +614,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                   this.broadcastEvent("token", {
                     type: "token",
                     text: quotedSummary + "\n\n",
-                    position: position++,
+                    position: position++
                   });
 
                   reasoningBuffer = "";
@@ -632,7 +634,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
                 "chatgpt output tokens",
                 parsed.usage.completion_tokens,
                 "priceAtOutput",
-                priceAtOutput,
+                priceAtOutput
               );
             } else if (parsed.type === "error") {
               throw new Error("Error during stream: " + JSON.stringify(parsed));
@@ -644,7 +646,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
               this.broadcastEvent("token", {
                 type: "token",
                 text: token,
-                position: position++,
+                position: position++
               });
             }
           }
@@ -662,7 +664,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         this.broadcastEvent("token", {
           type: "token",
           text: quotedReasoning + "\n\n",
-          position: position++,
+          position: position++
         });
       }
 
@@ -679,7 +681,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       this.broadcastEvent("error", {
         type: "error",
         message: error.message,
-        stack: error.stack,
+        stack: error.stack
       });
 
       // Store error state in KV
@@ -694,7 +696,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           model: modelConfig.model,
           context: context || undefined,
           error: "Error:" + error.message,
-          timestamp: Date.now(),
+          timestamp: Date.now()
         };
         console.warn("error stored", error);
         await this.env.RESULTS.put(pathname, JSON.stringify(errorData));
@@ -716,7 +718,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
   private async handleStreamComplete(
     user: Omit<StripeUser, "charge"> | undefined,
-    totalCostUsd: number,
+    totalCostUsd: number
   ) {
     this.set("streamComplete", true);
     const shouldStore = this.get<boolean>("store") !== false;
@@ -724,7 +726,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
     // Send complete event
     this.broadcastEvent("complete", {
       type: "complete",
-      result: this.accumulatedData,
+      result: this.accumulatedData
     });
 
     // Store in KV
@@ -736,7 +738,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
     console.log(
       "Request is done. User should be charged; total cost: ",
-      totalCostUsd,
+      totalCostUsd
     );
 
     console.log({ userId: user?.userId });
@@ -746,13 +748,13 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const stripeflareUser = await getStripeflareUser(
         user.userId,
         this.env,
-        ctx,
+        ctx
       );
 
       if (stripeflareUser) {
         const { charged, message } = await stripeflareUser.charge(
           totalCostUsd * 100,
-          true,
+          true
         );
         console.log({ charged, message });
       }
@@ -767,7 +769,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         context: context || undefined,
         result: this.accumulatedData,
         timestamp: Date.now(),
-        headline,
+        headline
       };
       await this.env.RESULTS.put(pathname, JSON.stringify(kvData));
     }
@@ -786,12 +788,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
   private async sendEvent(
     controller: ReadableStreamDefaultController<Uint8Array>,
     type: string,
-    data: any,
+    data: any
   ) {
     const event: SSEEvent = {
       type: type as any,
       data,
-      timestamp: Date.now(),
+      timestamp: Date.now()
     };
 
     const message = `data: ${JSON.stringify(event)}\n\n`;
@@ -879,7 +881,7 @@ const generateMetadataHtml = (kvData: KVData, requestUrl: string) => {
   const title = sanitizeMetadataString(headline || rawTitle || "No title", 60);
   const description = sanitizeMetadataString(
     rawDescription || "No description",
-    160,
+    160
   );
 
   // Use the provided imageUrl or generate a default one if not provided
@@ -941,10 +943,10 @@ const getCrawler = (userAgent: string | null) => {
     { name: "Telegram", userAgentRegex: /TelegramBot/ },
     { name: "Pinterest", userAgentRegex: /Pinterest/ },
     { name: "Google", userAgentRegex: /Googlebot/ },
-    { name: "Bing", userAgentRegex: /bingbot/ },
+    { name: "Bing", userAgentRegex: /bingbot/ }
   ];
   const crawler = crawlers.find((item) =>
-    item.userAgentRegex.test(userAgent || ""),
+    item.userAgentRegex.test(userAgent || "")
   )?.name;
 
   return crawler;
@@ -955,7 +957,7 @@ const allowedFormats = {
   html: "text/html",
   json: "application/json",
   yaml: "text/yaml",
-  png: "image/png",
+  png: "image/png"
 } as const;
 
 type AllowedFormat = (typeof allowedFormats)[keyof typeof allowedFormats];
@@ -973,7 +975,7 @@ export const getFormat = (request: Request): AllowedFormat | null => {
   if (ext && Object.keys(allowedFormats).includes(ext)) {
     // allow path to determine format. comes before crawler since this allows easy changing
     return Object.entries(allowedFormats).find(
-      (entry) => entry[0] === ext,
+      (entry) => entry[0] === ext
     )?.[1]!;
   }
 
@@ -990,7 +992,7 @@ export const getFormat = (request: Request): AllowedFormat | null => {
     .split(",")
     .map((f) => f.trim().split(";")[0].trim());
   const allowedFomat = acceptedFormats.find((format) =>
-    Object.values(allowedFormats).includes(format as AllowedFormat),
+    Object.values(allowedFormats).includes(format as AllowedFormat)
   ) as AllowedFormat | undefined;
 
   return allowedFomat || null;
@@ -1001,7 +1003,7 @@ const getResult = async (
   env: Env,
   data: KVData,
   status: string,
-  headers: any,
+  headers: any
 ) => {
   const format = getFormat(request);
   const url = new URL(request.url);
@@ -1082,7 +1084,7 @@ const getResult = async (
         width: 1200,
         height: 630,
         format: "png",
-        debug: true,
+        debug: true
       });
 
       // Ensure proper headers are set
@@ -1094,14 +1096,14 @@ const getResult = async (
 
       return new Response(imageResponse.body, {
         headers: imageHeaders,
-        status: 200,
+        status: 200
       });
     } catch (error) {
       console.error("Error generating OG image:", error);
       headers.set("Content-Type", "text/plain");
       return new Response("Error generating image: " + error.message, {
         status: 500,
-        headers,
+        headers
       });
     }
   }
@@ -1115,9 +1117,9 @@ const getResult = async (
         url.pathname,
         data,
         url.searchParams.get("key"),
-        url.searchParams.get("codeblock"),
+        url.searchParams.get("codeblock")
       ),
-      { headers },
+      { headers }
     );
   }
 
@@ -1130,7 +1132,7 @@ const getResult = async (
       //   ...data,
       //  user: publicUser, status
       // })
-      { headers },
+      { headers }
     );
   }
 
@@ -1138,7 +1140,7 @@ const getResult = async (
     ...data,
     //user: publicUser,
     status,
-    streaming: status !== "complete",
+    streaming: status !== "complete"
   };
 
   return getResultHTML(env, scriptData, headers, request.url);
@@ -1148,7 +1150,7 @@ const getResultHTML = async (
   env: Env,
   data: any,
   headers: Headers,
-  requestUrl: string,
+  requestUrl: string
 ) => {
   const url = new URL(requestUrl);
 
@@ -1157,12 +1159,12 @@ const getResultHTML = async (
     .on("#server-data", {
       element: (e) => {
         e.setInnerContent(JSON.stringify(data), { html: false });
-      },
+      }
     })
     .on("head", {
       element: (e) => {
         e.append(generateMetadataHtml(data, requestUrl), { html: true });
-      },
+      }
     })
     .transform(await env.ASSETS.fetch(url.origin + "/result.html"));
 
@@ -1170,6 +1172,142 @@ const getResultHTML = async (
   headers.set("Content-Type", "text/html");
   return new Response(resultHTML.body, { headers });
 };
+
+// ── Paste & Context API handlers ────────────────────────────────────
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
+
+async function handlePaste(
+  request: Request,
+  env: Env,
+  url: URL
+): Promise<Response> {
+  if (!env.PASTES) {
+    return new Response("KV not configured", {
+      status: 503,
+      headers: corsHeaders
+    });
+  }
+
+  const id = crypto.randomUUID().slice(0, 8);
+  const content = await request.text();
+  const contentType = request.headers.get("Content-Type") || "text/plain";
+
+  await env.PASTES.put(id, content, {
+    metadata: { contentType },
+    expirationTtl: 86400 * 30
+  });
+
+  const pasteUrl = `${url.origin}/paste/${id}`;
+  return new Response(pasteUrl, {
+    headers: { ...corsHeaders, "Content-Type": "text/plain" }
+  });
+}
+
+async function handleGetPaste(url: URL, env: Env): Promise<Response> {
+  if (!env.PASTES) {
+    return new Response("KV not configured", {
+      status: 503,
+      headers: corsHeaders
+    });
+  }
+
+  const id = url.pathname.slice("/paste/".length);
+  const { value, metadata } = await env.PASTES.getWithMetadata(id);
+
+  if (!value) {
+    return new Response("Not found", { status: 404, headers: corsHeaders });
+  }
+
+  return new Response(value, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": (metadata as any)?.contentType || "text/plain"
+    }
+  });
+}
+
+async function handleContext(url: URL, env: Env): Promise<Response> {
+  const targetUrl = url.searchParams.get("url");
+  if (!targetUrl) {
+    return new Response(JSON.stringify({ error: "Missing url parameter" }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+
+  try {
+    // For contextarea.com URLs, use the self service binding to avoid 522
+    let parsedTarget: URL;
+    try {
+      parsedTarget = new URL(targetUrl);
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid URL" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const isSelf =
+      parsedTarget.hostname === "contextarea.com" ||
+      parsedTarget.hostname === "www.contextarea.com";
+
+    const response = await (isSelf ? env.FETCHER : globalThis).fetch(
+      targetUrl,
+      {
+        headers: {
+          "User-Agent": "ContextArea/1.0",
+          Accept: "text/markdown"
+        },
+        redirect: "follow"
+      }
+    );
+
+    const contentType = response.headers.get("Content-Type") || "";
+    const text = await response.text();
+
+    let type = "unknown";
+
+    if (contentType.includes("text/html")) {
+      return new Response(
+        JSON.stringify({ error: "HTML pages are not supported as context" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
+    } else if (contentType.includes("application/json")) {
+      type = "json";
+    } else if (contentType.includes("text/")) {
+      type = "text";
+    } else {
+      type = contentType.split("/")[1] || "binary";
+    }
+
+    const tokens = Math.ceil(text.length / 4);
+
+    return new Response(
+      JSON.stringify({
+        title: targetUrl,
+        type,
+        tokens,
+        description: "",
+        content: text
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      }
+    );
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+  }
+}
 
 export default {
   fetch: withSimplerAuth<Env>(
@@ -1179,6 +1317,28 @@ export default {
       const acceptHeader = request.headers.get("Accept") || "*/*";
       if (pathname === "/stripe-webhook") {
         return handleStripeWebhook(request, env, ctx);
+      }
+
+      // ── Paste & Context API routes ──
+      if (
+        request.method === "OPTIONS" &&
+        (pathname === "/paste" ||
+          pathname.startsWith("/paste/") ||
+          pathname === "/context")
+      ) {
+        return new Response(null, { headers: corsHeaders });
+      }
+
+      if (pathname === "/paste" && request.method === "POST") {
+        return handlePaste(request, env, url);
+      }
+
+      if (pathname.startsWith("/paste/") && request.method === "GET") {
+        return handleGetPaste(url, env);
+      }
+
+      if (pathname === "/context" && request.method === "GET") {
+        return handleContext(url, env);
       }
 
       // Get model configuration
@@ -1202,7 +1362,7 @@ export default {
         baseUrl: "https://contextarea.com",
         userId,
         clientInfo: CLIENT_INFO,
-        pathPrefix: "/mcp",
+        pathPrefix: "/mcp"
       });
 
       const idpResponse = await idpMiddleware(request, env, ctx);
@@ -1225,7 +1385,7 @@ export default {
         // Check if result already exists in KV
         const existingData = (await env.RESULTS.get(
           pathnameWithoutExt,
-          "json",
+          "json"
         )) as KVData | null;
         console.log({ kvRequestMs: Date.now() - t });
 
@@ -1235,7 +1395,7 @@ export default {
             env,
             existingData,
             existingData.error ? "error" : "complete",
-            new Headers({ accept: "text/event-stream" }),
+            new Headers({ accept: "text/event-stream" })
           );
         }
 
@@ -1247,7 +1407,7 @@ export default {
           // Connect to the Durable Object SSE stream
           const doRequest = new Request("https://do/stream", {
             method: "GET",
-            headers: { Accept: "text/event-stream" },
+            headers: { Accept: "text/event-stream" }
           });
 
           const response = await doStub.fetch(doRequest);
@@ -1259,7 +1419,7 @@ export default {
 
           return new Response(response.body, {
             status: response.status,
-            headers: sseHeaders,
+            headers: sseHeaders
           });
         }
 
@@ -1305,10 +1465,10 @@ export default {
             "127.0.0.1";
 
           const ratelimited = await env.RATELIMIT_DO.get(
-            env.RATELIMIT_DO.idFromName("v2." + clientIp),
+            env.RATELIMIT_DO.idFromName("v2." + clientIp)
           ).checkRateLimit({
             requestLimit,
-            resetIntervalMs: 3600 * 1000,
+            resetIntervalMs: 3600 * 1000
           });
 
           // console.log("middleware 2:", Date.now() - t + "ms", {
@@ -1333,16 +1493,16 @@ export default {
                 error: !user?.id
                   ? "You need to login first."
                   : hasWaitTime
-                  ? "You have reached the ratelimit. Please purchase tokens to continue."
-                  : "You have spent all your tokens. Please purchase tokens to continue.",
-                streaming: false,
+                    ? "You have reached the ratelimit. Please purchase tokens to continue."
+                    : "You have spent all your tokens. Please purchase tokens to continue.",
+                streaming: false
               };
 
               return getResultHTML(
                 env,
                 scriptData,
                 new Headers(ratelimited.headers),
-                request.url,
+                request.url
               );
             }
 
@@ -1358,9 +1518,9 @@ export default {
                   "WWW-Authenticate":
                     'Bearer realm="LMPIFY",' +
                     'error="rate_limit_exceeded",' +
-                    'error_description="Rate limit exceeded. Please purchase credit at https://contextarea.com for higher limits"',
-                },
-              },
+                    'error_description="Rate limit exceeded. Please purchase credit at https://contextarea.com for higher limits"'
+                }
+              }
             );
           }
 
@@ -1368,7 +1528,7 @@ export default {
             pathname: pathnameWithoutExt,
             prompt,
             model: modelConfig,
-            user: stripeflareUser,
+            user: stripeflareUser
           });
         } else {
           prompt = result.prompt!;
@@ -1376,7 +1536,7 @@ export default {
           context = result.context;
           console.log("GET METHOD got details", {
             promptLength: prompt?.length || 0,
-            model,
+            model
           });
         }
 
@@ -1384,12 +1544,12 @@ export default {
           model: model || providers[0].model,
           prompt,
           context,
-          headline: result.headline || undefined,
+          headline: result.headline || undefined
         };
         if (!result.prompt && request.method === "GET") {
           return new Response(null, {
             headers: { Location: "/" },
-            status: 302,
+            status: 302
           });
         }
         return getResult(request, env, data, "pending", new Headers());
@@ -1397,9 +1557,9 @@ export default {
         console.error("Error in fetch handler:", error);
         return new Response("Internal server error", {
           status: 500,
-          headers: {},
+          headers: {}
         });
       }
-    },
-  ),
+    }
+  )
 };

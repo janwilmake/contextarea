@@ -20,6 +20,12 @@
       "id": "c582dfcc2f034037beb67658c17bf9a8"
     }
   ],
+  "services": [
+    {
+      "binding": "FETCHER",
+      "service": "lmpify3"
+    }
+  ],
   "durable_objects": {
     "bindings": [
       {

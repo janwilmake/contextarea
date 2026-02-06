@@ -13,6 +13,7 @@
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <script src="/markdown-highlighter.js"></script>
     <link rel="stylesheet" href="https://js.contextarea.com/style.css">
     <script src="https://js.contextarea.com/lib.js" defer></script>
@@ -299,7 +300,10 @@
                 color: var(--text-primary) !important;
             }
 
-
+            /* Prompt editor mobile height */
+            .prompt-editor-container {
+                height: 300px !important;
+            }
         }
 
         @supports (container-type: inline-size) {
@@ -455,6 +459,17 @@
             padding: 16px 24px;
         }
 
+        /* Prompt column content: no padding, let Monaco fill it */
+        .prompt-column .column-content {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .prompt-editor-container {
+            width: 100%;
+            height: 100%;
+        }
+
         /* Sticky bottom styles */
         .sticky-bottom {
             position: sticky;
@@ -479,27 +494,6 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             color: var(--text-primary);
-        }
-
-        .prompt-textarea {
-            width: 100%;
-            background-color: var(--bg-primary);
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 16px;
-            padding: 16px;
-            resize: vertical;
-            outline: none;
-            font-family: inherit;
-            line-height: 1.6;
-            min-height: 200px;
-            transition: border-color 0.2s ease;
-            height: auto;
-        }
-
-        .prompt-textarea:focus {
-            border-color: var(--accent-primary);
         }
 
         /* Prompt actions container */
@@ -718,23 +712,19 @@
         }
 
         /* Scrollbar styling */
-        textarea::-webkit-scrollbar,
         .column-content::-webkit-scrollbar {
             width: 8px;
         }
 
-        textarea::-webkit-scrollbar-track,
         .column-content::-webkit-scrollbar-track {
             background: transparent;
         }
 
-        textarea::-webkit-scrollbar-thumb,
         .column-content::-webkit-scrollbar-thumb {
             background-color: var(--bg-quaternary);
             border-radius: 4px;
         }
 
-        textarea::-webkit-scrollbar-thumb:hover,
         .column-content::-webkit-scrollbar-thumb:hover {
             background-color: var(--border-secondary);
         }
@@ -863,7 +853,7 @@
 
         <div class="content-container">
             <!-- Prompt Column -->
-            <div class="column">
+            <div class="column prompt-column">
                 <!-- Sticky Header -->
                 <div class="sticky-header">
                     <div class="column-header">
@@ -872,9 +862,9 @@
                     </div>
                 </div>
 
-                <!-- Scrollable Content -->
+                <!-- Scrollable Content — Monaco editor fills this -->
                 <div class="column-content">
-                    <textarea class="prompt-textarea" id="contextarea">Loading...</textarea>
+                    <div class="prompt-editor-container" id="contextarea-editor"></div>
                 </div>
 
                 <!-- Sticky Bottom -->
@@ -992,6 +982,8 @@
     </div>
 
     <script src="/model-modal.js"></script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="/contextarea.js"></script>
 
     <!-- Module definitions -->
     <script>
@@ -1031,16 +1023,13 @@
                     });
 
                     if (!response.ok) {
-                        // Handle HTTP errors
                         const errorText = await response.text();
                         let errorMessage = `HTTP ${response.status}: ${errorText}`;
 
                         try {
                             const errorJson = JSON.parse(errorText);
                             errorMessage = errorJson.error || errorJson.message || errorMessage;
-                        } catch (e) {
-                            // Not JSON, use text as-is
-                        }
+                        } catch (e) { }
 
                         if (this.onError) {
                             this.onError(new Error(errorMessage));
@@ -1053,8 +1042,6 @@
                     }
 
                     this.retryCount = 0;
-
-                    // Process the stream
                     await this.processStream(response.body);
 
                     if (this.onComplete) {
@@ -1080,25 +1067,17 @@
                 try {
                     while (true) {
                         const { done, value } = await reader.read();
-
-                        if (done) {
-                            break;
-                        }
+                        if (done) break;
 
                         buffer += decoder.decode(value, { stream: true });
-
-                        // Process complete events from buffer
                         const lines = buffer.split('\n');
-                        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                        buffer = lines.pop() || '';
 
                         for (const line of lines) {
                             if (line.startsWith('data: ')) {
                                 const data = line.slice(6);
-
                                 try {
                                     const message = JSON.parse(data);
-
-                                    // Check for error in message
                                     if (message.type === 'error' || message.error) {
                                         const errorMsg = message.error || message.data?.message || 'Unknown error';
                                         if (this.onError) {
@@ -1107,7 +1086,6 @@
                                         reader.cancel();
                                         return;
                                     }
-
                                     if (this.onMessage) {
                                         this.onMessage(message);
                                     }
@@ -1222,7 +1200,7 @@
 
             setCompletionState() {
                 this.stopLoadingAnimation();
-                document.title = '✅ Generated';
+                document.title = '\u2705 Generated';
 
                 this.setFavicon('data:image/svg+xml;base64,' + btoa(`
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1264,16 +1242,16 @@
             }
         }
 
-        // UIManager class
+        // UIManager class — uses Monaco ContextArea for the prompt editor
         class UIManager {
             constructor() {
-                this.contextarea = document.getElementById('contextarea');
                 this.resultContent = document.getElementById('resultContent');
                 this.currentResult = "";
                 this.isStreaming = false;
                 this.userHasScrolled = false;
                 this.lastScrollTop = 0;
                 this.initialLoad = true;
+                this.caEditor = null; // Set after Monaco loads
                 this.setupScrollListener();
             }
 
@@ -1311,6 +1289,15 @@
                 const scrollContainer = this.resultContent.parentElement;
                 const heightDiff = scrollContainer.scrollHeight - savedPosition.scrollHeight;
                 scrollContainer.scrollTop = savedPosition.scrollTop + heightDiff;
+            }
+
+            getPromptValue() {
+                if (this.caEditor) return this.caEditor.getValue();
+                return '';
+            }
+
+            setPromptValue(value) {
+                if (this.caEditor) this.caEditor.setValue(value);
             }
 
             handleSSEMessage(message) {
@@ -1398,8 +1385,7 @@
                         .replace(/&#39;/g, "'")
                         .replace(/&amp;/g, '&');
 
-                    this.contextarea.value = unescapedPrompt;
-                    this.adjustTextareaHeight();
+                    this.setPromptValue(unescapedPrompt);
                 }
 
                 const secondPanelView = localStorage.getItem("secondPanelView")
@@ -1429,11 +1415,6 @@
                     });
                     this.initialLoad = false;
                 }
-            }
-
-            adjustTextareaHeight() {
-                this.contextarea.style.height = 'auto';
-                this.contextarea.style.height = this.contextarea.scrollHeight + 'px';
             }
         }
 
@@ -1538,18 +1519,11 @@
         // 5. Token Counter Module
         class TokenCounter {
             constructor() {
-                this.contextarea = document.getElementById('contextarea');
                 this.tokenCounter = document.getElementById('tokenCounter');
-                this.setupEventListeners();
-            }
-
-            setupEventListeners() {
-                this.contextarea.addEventListener('input', () => this.updateTokenCount());
-                setTimeout(() => this.updateTokenCount(), 0);
             }
 
             updateTokenCount() {
-                const promptText = this.contextarea.value;
+                const promptText = uiManager.getPromptValue();
                 const tokenCount = Math.round(promptText.length / 5);
                 const contextCount = data.context ? Math.round(data.context.length / 5) : null;
 
@@ -1566,7 +1540,6 @@
             constructor() {
                 this.tryAgainButton = document.getElementById('tryAgainButton');
                 this.iterateButton = document.getElementById('iterateButton');
-                this.contextarea = document.getElementById('contextarea');
                 this.iterateClicked = false;
 
                 this.setupEventListeners();
@@ -1575,13 +1548,6 @@
             setupEventListeners() {
                 this.tryAgainButton.addEventListener('click', () => this.handleTryAgain());
                 this.iterateButton.addEventListener('click', () => this.handleIterate());
-
-                this.contextarea.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' && event.shiftKey) {
-                        event.preventDefault();
-                        this.tryAgainButton.click();
-                    }
-                });
             }
 
             slugify(text) {
@@ -1613,7 +1579,7 @@
             }
 
             handleTryAgain() {
-                const promptText = this.contextarea.value.trim();
+                const promptText = uiManager.getPromptValue().trim();
                 if (!promptText) return;
                 const model = window.localStorage.getItem('model');
                 const first20 = promptText.substring(0, 20);
@@ -1661,14 +1627,17 @@
                 const currentPath = window.location.pathname;
                 const answerText = `\n\nANSWER: https://contextarea.com${currentPath}?key=result\n\n`;
 
-                const currentValue = this.contextarea.value;
-                this.contextarea.value = currentValue + answerText;
+                const currentValue = uiManager.getPromptValue();
+                uiManager.setPromptValue(currentValue + answerText);
 
-                this.contextarea.focus();
-                this.contextarea.setSelectionRange(this.contextarea.value.length, this.contextarea.value.length);
-
-                if (uiManager && uiManager.adjustTextareaHeight) {
-                    uiManager.adjustTextareaHeight();
+                // Focus and move cursor to end in Monaco
+                if (uiManager.caEditor) {
+                    const editor = uiManager.caEditor.editor;
+                    const model = editor.getModel();
+                    const lastLine = model.getLineCount();
+                    const lastCol = model.getLineMaxColumn(lastLine);
+                    editor.setPosition({ lineNumber: lastLine, column: lastCol });
+                    editor.focus();
                 }
 
                 if (window.tokenCounter && window.tokenCounter.updateTokenCount) {
@@ -1685,7 +1654,7 @@
             setTimeout(() => window.openModelModal(), 400)
         }
 
-        // Initialize modules
+        // Initialize modules (except Monaco-dependent ones)
         const uiManager = new UIManager();
         const resultButtonsManager = new ResultButtonsManager();
         const copyManager = new CopyManager();
@@ -1694,38 +1663,62 @@
         const titleManager = new TitleManager();
         window.titleManager = titleManager;
         window.resultButtonsManager = resultButtonsManager;
+        window.tokenCounter = tokenCounter;
 
-        // Initialize fetch-based SSE if needed
-        if (data.streaming && data.status === "pending") {
-            const sseHandler = new FetchSSEHandler({
-                path: window.location.pathname,
-                onMessage: (message) => uiManager.handleSSEMessage(message),
-                onError: (error) => {
-                    console.error('SSE connection failed:', error);
-                    uiManager.handleError(error);
+        // Initialize Monaco editor for the prompt panel
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            const ca = ContextArea.create(document.getElementById('contextarea-editor'), {
+                pasteApiUrl: '/paste',
+                contextApiUrl: '/context',
+                value: '', // Will be set by updateUI
+                editorOptions: {
+                    lineNumbers: 'on',
+                    wordWrap: 'on',
+                    minimap: { enabled: false },
+                    automaticLayout: true,
                 },
-                onComplete: () => {
-                    console.log('Stream completed');
+                onSubmit(value) {
+                    actionButtons.handleTryAgain();
                 },
-                maxRetries: 3,
-                retryDelay: 1000
+                onChange() {
+                    if (window.tokenCounter) {
+                        window.tokenCounter.updateTokenCount();
+                    }
+                },
             });
 
-            sseHandler.initialize();
+            uiManager.caEditor = ca;
+            window.caEditor = ca;
 
-            window.addEventListener('beforeunload', () => {
-                sseHandler.close();
-            });
-        }
+            // Now that Monaco is ready, do initial UI update
+            uiManager.updateUI(data, true);
+            resultButtonsManager.initializeButtonVisibility();
+            tokenCounter.updateTokenCount();
 
-        uiManager.contextarea.addEventListener('input', () => {
-            uiManager.adjustTextareaHeight();
+            // Initialize fetch-based SSE if needed
+            if (data.streaming && data.status === "pending") {
+                const sseHandler = new FetchSSEHandler({
+                    path: window.location.pathname,
+                    onMessage: (message) => uiManager.handleSSEMessage(message),
+                    onError: (error) => {
+                        console.error('SSE connection failed:', error);
+                        uiManager.handleError(error);
+                    },
+                    onComplete: () => {
+                        console.log('Stream completed');
+                    },
+                    maxRetries: 3,
+                    retryDelay: 1000
+                });
+
+                sseHandler.initialize();
+
+                window.addEventListener('beforeunload', () => {
+                    sseHandler.close();
+                });
+            }
         });
-
-        // Initial UI update
-        uiManager.updateUI(data, true);
-        resultButtonsManager.initializeButtonVisibility();
-        setTimeout(() => uiManager.adjustTextareaHeight(), 0);
     </script>
 </body>
 

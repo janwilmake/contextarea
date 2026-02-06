@@ -100,9 +100,10 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .header {
@@ -166,19 +167,24 @@
             flex: 1;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 40px 24px;
+            padding: 24px;
+            min-height: 0;
         }
 
         .form-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
         form {
             width: 100%;
             display: flex;
             flex-direction: column;
+            flex: 1;
+            min-height: 0;
         }
 
         .textarea-container {
@@ -191,6 +197,8 @@
             border-radius: 6px;
             overflow: hidden;
             transition: border-color 0.2s ease;
+            flex: 1;
+            min-height: 300px;
         }
 
         .textarea-container:focus-within {
@@ -198,24 +206,9 @@
             box-shadow: 0 0 0 3px rgba(14, 99, 156, 0.1);
         }
 
-        textarea {
-            width: 100%;
-            border: none;
-            background-color: transparent;
-            color: var(--text-primary);
-            font-size: 16px;
-            padding: 20px;
-            resize: none;
-            outline: none;
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-            line-height: 1.6;
-            min-height: 200px;
-            overflow-y: auto;
-        }
-
-        textarea::placeholder {
-            color: var(--text-muted);
-            font-style: italic;
+        #contextarea-editor {
+            flex: 1;
+            min-height: 0;
         }
 
         .buttons-row {
@@ -307,25 +300,6 @@
             margin-left: 8px;
         }
 
-        /* Scrollbar styling */
-        textarea::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        textarea::-webkit-scrollbar-track {
-            background: var(--bg-tertiary);
-        }
-
-        textarea::-webkit-scrollbar-thumb {
-            background-color: var(--border-secondary);
-            border-radius: 6px;
-            border: 2px solid var(--bg-tertiary);
-        }
-
-        textarea::-webkit-scrollbar-thumb:hover {
-            background-color: var(--text-muted);
-        }
-
         .model-modal-trigger {
             color: var(--text-primary) !important;
             border-color: var(--border-primary) !important;
@@ -363,14 +337,11 @@
             }
 
             .main-container {
-                padding: 20px 16px;
+                padding: 16px;
             }
 
-            textarea {
-                font-size: 16px;
-                /* Prevent zoom on iOS */
-                padding: 16px;
-                min-height: 150px;
+            .textarea-container {
+                min-height: 200px;
             }
 
             .buttons-row {
@@ -394,12 +365,7 @@
             }
 
             .main-container {
-                padding: 16px 12px;
-            }
-
-            textarea {
-                padding: 14px;
-                min-height: 120px;
+                padding: 12px;
             }
 
             .buttons-row {
@@ -459,8 +425,7 @@
         <div class="form-container" id="formView">
             <form id="promptForm" method="POST">
                 <div class="textarea-container">
-                    <textarea id="contextarea" name="prompt"
-                        placeholder="Enter your prompt or paste URLs for context..." rows="8"></textarea>
+                    <div id="contextarea-editor"></div>
                     <div class="buttons-row">
                         <div class="left-buttons">
                             <button type="button" class="icon-button" id="configButton" title="Configuration">
@@ -491,45 +456,29 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="/contextarea.js"></script>
     <script>
-        const textarea = document.getElementById('contextarea');
-        const submitButton = document.getElementById('submitButton');
-        const form = document.getElementById('promptForm');
-        const formView = document.getElementById('formView');
-        const configButton = document.getElementById('configButton');
-
         // Parse front matter from content
         function parseFrontMatter(content) {
             const frontMatterRegex = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
             const match = content.match(frontMatterRegex);
-
             if (match) {
-                return {
-                    frontMatter: match[1],
-                    content: match[2]
-                };
+                return { frontMatter: match[1], content: match[2] };
             }
-
-            return {
-                frontMatter: null,
-                content: content
-            };
+            return { frontMatter: null, content: content };
         }
 
         // Build front matter from MCP parameters
         function buildMcpFrontMatter(mcpList) {
-            if (!mcpList || mcpList.length === 0) {
-                return null;
-            }
+            if (!mcpList || mcpList.length === 0) return null;
             return `---\nmcp: ${mcpList.join(',')}\n---`;
         }
 
-        // Normalize MCP URL by removing https:// prefix
         function normalizeMcpUrl(url) {
             return url.replace(/^https?:\/\//, '');
         }
 
-        // System prompt functionality
         async function loadSystemPrompt() {
             try {
                 let systemPrompt = localStorage.getItem('system.md');
@@ -550,97 +499,13 @@
             }
         }
 
-        // Function to fill textarea with query and mcp parameters
-        function fillTextareaFromQuery() {
-            const textarea = document.getElementById('contextarea');
-            const params = new URLSearchParams(window.location.search);
-            const queryContent = params.get('q');
-            const mcpParam = params.getAll('mcp');
-
-            let finalContent = '';
-
-            // Add MCP front matter if present
-            if (mcpParam && mcpParam.length > 0) {
-                // Normalize MCP URLs by removing https:// prefix
-                const normalizedMcpList = mcpParam.map(normalizeMcpUrl);
-                const mcpFrontMatter = buildMcpFrontMatter(normalizedMcpList);
-                finalContent = mcpFrontMatter + '\n';
-            }
-
-            // Add query content if present
-            if (queryContent) {
-                finalContent += queryContent;
-            }
-
-            if (finalContent) {
-                textarea.value = finalContent;
-                adjustTextareaHeight();
-                submitButton.disabled = false;
-            }
-        }
-
-        // Auto-resize textarea
-        function adjustTextareaHeight() {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, window.innerHeight * 0.5) + 'px';
-        }
-
-        // Insert URL at cursor position
-        function insertUrlAtCursor(url) {
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const text = textarea.value;
-            const before = text.substring(0, start);
-            const after = text.substring(end);
-
-            // Add newline if there's text before and it doesn't end with newline
-            const prefix = before && !before.endsWith('\n') ? '\n' : '';
-            // Add newline if there's text after and it doesn't start with newline
-            const suffix = after && !after.startsWith('\n') ? '\n' : '';
-
-            textarea.value = before + prefix + url + suffix + after;
-
-            // Set cursor position after the inserted URL
-            const newPosition = start + prefix.length + url.length;
-            textarea.setSelectionRange(newPosition, newPosition);
-            textarea.focus();
-
-            adjustTextareaHeight();
-            submitButton.disabled = textarea.value.trim() === '';
-        }
-
-        // Event listeners
-        textarea.addEventListener('input', () => {
-            adjustTextareaHeight();
-            submitButton.disabled = textarea.value.trim() === '';
-        });
-
-        // Handle shift+enter for newline, enter for submit
-        textarea.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.shiftKey) {
-                e.preventDefault();
-                if (textarea.value.trim()) {
-                    form.dispatchEvent(new Event('submit'));
-                }
-            }
-        });
-
-        // Config button click
-        configButton.addEventListener('click', () => {
-            window.open('config.html', '_blank');
-        });
-
-        // Slugify function
         function slugify(text) {
-            return text
-                .toLowerCase()
-                .trim()
+            return text.toLowerCase().trim()
                 .replace(/[^\w\s-]/g, '')
                 .replace(/[\s_-]+/g, '-')
                 .replace(/^-+|-+$/g, '');
         }
 
-        // Simple hash function for 14-character SHA-like string
         function simpleHash(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
@@ -648,93 +513,114 @@
                 hash = ((hash << 5) - hash) + char;
                 hash = hash & hash;
             }
-
-            // Generate multiple hash values to fill 14 characters
             let result = '';
             let currentHash = Math.abs(hash);
-
             while (result.length < 14) {
                 result += currentHash.toString(36);
-                currentHash = ((currentHash * 1103515245) + 12345) & 0x7fffffff; // Simple LCG
+                currentHash = ((currentHash * 1103515245) + 12345) & 0x7fffffff;
             }
-
             return result.substring(0, 14);
         }
 
-        // Handle form submission
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
+        async function handleSubmit(promptText) {
+            if (!promptText.trim()) return;
 
-            const promptText = textarea.value.trim();
-            if (!promptText) return;
-
-            const selectedModel = localStorage.getItem('model') || 'claude-3-5-sonnet-20241022'; // Add fallback
+            const selectedModel = localStorage.getItem('model') || 'claude-3-5-sonnet-20241022';
             const systemPrompt = await loadSystemPrompt();
+            const { frontMatter, content } = parseFrontMatter(promptText.trim());
 
-            // Parse front matter from current content
-            const { frontMatter, content } = parseFrontMatter(promptText);
-
-            // Build final prompt: front matter + system prompt + content
             let finalPrompt = '';
-
-            if (frontMatter) {
-                finalPrompt = `---\n${frontMatter}\n---\n`;
-            }
-
-            if (systemPrompt && systemPrompt.trim() !== '') {
-                finalPrompt += systemPrompt;
-            }
-
+            if (frontMatter) finalPrompt = `---\n${frontMatter}\n---\n`;
+            if (systemPrompt && systemPrompt.trim() !== '') finalPrompt += systemPrompt;
             finalPrompt += content;
 
-            // Generate slug from first 20 characters of the original content (without front matter)
             const first20 = content.substring(0, 20);
             const slug = slugify(first20);
             const hash = simpleHash(selectedModel + ':' + finalPrompt);
-
-            // Create the URL path
             const path = `/${slug}-${hash}`;
 
-            // Update the existing textarea value with the final prompt
-            textarea.value = finalPrompt;
+            const form = document.getElementById('promptForm');
 
-            // Remove any existing hidden inputs to avoid conflicts
-            const existingHiddenInputs = form.querySelectorAll('input[type="hidden"]');
-            existingHiddenInputs.forEach(input => input.remove());
+            // Remove any existing hidden inputs
+            form.querySelectorAll('input[type="hidden"]').forEach(input => input.remove());
 
-            // Create hidden input field for the model
+            // Add hidden inputs for prompt and model
+            const promptHidden = document.createElement('input');
+            promptHidden.type = 'hidden';
+            promptHidden.name = 'prompt';
+            promptHidden.value = finalPrompt;
+            form.appendChild(promptHidden);
+
             const modelHidden = document.createElement('input');
             modelHidden.type = 'hidden';
             modelHidden.name = 'model';
             modelHidden.value = selectedModel;
             form.appendChild(modelHidden);
 
-            // Update form action and method
             form.action = path;
             form.method = 'POST';
 
             console.log({ selectedModel, finalPrompt, path });
-
-            // Submit the form - this will navigate to the new page
             form.submit();
-        });
+        }
 
-        // Initialize
-        adjustTextareaHeight();
-        submitButton.disabled = true;
+        // Get initial content from query parameters
+        function getInitialContent() {
+            const params = new URLSearchParams(window.location.search);
+            const queryContent = params.get('q');
+            const mcpParam = params.getAll('mcp');
 
-        // Handle window resize
-        window.addEventListener('resize', adjustTextareaHeight);
+            let finalContent = '';
+            if (mcpParam && mcpParam.length > 0) {
+                const normalizedMcpList = mcpParam.map(normalizeMcpUrl);
+                const mcpFrontMatter = buildMcpFrontMatter(normalizedMcpList);
+                finalContent = mcpFrontMatter + '\n';
+            }
+            if (queryContent) finalContent += queryContent;
+            return finalContent;
+        }
 
-        document.addEventListener("DOMContentLoaded", async () => {
-            fillTextareaFromQuery();
+        // Initialize Monaco + ContextArea
+        require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            const submitButton = document.getElementById('submitButton');
+            const configButton = document.getElementById('configButton');
+            const initialContent = getInitialContent();
+
+            const ca = ContextArea.create(document.getElementById('contextarea-editor'), {
+                pasteApiUrl: '/paste',
+                contextApiUrl: '/context',
+                value: initialContent,
+                onSubmit(value) {
+                    handleSubmit(value);
+                },
+                onChange(value) {
+                    submitButton.disabled = !value.trim();
+                },
+            });
+
+            window.caEditor = ca;
+
+            submitButton.disabled = !initialContent.trim();
+
+            // Form submit button click
+            submitButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                handleSubmit(ca.getValue());
+            });
+
+            // Prevent default form submission (we handle it via JS)
+            document.getElementById('promptForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleSubmit(ca.getValue());
+            });
+
+            configButton.addEventListener('click', () => {
+                window.open('config.html', '_blank');
+            });
 
             // Load system prompt on page load
-            await loadSystemPrompt();
-
-            // Keep the existing focus line
-            const textarea = document.getElementById("contextarea");
-            setTimeout(() => textarea.focus(), 50);
+            loadSystemPrompt();
         });
     </script>
 
