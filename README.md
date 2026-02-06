@@ -1,11 +1,6 @@
 # Context Area - Fast, Smart Prompting for Devs
 
-[Thread](https://x.com/janwilmake/status/1980588668826902890)
-
-> [!TIP]
->
-> **Looking for Sponsor**
-> I'm looking for one or multiple sponsors that believe in context engineering and want me to build the best possible experience! Please [reach out on X](https://x.com/janwilmake)
+[![](https://badge.xymake.com/janwilmake/status/1980588668826902890)](https://x.com/janwilmake/status/1980588668826902890)
 
 ## Goals
 
@@ -39,23 +34,10 @@ We are not aiming to match the UX non-technical folks need in any way.
 
 ## Contents of this repo
 
-ContextArea itself
-
-- [contextarea](contextarea)
-
-ContextArea frontend-element:
-
-- [contextarea-js](contextarea-js) - js lib for a frontend element to easily work with context in a textarea
-- [context](context) - where the context from the `<contextarea>` is stored
-- [pastebin](pastebin) - a place where pastes get stored and made accessible as small url
-
-Utilities
-
+- [app](app) - ContextArea itself
 - [stream-server](stream-server) - serves the output files as they are generated
-
-Other:
-
 - [redirects](redirects) - redirect from old names lmpify.com and letmeprompt.com
+- [contextarea-v0](contextarea-v0/) - old/previous frontend element to drag&drop context and to see tokens in a textarea.
 
 ## Why Context Area?
 
@@ -151,11 +133,3 @@ Any shared links that were previously generated are free to be reached without r
 - New users that didn't deposit $ with Stripe get 5 free prompts per hour. This may change in the future.
 - After depositing $ through Stripe, users pay the model price + markup when executing new prompts.
 - The markup is 50% markup on top of model price to account for free usage, creator benefits (coming soon), and make this tool sustainable.
-
-# Table of Contents
-
-- [contextarea](contextarea): makes chat completions stateful, monetized with stripe, and adds nice frontend
-- [connectconnector](connectconnector): simple landingpage for connectconnector.com
-- [stream-server](stream-server): way to quickly serve a UI streamed from a completion
-- [mcp-completions](mcp-completions): chat completions proxy that adds authenticated mcp tools
-- [mcp-completions-demo](mcp-completions-demo)

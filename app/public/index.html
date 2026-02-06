@@ -100,10 +100,9 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: var(--bg-primary);
             color: var(--text-primary);
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
         .header {
@@ -112,7 +111,6 @@
             align-items: center;
             padding: 16px 24px;
             background-color: var(--bg-primary);
-            border-bottom: 1px solid var(--border-primary);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -142,32 +140,40 @@
 
         .header-links {
             display: flex;
-            gap: 12px;
+            align-items: center;
         }
 
-        .header-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 6px 12px;
-            border-radius: 4px;
-            border: 1px solid var(--border-primary);
-            background-color: var(--bg-secondary);
-            transition: all 0.2s ease;
+        /* Hero section */
+        .hero {
+            text-align: center;
+            padding: 64px 24px 48px;
         }
 
-        .header-links a:hover {
+        .hero h2 {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.5px;
             color: var(--text-primary);
-            background-color: var(--bg-tertiary);
-            border-color: var(--border-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-top: 16px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.5;
         }
 
         .main-container {
             flex: 1;
             display: flex;
             justify-content: center;
-            padding: 24px;
+            padding: 0 24px 24px;
             min-height: 0;
         }
 
@@ -197,8 +203,7 @@
             border-radius: 6px;
             overflow: hidden;
             transition: border-color 0.2s ease;
-            flex: 1;
-            min-height: 300px;
+            min-height: 420px;
         }
 
         .textarea-container:focus-within {
@@ -311,6 +316,74 @@
             border-color: var(--border-secondary) !important;
         }
 
+        /* Features section */
+        .features-section {
+            padding: 80px 24px;
+            max-width: 960px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .features-section h3 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 48px;
+            color: var(--text-primary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .feature-card {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 32px 24px;
+            text-align: center;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-tertiary);
+            border-radius: 10px;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--accent-primary);
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .feature-card h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
         /* Mobile optimization */
         @media (max-width: 768px) {
             .header {
@@ -336,12 +409,33 @@
                 padding: 4px 8px;
             }
 
+            .hero {
+                padding: 40px 16px 32px;
+            }
+
+            .hero h2 {
+                font-size: 30px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
             .main-container {
-                padding: 16px;
+                padding: 0 16px 16px;
             }
 
             .textarea-container {
-                min-height: 200px;
+                min-height: 300px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .features-section {
+                padding: 48px 16px;
             }
 
             .buttons-row {
@@ -414,11 +508,15 @@
             <h1>CONTEXTAREA</h1>
         </div>
         <div class="header-links">
-            <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank"
-                title="Documentation">Why Context Area?</a>
-            <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank"
-                title="Privacy Policy">Privacy</a>
+            <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
+                <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
+            </a>
         </div>
+    </div>
+
+    <div class="hero">
+        <h2>Prompt Editor for Context Engineers</h2>
+        <p>Craft perfect prompts with MCP tools, live URL context, and instant sharing.</p>
     </div>
 
     <div class="main-container">
@@ -455,6 +553,49 @@
             </form>
         </div>
     </div>
+
+    <div class="features-section">
+        <h3>What makes it great</h3>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
+                </div>
+                <h4>MCP Built-in</h4>
+                <p>Connect any MCP server directly in your prompt. Add tools, data sources, and integrations via front matter — no setup required.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+                    </svg>
+                </div>
+                <h4>URLs Are Context</h4>
+                <p>Paste any URL and it becomes part of your prompt context. Documentation, code, APIs — just link it and the model sees it.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
+                        <polyline points="16 6 12 2 8 6" />
+                        <line x1="12" y1="2" x2="12" y2="15" />
+                    </svg>
+                </div>
+                <h4>Easy to Share</h4>
+                <p>Every prompt gets a unique URL. Share your exact setup — prompt, context, and MCP config — with a single link.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 12px 0;">
+        <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank"
+            style="color: var(--text-muted); font-size: 11px; text-decoration: none; opacity: 0.6;">Privacy</a>
+    </footer>
 
     <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
     <script src="/contextarea.js"></script>
