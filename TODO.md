@@ -1,3 +1,19 @@
+# Improvements
+
+- get mcp names and icons right from the initialization step
+- ensure to get suggestion to go to dashboard for MCPs that aren't found
+- create a marketplace of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
+- determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
+
+#
+
+<!-- After this works, lets work on an email MCP so agents can actually do browsing stuff with email verification codes -->
+
+- budget cc mcp
+- email mcp
+- sms mcp
+- browser automation mcp
+
 # Dashboard
 
 Test `/chat/completions`. I'm interested in making different UIs for this as well as integration with several CLIs, so let's see if I can do this. Maybe it's also better to seperate the backend from the front-end?
@@ -17,8 +33,6 @@ MCP pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
 Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
 
 Huge if I can make 'MCP UI' work nicely. Great for testing too.
-
-<!-- After this works, lets work on an email MCP so agents can actually do browsing stuff with email verification codes -->
 
 # bug in file paths
 

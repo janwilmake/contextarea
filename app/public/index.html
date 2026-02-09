@@ -738,9 +738,11 @@
 
             let finalContent = '';
             if (mcpParam && mcpParam.length > 0) {
-                const normalizedMcpList = mcpParam.map(normalizeMcpUrl);
-                const mcpFrontMatter = buildMcpFrontMatter(normalizedMcpList);
-                finalContent = mcpFrontMatter + '\n';
+                const mcpRefs = mcpParam.map(url => {
+                    const cleaned = url.replace(/^https?:\/\//, '');
+                    return '@https://' + cleaned;
+                });
+                finalContent = mcpRefs.join('\n') + '\n';
             }
             if (queryContent) finalContent += queryContent;
             return finalContent;
