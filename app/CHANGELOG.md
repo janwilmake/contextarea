@@ -310,3 +310,19 @@ bonus: refresh openrouter models automatically every hour or so.
 # cleanup (2025-12-24)
 
 - clean up the code creating a `src` folder and splitting it up a bit more
+
+# new features and fixes (2026-02-06)
+
+✅ Add oauth for pasting as well. This is currently free and can be abused easily. A paste->url can be done by anyone. change that so it can only be done by logged in X accounts
+
+✅ uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to make it raw.githubusercontent.com for now.
+
+✅ uithub: it seems like curl still works! make sure to handle this according to the oauth spec so it stops working without auth, giving 401 and 402
+
+✅ Finish [monacobro.js](https://github.com/janwilmake/monacobro) with functional paste-interceptor and token counter, then use this in contextarea.com. Then get back to [sunil](https://x.com/threepointone/status/1979536991869116585)
+
+✅ It should show details on the mcps used (token count), as well as the context links.
+
+✅ Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
+
+✅ Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with https or multiple is buggy now)

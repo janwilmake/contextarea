@@ -447,10 +447,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       // Prepare LLM request
       const messages = [
-        {
-          role: "user",
-          content: this.parseFrontMatter(content).content
-        }
+        { role: "user", content: this.parseFrontMatter(content).content }
       ];
 
       let priceAtOutput: number | undefined = undefined;

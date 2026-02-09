@@ -1,0 +1,7 @@
+name = "idp-middleware"
+main = "dashboard.ts"
+compatibility_date = "2025-12-01"
+
+[[kv_namespaces]]
+binding = "KV_STORE"
+id = "709e22b93e414dfbb0e6de17ded170cf"

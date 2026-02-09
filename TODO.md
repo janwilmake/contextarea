@@ -1,32 +1,30 @@
-# NEXT TIME
+Rip out the mcp-completions and replace it with logic more similar to: https://github.com/janwilmake/mcp-completions/tree/main/demos/mcp-chat-interface
 
-✅ Add oauth for pasting as well. This is currently free and can be abused easily. A paste->url can be done by anyone. change that so it can only be done by logged in X accounts
+Bug: markdown links arent extracted properly. Fix this.
 
-✅ uithub: the url thing doesn't work for chatgpt/claude, because it's not public. probably best to make it raw.githubusercontent.com for now.
+# User-profiles
 
-✅ uithub: it seems like curl still works! make sure to handle this according to the oauth spec so it stops working without auth, giving 401 and 402
+- Make UserContextDO! Each time you land at a chat, save its details into a user object: `{ history: {title, created at, url}[], resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
+- Render history button to easily go to other chats
+- For resources and tools, add easy toggle.
 
-# ContextArea Monaco
+This makes it a much more usable thing because context is hard to remember.
 
-✅ Finish [monacobro.js](https://github.com/janwilmake/monacobro) with functional paste-interceptor and token counter, then use this in contextarea.com. Then get back to [sunil](https://x.com/threepointone/status/1979536991869116585)
+Create a dashboard to:
 
-✅ It should show details on the mcps used (token count), as well as the context links.
-
-# Make MCP functional in `contextarea`!
-
-✅ Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
-
-✅ Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with https or multiple is buggy now)
+- switch profile
+- manage authorized MCP servers
+- manage authorized context
 
 There's no way to refresh MCPs now. Follow version from `initialize` and update if it's newer than the one we have.
-
-Add `profile` frontmatter tag as well to switch who to login to for MCP.
 
 MCP pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
 
 Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
 
 Huge if I can make 'MCP UI' work nicely. Great for testing too.
+
+<!-- After this works, lets work on an email MCP so agents can actually do browsing stuff with email verification codes -->
 
 # bug in file paths
 
@@ -52,18 +50,6 @@ Duplicates https://openrouter.ai/chat but only minimal features of selecting mod
 Also have `/responses` interface. Makes actually more sense for my UI because there are no messages.
 
 Expose OpenAPI and create some docs for it (Mintlify?)
-
-# User-profiles
-
-- Make UserContextDO! Each time you land at a chat, save its details into a user object: `{ history: {title, created at, url}[], resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
-- Render history button to easily go to other chats
-- For resources and tools, add easy toggle.
-
-This makes it a much more usable thing because context is hard to remember.
-
-# Better README
-
-Make screenshots for the features that differentiate contextarea from other LLM clients
 
 # MCP & OpenRouter
 
