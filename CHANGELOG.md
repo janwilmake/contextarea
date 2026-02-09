@@ -326,3 +326,27 @@ bonus: refresh openrouter models automatically every hour or so.
 ✅ Make one-click installation work https://contextarea.com/?mcp=https://task-mcp.parallel.ai/mcp&mcp=https://search-mcp.parallel.ai/mcp (should add `,` and should remove `https://`, as it's not needed. Space should also be ok as split character.
 
 ✅ Make this work! https://contextarea.com/mcp-httpssea-cektvkah7vnkea (login with https or multiple is buggy now)
+
+# MCP and context (2026-02-09)
+
+✅ Rip out the mcp-completions and replace it with logic more similar to: https://github.com/janwilmake/mcp-completions/tree/main/demos/mcp-chat-interface
+
+✅ markdown links arent extracted properly. Fix this.
+
+✅ Each time you land at a chat, save its details into a user object: `{ resources: { title, icon, description, url}[], tools: { name, icon, description, url}[]` with counts and details.
+
+✅ Create a dashboard to:
+
+- switch profile
+- manage authorized MCP servers
+- manage authorized context
+
+✅ There's no way to refresh MCPs now. Follow version from `initialize` and update if it's newer than the one we have.
+
+# Simplify Implementation (2026-02-09)
+
+✅ We have 2 implementations for chat completions now, one of which can be used as API. Lets simplify that down to one in a way that the config of previous generations is possible to be used as model. Config should be merged/overwritten with what's defined in the prompt. IDK though, maybe this whole model wrapping with tools is actually against my beliefs. The oauth provider is important though since there we can really create a proxy! One or a few implementations of this will be perfect.
+
+✅ Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
+
+✅ Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
