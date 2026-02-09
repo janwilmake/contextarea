@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Analytics -->
+    <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    <link rel="manifest" href="/site.webmanifest">
+    <link rel="stylesheet" href="https://js.contextarea.com/style.css">
+    <script src="https://js.contextarea.com/lib.js" defer></script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - CONTEXTAREA</title>
+
+    <style>
+        /* System theme variables - VS Code style */
+        :root {
+            color-scheme: light dark;
+        }
+
+        /* Light theme (default) */
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8f8;
+            --bg-tertiary: #f0f0f0;
+            --bg-quaternary: #e8e8e8;
+            --text-primary: #1e1e1e;
+            --text-secondary: #2d2d2d;
+            --text-muted: #666666;
+            --border-primary: #d4d4d4;
+            --border-secondary: #c4c4c4;
+            --accent-primary: #007acc;
+            --accent-secondary: #005a9e;
+            --success-color: #007acc;
+            --error-color: #d73a49;
+            --warning-color: #f9c513;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --backdrop-blur: rgba(248, 248, 248, 0.95);
+        }
+
+        /* Dark theme */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1e1e1e;
+                --bg-secondary: #2d2d2d;
+                --bg-tertiary: #3c3c3c;
+                --bg-quaternary: #4a4a4a;
+                --text-primary: #cccccc;
+                --text-secondary: #d4d4d4;
+                --text-muted: #858585;
+                --border-primary: #3c3c3c;
+                --border-secondary: #4a4a4a;
+                --accent-primary: #0e639c;
+                --accent-secondary: #1177bb;
+                --success-color: #0e639c;
+                --error-color: #f48771;
+                --warning-color: #ffcc02;
+                --shadow: rgba(0, 0, 0, 0.3);
+                --backdrop-blur: rgba(45, 45, 45, 0.95);
+            }
+        }
+
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            background-color: #000000;
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #333333;
+            flex-shrink: 0;
+            height: fit-content;
+            text-decoration: none;
+        }
+
+        .header-logo img {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+        }
+
+        .header-logo h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .header-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .header-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-primary);
+            background-color: var(--bg-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .header-links a:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        .header-links a:has(img) {
+            border: none;
+            background-color: transparent;
+            padding: 6px 0;
+        }
+
+        .header-links a:has(img):hover {
+            background-color: transparent;
+        }
+
+        .header-links a.active {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        /* Section styles */
+        .section {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        /* Form styles */
+        .add-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .add-form input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .add-form input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .add-form input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .add-button {
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .add-button:hover {
+            background-color: var(--accent-secondary);
+        }
+
+        .add-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* List styles */
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .item-url {
+            font-size: 13px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-badges {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .badge-public {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .badge-auth {
+            background-color: var(--warning-color);
+            color: var(--text-primary);
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .action-button {
+            background-color: transparent;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            color: var(--text-primary);
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .action-button:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .action-button.remove {
+            color: var(--error-color);
+            border-color: var(--error-color);
+        }
+
+        .action-button.remove:hover {
+            background-color: var(--error-color);
+            color: white;
+        }
+
+        .action-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 32px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            border-color: var(--success-color);
+        }
+
+        .toast.error {
+            border-color: var(--error-color);
+        }
+
+        .toast-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .toast-message {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-primary);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Desktop navigation - hide on mobile */
+        .desktop-nav {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none !important;
+            }
+        }
+
+        /* Mobile navigation - hide on desktop */
+        .nav-bar {
+            display: none;
+        }
+
+        /* Mobile styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .container {
+                padding: 0 16px;
+                padding-top: 76px;
+                padding-bottom: 20px;
+            }
+
+            .nav-bar {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                background-color: var(--bg-primary) !important;
+                border-bottom: 1px solid var(--border-primary) !important;
+                padding: 12px 16px !important;
+                z-index: 1000 !important;
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                height: 60px !important;
+                box-sizing: border-box !important;
+            }
+
+            .nav-links {
+                display: flex !important;
+                gap: 8px !important;
+            }
+
+            .nav-links a {
+                background-color: var(--bg-secondary) !important;
+                color: var(--text-primary) !important;
+                padding: 8px 12px !important;
+                border-radius: 8px !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                text-decoration: none !important;
+                transition: background-color 0.2s ease !important;
+            }
+
+            .nav-links a:hover {
+                background-color: var(--bg-tertiary) !important;
+                color: var(--text-primary) !important;
+            }
+
+            .nav-links a:has(img) {
+                background-color: transparent !important;
+                padding: 8px 0 !important;
+                border: none !important;
+            }
+
+            .nav-links a:has(img):hover {
+                background-color: transparent !important;
+            }
+
+            .nav-links a.active {
+                background-color: var(--bg-tertiary) !important;
+            }
+
+            .section {
+                padding: 16px;
+            }
+
+            .item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .item-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+
+            .toast {
+                right: 16px;
+                left: 16px;
+                bottom: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile navigation bar -->
+    <div class="nav-bar">
+        <div class="header-logo">
+            <img src="/apple-touch-icon.png" alt="CONTEXTAREA" />
+            <h1>CONTEXTAREA</h1>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard" class="active" title="Manage MCP & Context">Dashboard</a>
+            <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
+                <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Desktop header -->
+        <div class="header desktop-nav">
+            <a href="/" class="header-logo">
+                <img src="/apple-touch-icon.png" alt="CONTEXTAREA" />
+                <h1>CONTEXTAREA</h1>
+            </a>
+            <div class="header-links">
+                <a href="/dashboard" class="active" title="Manage MCP & Context">Dashboard</a>
+                <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
+                    <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
+                </a>
+            </div>
+        </div>
+
+        <!-- Context Entries Section -->
+        <div class="section">
+            <h2 class="section-title">Context Entries</h2>
+            <div class="add-form">
+                <input type="url" id="contextUrlInput" placeholder="Enter context URL..." />
+                <button class="add-button" id="addContextButton">Add</button>
+            </div>
+            <div class="item-list" id="contextList">
+                <div class="empty-state">
+                    <div class="spinner"></div> Loading context entries...
+                </div>
+            </div>
+        </div>
+
+        <!-- MCP Servers Section -->
+        <div class="section">
+            <h2 class="section-title">MCP Servers</h2>
+            <div class="add-form">
+                <input type="url" id="mcpUrlInput" placeholder="Enter MCP server URL..." />
+                <button class="add-button" id="addMcpButton">Add</button>
+            </div>
+            <div class="item-list" id="mcpList">
+                <div class="empty-state">
+                    <div class="spinner"></div> Loading MCP servers...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast">
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <span class="toast-message" id="toastMessage"></span>
+    </div>
+
+    <script>
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = toast.querySelector('.toast-icon');
+
+            toastMessage.textContent = message;
+            toast.className = 'toast ' + type;
+
+            if (type === 'success') {
+                toastIcon.innerHTML = '<circle cx="12" cy="12" r="10"></circle><path d="M9 12l2 2 4-4"></path>';
+            } else {
+                toastIcon.innerHTML = '<circle cx="12" cy="12" r="10"></circle><path d="M12 8v4m0 4h.01"></path>';
+            }
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // API functions
+        async function fetchContextEntries() {
+            try {
+                const response = await fetch('/mcp/api/context-entries');
+                if (!response.ok) throw new Error('Failed to fetch context entries');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching context entries:', error);
+                showToast('Failed to load context entries', 'error');
+                return [];
+            }
+        }
+
+        async function fetchMcpServers() {
+            try {
+                const response = await fetch('/mcp/api/mcp-servers');
+                if (!response.ok) throw new Error('Failed to fetch MCP servers');
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching MCP servers:', error);
+                showToast('Failed to load MCP servers', 'error');
+                return [];
+            }
+        }
+
+        async function removeContextEntry(url, profile) {
+            try {
+                const response = await fetch('/mcp/api/context-entries', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, profile })
+                });
+                if (!response.ok) throw new Error('Failed to remove context entry');
+                showToast('Context entry removed successfully', 'success');
+                loadContextEntries();
+            } catch (error) {
+                console.error('Error removing context entry:', error);
+                showToast('Failed to remove context entry', 'error');
+            }
+        }
+
+        async function removeMcpServer(url, profile) {
+            try {
+                const response = await fetch('/mcp/api/mcp-servers', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url, profile })
+                });
+                if (!response.ok) throw new Error('Failed to remove MCP server');
+                showToast('MCP server removed successfully', 'success');
+                loadMcpServers();
+            } catch (error) {
+                console.error('Error removing MCP server:', error);
+                showToast('Failed to remove MCP server', 'error');
+            }
+        }
+
+        // Render functions
+        function renderContextEntry(entry) {
+            const div = document.createElement('div');
+            div.className = 'item';
+
+            const isAuthenticated = !!entry.access_token;
+
+            div.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${escapeHtml(entry.name || 'Unnamed Entry')}</div>
+                    <div class="item-url">${escapeHtml(entry.url)}</div>
+                </div>
+                <div class="item-badges">
+                    <span class="badge ${entry.public ? 'badge-public' : 'badge-auth'}">
+                        ${entry.public ? 'Public' : 'Auth'}
+                    </span>
+                </div>
+                <div class="item-actions">
+                    ${!entry.public && entry.reauthorizeUrl ? `
+                        <button class="action-button" onclick="window.open('${escapeHtml(entry.reauthorizeUrl)}', '_blank')">
+                            Reauth
+                        </button>
+                    ` : ''}
+                    <button class="action-button remove" onclick="removeContextEntry('${escapeHtml(entry.url)}', '${escapeHtml(entry.profile || '')}')">
+                        Remove
+                    </button>
+                </div>
+            `;
+
+            return div;
+        }
+
+        function renderMcpServer(server) {
+            const div = document.createElement('div');
+            div.className = 'item';
+
+            const isAuthenticated = !!server.access_token;
+
+            div.innerHTML = `
+                <div class="item-info">
+                    <div class="item-name">${escapeHtml(server.name || 'Unnamed Server')}</div>
+                    <div class="item-url">${escapeHtml(server.url)}</div>
+                </div>
+                <div class="item-badges">
+                    <span class="badge ${server.public ? 'badge-public' : 'badge-auth'}">
+                        ${server.public ? 'Public' : 'Auth'}
+                    </span>
+                </div>
+                <div class="item-actions">
+                    ${!server.public && server.reauthorizeUrl ? `
+                        <button class="action-button" onclick="window.open('${escapeHtml(server.reauthorizeUrl)}', '_blank')">
+                            Reauth
+                        </button>
+                    ` : ''}
+                    <button class="action-button remove" onclick="removeMcpServer('${escapeHtml(server.url)}', '${escapeHtml(server.profile || '')}')">
+                        Remove
+                    </button>
+                </div>
+            `;
+
+            return div;
+        }
+
+        // Load functions
+        async function loadContextEntries() {
+            const contextList = document.getElementById('contextList');
+            const entries = await fetchContextEntries();
+
+            contextList.innerHTML = '';
+
+            if (entries.length === 0) {
+                contextList.innerHTML = '<div class="empty-state">No context entries yet. Add one above to get started.</div>';
+            } else {
+                entries.forEach(entry => {
+                    contextList.appendChild(renderContextEntry(entry));
+                });
+            }
+        }
+
+        async function loadMcpServers() {
+            const mcpList = document.getElementById('mcpList');
+            const servers = await fetchMcpServers();
+
+            mcpList.innerHTML = '';
+
+            if (servers.length === 0) {
+                mcpList.innerHTML = '<div class="empty-state">No MCP servers yet. Add one above to get started.</div>';
+            } else {
+                servers.forEach(server => {
+                    mcpList.appendChild(renderMcpServer(server));
+                });
+            }
+        }
+
+        // Add button handlers
+        document.getElementById('addContextButton').addEventListener('click', () => {
+            const input = document.getElementById('contextUrlInput');
+            const url = input.value.trim();
+
+            if (!url) {
+                showToast('Please enter a URL', 'error');
+                return;
+            }
+
+            // Open OAuth flow in new tab
+            window.open(`/mcp/login/context?url=${encodeURIComponent(url)}`, '_blank');
+            input.value = '';
+            showToast('Opening authentication window...', 'success');
+
+            // Refresh list after a delay to give time for auth
+            setTimeout(() => loadContextEntries(), 2000);
+        });
+
+        document.getElementById('addMcpButton').addEventListener('click', () => {
+            const input = document.getElementById('mcpUrlInput');
+            const url = input.value.trim();
+
+            if (!url) {
+                showToast('Please enter a URL', 'error');
+                return;
+            }
+
+            // Open OAuth flow in new tab
+            window.open(`/mcp/login/mcp?url=${encodeURIComponent(url)}`, '_blank');
+            input.value = '';
+            showToast('Opening authentication window...', 'success');
+
+            // Refresh list after a delay to give time for auth
+            setTimeout(() => loadMcpServers(), 2000);
+        });
+
+        // Handle query param for pre-filling context URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlParam = urlParams.get('url');
+        if (urlParam) {
+            document.getElementById('contextUrlInput').value = urlParam;
+        }
+
+        // Utility function
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Initial load
+        loadContextEntries();
+        loadMcpServers();
+
+        // Reload data when window regains focus (after OAuth)
+        window.addEventListener('focus', () => {
+            loadContextEntries();
+            loadMcpServers();
+        });
+    </script>
+</body>
+
+</html>

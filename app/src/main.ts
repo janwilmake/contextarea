@@ -3,7 +3,8 @@
 /// <reference lib="esnext" />
 
 import { UserContext, withSimplerAuth } from "simplerauth-client";
-import { chatCompletionsProxy, OAuthProviders } from "mcp-completions";
+import { createIdpMiddleware, fetchUrlContext, getAuthorizationForContext, createTools, type IdpKV } from "./idp-middleware";
+import { chatCompletionsProxy } from "./mcp-completions-stateless";
 import { ImageResponse } from "workers-og";
 import { DurableObject } from "cloudflare:workers";
 
@@ -23,7 +24,6 @@ import { getMarkdownResponse } from "./getMarkdownResponse.js";
 
 export { RatelimitDO };
 export { DORM };
-export { OAuthProviders };
 
 const PRICE_MARKUP_FACTOR = 1.5;
 const CLIENT_INFO = {
@@ -43,6 +43,25 @@ interface Env extends StripeflareEnv, LLMSecrets {
   ASSETS: Fetcher;
   FETCHER: Fetcher; // Self service binding to avoid 522 on same-domain fetches
   RATELIMIT_DO: DurableObjectNamespace<RatelimitDO>;
+  IDP_KV: KVNamespace;
+}
+
+function kvFromNamespace(ns: KVNamespace): IdpKV {
+  return {
+    async get(key) { return ns.get(key); },
+    async set(key, value) { await ns.put(key, value); },
+    async del(key) { await ns.delete(key); },
+    async list(prefix) {
+      const keys: string[] = [];
+      let cursor: string | undefined;
+      do {
+        const result = await ns.list({ prefix, cursor });
+        for (const key of result.keys) keys.push(key.name);
+        cursor = result.list_complete ? undefined : result.cursor;
+      } while (cursor);
+      return keys;
+    }
+  };
 }
 
 /**
@@ -463,39 +482,63 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       console.log("gonna do request ", fullUrl);
 
-      const { fetchProxy } = chatCompletionsProxy(this.env, {
-        baseUrl: "https://contextarea.com",
-        userId: user?.userId,
-        clientInfo: CLIENT_INFO,
-        extractUrl: {
-          url: "https://llmtext.com",
-          bearerToken: this.env.PARALLEL_SECRET
-        },
-        shadowUrls: { "github.com": "uithub.com", "x.com": "xymake.com" }
-      });
+      // Pre-fetch URL context using idp-middleware
+      const kv = kvFromNamespace(this.env.IDP_KV);
+      const urlContextResult = await fetchUrlContext(
+        prompt, user?.userId || "", "default", kv
+      );
 
-      const mcpUrls = frontMatter?.mcp
-        ? frontMatter.mcp
-            .split(/[,\s]+/) // Split by comma OR whitespace (one or more)
-            .map((x) =>
-              x.startsWith("https://") ? x.trim() : "https://" + x.trim()
-            )
-            .filter((x) => {
-              try {
-                new URL(x);
-                return true;
-              } catch (e) {
-                return false;
-              }
-            })
-        : undefined;
+      if (urlContextResult.status === 200 && urlContextResult.results.length > 0) {
+        const contextText = urlContextResult.results
+          .map(r => `<context url="${r.url}">\n${r.content}\n</context>`)
+          .join("\n\n");
+        messages.unshift({ role: "system", content: contextText });
+      }
 
-      const tools =
-        mcpUrls?.length && user?.userId
-          ? mcpUrls.map((server_url) => ({ type: "mcp", server_url }))
-          : [];
+      // Extract MCP server URLs from front matter and @-tagged URLs in prompt
+      const mcpUrls: string[] = [];
+      if (frontMatter?.mcp) {
+        for (const url of String(frontMatter.mcp).split(',')) {
+          const trimmed = url.trim();
+          if (trimmed) {
+            mcpUrls.push(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+          }
+        }
+      }
+      // Detect @https://... URLs in prompt text as MCP servers
+      const atUrlRe = /@(https?:\/\/[^\s]+)/g;
+      let atMatch;
+      while ((atMatch = atUrlRe.exec(prompt)) !== null) {
+        const url = atMatch[1].replace(/[)\].,;:!?'"]+$/, '');
+        if (!mcpUrls.includes(url)) mcpUrls.push(url);
+      }
 
-      const llmResponse = await fetchProxy(fullUrl, {
+      // Resolve MCP tool authorization via idp-middleware
+      const mcpTools: { type: "mcp"; server_url: string; authorization?: string; require_approval: "never" }[] = [];
+      if (mcpUrls.length > 0) {
+        const toolResults = await createTools(
+          mcpUrls.map(url => ({ server_url: url })),
+          user?.userId || "",
+          "default",
+          kv
+        );
+        for (const url of mcpUrls) {
+          const result = toolResults.find(t => t.server_url === url);
+          mcpTools.push({
+            type: "mcp",
+            server_url: url,
+            ...(result?.authorization && { authorization: result.authorization }),
+            require_approval: "never",
+          });
+        }
+      }
+
+      // Use MCP-aware fetch proxy when MCP tools are present
+      const fetchFn = mcpTools.length > 0
+        ? chatCompletionsProxy({ clientInfo: CLIENT_INFO }).fetchProxy
+        : fetch;
+
+      const llmResponse = await fetchFn(fullUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -506,7 +549,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
           messages,
           stream: true,
           stream_options: { include_usage: true },
-          tools: [{ type: "url_context" }, ...tools],
+          ...(mcpTools.length > 0 && { tools: mcpTools }),
           ...(modelConfig.extra && { ...modelConfig.extra }),
           ...(isCloudflare
             ? {
@@ -1228,7 +1271,7 @@ async function handleGetPaste(url: URL, env: Env): Promise<Response> {
   });
 }
 
-async function handleContext(url: URL, env: Env): Promise<Response> {
+async function handleContext(url: URL, env: Env, userId: string | null): Promise<Response> {
   const targetUrl = url.searchParams.get("url");
   if (!targetUrl) {
     return new Response(JSON.stringify({ error: "Missing url parameter" }), {
@@ -1253,16 +1296,54 @@ async function handleContext(url: URL, env: Env): Promise<Response> {
       parsedTarget.hostname === "contextarea.com" ||
       parsedTarget.hostname === "www.contextarea.com";
 
+    const headers: Record<string, string> = {
+      "User-Agent": "ContextArea/1.0",
+      Accept: "text/markdown"
+    };
+
+    // If user is logged in, try to get auth for this URL
+    if (userId) {
+      const kv = kvFromNamespace(env.IDP_KV);
+      const auth = await getAuthorizationForContext(kv, userId, targetUrl, "default", {
+        baseUrl: "https://contextarea.com",
+        pathPrefix: "/mcp"
+      });
+      if (auth.Authorization) {
+        headers["Authorization"] = auth.Authorization;
+      }
+    }
+
     const response = await (isSelf ? env.FETCHER : globalThis).fetch(
       targetUrl,
       {
-        headers: {
-          "User-Agent": "ContextArea/1.0",
-          Accept: "text/markdown"
-        },
+        headers,
         redirect: "follow"
       }
     );
+
+    // Return 401 with action info for the client
+    if (response.status === 401) {
+      return new Response(JSON.stringify({
+        error: "Unauthorized",
+        status: 401,
+        action: `/dashboard?url=${encodeURIComponent(targetUrl)}`
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Return 404 with action info for the client
+    if (response.status === 404) {
+      return new Response(JSON.stringify({
+        error: "Not found",
+        status: 404,
+        action: `/dashboard?url=${encodeURIComponent(targetUrl)}`
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     const contentType = response.headers.get("Content-Type") || "";
     const text = await response.text();
@@ -1340,12 +1421,12 @@ export default {
         return handleGetPaste(url, env);
       }
 
-      if (pathname === "/context" && request.method === "GET") {
-        return handleContext(url, env);
-      }
-
       // Get model configuration
       const userId = ctx.user?.id || null;
+
+      if (pathname === "/context" && request.method === "GET") {
+        return handleContext(url, env, userId);
+      }
 
       const t = Date.now();
       // Apply stripeflare middleware
@@ -1361,16 +1442,42 @@ export default {
         return new Response(JSON.stringify(user || {}, undefined, 2), {});
       }
 
-      const { idpMiddleware } = chatCompletionsProxy(env, {
-        baseUrl: "https://contextarea.com",
+      const idpHandlers = createIdpMiddleware({
+        kv: kvFromNamespace(env.IDP_KV),
         userId,
+        profile: "default",
         clientInfo: CLIENT_INFO,
+        baseUrl: "https://contextarea.com",
         pathPrefix: "/mcp"
       });
 
-      const idpResponse = await idpMiddleware(request, env, ctx);
+      // Serve dashboard page
+      if (pathname === "/dashboard") {
+        return env.ASSETS.fetch(new Request(new URL("/dashboard.html", request.url)));
+      }
+
+      // IDP middleware handles /mcp/login/* and /mcp/callback/*
+      const idpResponse = await idpHandlers.middleware(request);
       if (idpResponse) {
         return idpResponse;
+      }
+
+      // IDP API routes
+      if (pathname === "/mcp/api/mcp-servers" && request.method === "GET") {
+        return Response.json(await idpHandlers.getMcpServers());
+      }
+      if (pathname === "/mcp/api/context-entries" && request.method === "GET") {
+        return Response.json(await idpHandlers.getContextEntries());
+      }
+      if (pathname === "/mcp/api/mcp-servers" && request.method === "DELETE") {
+        const body = await request.json() as { url: string; profile: string };
+        await idpHandlers.removeMcpServer(body.url, body.profile);
+        return Response.json({ ok: true });
+      }
+      if (pathname === "/mcp/api/context-entries" && request.method === "DELETE") {
+        const body = await request.json() as { url: string; profile: string };
+        await idpHandlers.removeContext(body.url, body.profile);
+        return Response.json({ ok: true });
       }
 
       // Only accept POST and GET methods

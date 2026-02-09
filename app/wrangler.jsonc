@@ -18,6 +18,10 @@
     {
       "binding": "PASTES",
       "id": "c582dfcc2f034037beb67658c17bf9a8"
+    },
+    {
+      "binding": "IDP_KV",
+      "id": "709e22b93e414dfbb0e6de17ded170cf"
     }
   ],
   "services": [
@@ -39,10 +43,6 @@
       {
         "name": "RATELIMIT_DO",
         "class_name": "RatelimitDO"
-      },
-      {
-        "name": "OAuthProviders",
-        "class_name": "OAuthProviders"
       }
     ]
   },
@@ -68,6 +68,10 @@
       "tag": "v7",
       "new_sqlite_classes": ["OAuthProviders"],
       "deleted_classes": ["MCPProviders"]
+    },
+    {
+      "tag": "v8",
+      "deleted_classes": ["OAuthProviders"]
     }
   ]
 }

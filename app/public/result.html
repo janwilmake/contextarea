@@ -300,6 +300,16 @@
                 color: var(--text-primary) !important;
             }
 
+            .nav-links a:has(img) {
+                background-color: transparent !important;
+                padding: 8px 0 !important;
+                border: none !important;
+            }
+
+            .nav-links a:has(img):hover {
+                background-color: transparent !important;
+            }
+
             /* Prompt editor mobile height */
             .prompt-editor-container {
                 height: 300px !important;
@@ -406,6 +416,16 @@
             color: var(--text-primary);
             background-color: var(--bg-tertiary);
             border-color: var(--border-secondary);
+        }
+
+        .header-links a:has(img) {
+            border: none;
+            background-color: transparent;
+            padding: 6px 0;
+        }
+
+        .header-links a:has(img):hover {
+            background-color: transparent;
         }
 
         .content-container {
@@ -830,9 +850,10 @@
             <h1>CONTEXTAREA</h1>
         </div>
         <div class="nav-links">
-            <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank">Why Context
-                Area?</a>
-            <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank">Privacy</a>
+            <a href="/dashboard" title="Manage MCP & Context">Dashboard</a>
+            <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
+                <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
+            </a>
         </div>
     </div>
 
@@ -844,10 +865,10 @@
                 <h1>CONTEXTAREA</h1>
             </a>
             <div class="header-links">
-                <a href="https://github.com/janwilmake/contextarea/blob/main/README.md" target="_blank"
-                    title="Documentation">Why Context Area?</a>
-                <a href="https://github.com/janwilmake/contextarea/blob/main/PRIVACY.md" target="_blank"
-                    title="Privacy Policy">Privacy</a>
+                <a href="/dashboard" title="Manage MCP & Context">Dashboard</a>
+                <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
+                    <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
+                </a>
             </div>
         </div>
 
@@ -1667,11 +1688,32 @@
 
         // Initialize Monaco editor for the prompt panel
         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
-        require(['vs/editor/editor.main'], function () {
+        require(['vs/editor/editor.main'], async function () {
+            // Load user's MCP servers for @-suggestions
+            let mcpSuggestions = [];
+            try {
+                const res = await fetch('/mcp/api/mcp-servers');
+                if (res.ok) {
+                    const servers = await res.json();
+                    mcpSuggestions = servers.map(s => {
+                        const hostname = new URL(s.url).hostname;
+                        return {
+                            name: s.name || hostname.replace(/\./g, '-'),
+                            url: s.url,
+                            icon: '',
+                            description: s.url,
+                            insertText: '@'+s.url,
+                        };
+                    });
+                }
+            } catch (e) { console.warn('Could not load MCP servers:', e); }
+            window._mcpSuggestions = mcpSuggestions;
+
             const ca = ContextArea.create(document.getElementById('contextarea-editor'), {
                 pasteApiUrl: '/paste',
                 contextApiUrl: '/context',
                 value: '', // Will be set by updateUI
+                suggestions: mcpSuggestions,
                 editorOptions: {
                     lineNumbers: 'on',
                     wordWrap: 'on',

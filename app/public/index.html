@@ -670,8 +670,33 @@
             const systemPrompt = await loadSystemPrompt();
             const { frontMatter, content } = parseFrontMatter(promptText.trim());
 
+            // Resolve @mentions to MCP server URLs and merge into front matter
+            const suggestions = window._mcpSuggestions || [];
+            const mcpUrlSet = new Set();
+            if (frontMatter) {
+                const mcpLine = frontMatter.match(/^mcp:\s*(.+)$/m);
+                if (mcpLine) {
+                    mcpLine[1].split(',').forEach(u => { const t = u.trim(); if (t) mcpUrlSet.add(t); });
+                }
+            }
+            if (suggestions.length > 0) {
+                const names = suggestions.map(s => s.name);
+                const mentionRe = new RegExp('@(' + names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\b', 'g');
+                let mm;
+                while ((mm = mentionRe.exec(content)) !== null) {
+                    const s = suggestions.find(x => x.name === mm[1]);
+                    if (s) mcpUrlSet.add(normalizeMcpUrl(s.url));
+                }
+            }
+            let finalFM = frontMatter || '';
+            if (mcpUrlSet.size > 0) {
+                finalFM = finalFM.replace(/^mcp:.*\n?/m, '').trim();
+                const mcpLine = 'mcp: ' + Array.from(mcpUrlSet).join(',');
+                finalFM = finalFM ? finalFM + '\n' + mcpLine : mcpLine;
+            }
+
             let finalPrompt = '';
-            if (frontMatter) finalPrompt = `---\n${frontMatter}\n---\n`;
+            if (finalFM) finalPrompt = `---\n${finalFM}\n---\n`;
             if (systemPrompt && systemPrompt.trim() !== '') finalPrompt += systemPrompt;
             finalPrompt += content;
 
@@ -723,15 +748,36 @@
 
         // Initialize Monaco + ContextArea
         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
-        require(['vs/editor/editor.main'], function () {
+        require(['vs/editor/editor.main'], async function () {
             const submitButton = document.getElementById('submitButton');
             const configButton = document.getElementById('configButton');
             const initialContent = getInitialContent();
+
+            // Load user's MCP servers for @-suggestions
+            let mcpSuggestions = [];
+            try {
+                const res = await fetch('/mcp/api/mcp-servers');
+                if (res.ok) {
+                    const servers = await res.json();
+                    mcpSuggestions = servers.map(s => {
+                        const hostname = new URL(s.url).hostname;
+                        return {
+                            name: s.name || hostname.replace(/\./g, '-'),
+                            url: s.url,
+                            icon: '',
+                            description: s.url,
+                            insertText: '@'+s.url,
+                        };
+                    });
+                }
+            } catch (e) { console.warn('Could not load MCP servers:', e); }
+            window._mcpSuggestions = mcpSuggestions;
 
             const ca = ContextArea.create(document.getElementById('contextarea-editor'), {
                 pasteApiUrl: '/paste',
                 contextApiUrl: '/context',
                 value: initialContent,
+                suggestions: mcpSuggestions,
                 onSubmit(value) {
                     handleSubmit(value);
                 },

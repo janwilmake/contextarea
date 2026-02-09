@@ -5,7 +5,7 @@
  *   const ca = ContextArea.create(element, {
  *     pasteApiUrl: '/paste',
  *     contextApiUrl: '/context',
- *     suggestions: [{ name, url, icon, description }],  // @-triggered autocomplete
+ *     suggestions: [{ name, url, icon, description, insertText? }],  // @-triggered autocomplete
  *     onSubmit: (value, instance) => { ... },            // Shift+Enter callback
  *   });
  *   ca.editor   // underlying Monaco editor instance
@@ -102,6 +102,7 @@
                 automaticLayout: true,
                 inlayHints: { enabled: 'on', fontSize: 12 },
                 codeLens: false,
+                links: false,
                 quickSuggestions: false,
                 suggestOnTriggerCharacters: (options.suggestions?.length > 0),
             }, options.editorOptions);
@@ -189,12 +190,13 @@
                     decorations.push({ range, options: { inlineClassName: isError ? 'url-decoration-error' : 'url-decoration' } });
                 }
 
-                // 2. Bare URLs (skip those already inside markdown links)
+                // 2. Bare URLs (skip those inside markdown links or prepended with @)
                 const re = new RegExp(URL_REGEX.source, 'g');
                 while ((m = re.exec(line)) !== null) {
                     const matchStart = m.index;
                     const matchEnd = m.index + m[0].length;
                     if (mdLinkRanges.some(r => matchStart >= r.start && matchEnd <= r.end)) continue;
+                    if (matchStart > 0 && line[matchStart - 1] === '@') continue;
                     const url = m[0].replace(/[)\].,;:!?'"]+$/, '');
                     const range = new monaco.Range(i + 1, m.index + 1, i + 1, m.index + 1 + url.length);
                     if (!urlsInText.has(url)) urlsInText.set(url, []);
@@ -224,6 +226,16 @@
                     const r = await fetch(`${this.config.contextApiUrl}?url=${encodeURIComponent(url)}`);
                     if (!r.ok) throw new Error(r.status);
                     const data = await r.json();
+
+                    // Handle 401/404 with action redirect
+                    if (data.status === 401 || data.status === 404) {
+                        this.contextCache.set(url, data);
+                        if (this.onStatus) {
+                            this.onStatus(`${data.error}: ${url}`, false, data.action);
+                        }
+                        return data;
+                    }
+
                     this.contextCache.set(url, data);
                     return data;
                 } finally {
@@ -268,6 +280,9 @@
                                     return { range, contents: [{ value: '\u23f3 Loading context...', isTrusted: true }] };
                                 }
                                 if (!data) return null;
+                                if (data.error && data.action) {
+                                    return { range, contents: [{ value: `**${data.error}**\n\n[Authorize in Dashboard](${data.action})`, isTrusted: true }] };
+                                }
                                 if (data.error) {
                                     return { range, contents: [{ value: `**Error:** ${data.error}`, isTrusted: true }] };
                                 }
@@ -298,6 +313,7 @@
                                 if (lineIndex < range.startLineNumber || lineIndex > range.endLineNumber) continue;
                                 let label = '';
                                 if (loading) label = '\u23f3 loading';
+                                else if (data && data.error && data.action) label = `\ud83d\udd12 ${data.error}`;
                                 else if (data && data.error) label = `\u26a0 ${data.error}`;
                                 else if (data) {
                                     if (data.tokens) label += `${data.tokens} tokens`;
@@ -489,7 +505,7 @@
                             suggestions: items.map((s, i) => ({
                                 label: { label: s.name, description: s.description },
                                 kind: monaco.languages.CompletionItemKind.Module,
-                                insertText: `@${s.name}`,
+                                insertText: s.insertText ?? `@${s.name}`,
                                 range,
                                 sortText: String(i).padStart(3, '0'),
                                 detail: s.description,
@@ -579,10 +595,20 @@
         }
 
         _updateMentionDecorations() {
-            const names = this.suggestions.map(s => s.name);
-            if (!names.length) return;
+            // Build patterns from custom insertText values
+            const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const patterns = [];
+            const patternToSuggestion = new Map();
+            for (const s of this.suggestions) {
+                if (s.insertText && s.insertText.startsWith('@')) {
+                    const afterAt = s.insertText.slice(1);
+                    patterns.push(escRe(afterAt));
+                    patternToSuggestion.set(afterAt, s);
+                }
+            }
+            if (!patterns.length) return;
 
-            const re = new RegExp(`@(${names.join('|')})\\b`, 'g');
+            const re = new RegExp(`@(${patterns.join('|')})(?=\\s|$)`, 'g');
             const model = this.editor.getModel();
             const lines = model.getValue().split('\n');
             const decorations = [];
@@ -590,11 +616,12 @@
             lines.forEach((line, i) => {
                 let m;
                 while ((m = re.exec(line)) !== null) {
+                    const s = patternToSuggestion.get(m[1]);
                     decorations.push({
                         range: new monaco.Range(i + 1, m.index + 1, i + 1, m.index + 1 + m[0].length),
                         options: {
                             inlineClassName: 'ca-mention',
-                            hoverMessage: { value: `**${m[1]}**` },
+                            hoverMessage: { value: `**${s?.name || m[1]}**` },
                         },
                     });
                 }

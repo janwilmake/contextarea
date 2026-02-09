@@ -628,6 +628,21 @@ class MarkdownHighlighter {
     return html;
   }
 
+  // Render a <details> block with lightweight code handling (no heavy code block UI)
+  renderDetailsBlock(inner) {
+    const rendered = inner.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+      const trimmed = code.trimEnd();
+      let highlighted = this.escapeHTML(trimmed);
+      if (typeof hljs !== "undefined" && lang) {
+        try {
+          highlighted = hljs.highlight(trimmed, { language: lang }).value;
+        } catch (e) {}
+      }
+      return `<pre style="margin:4px 0;"><code class="hljs language-${lang || "plaintext"}">${highlighted}</code></pre>`;
+    });
+    return `<details>${rendered}</details>`;
+  }
+
   // Main function to highlight markdown text using marked
   highlightMarkdown(text) {
     // Check if marked is available
@@ -637,8 +652,21 @@ class MarkdownHighlighter {
     }
 
     try {
-      // Parse markdown with marked
-      let parsedHtml = marked.parse(text);
+      // Extract <details> blocks before marked processing so their code fences
+      // don't go through the heavy code block renderer (buttons, iframes, etc.)
+      const detailsBlocks = [];
+      const processed = text.replace(/<details>([\s\S]*?)<\/details>/g, (_, inner) => {
+        const idx = detailsBlocks.length;
+        detailsBlocks.push(this.renderDetailsBlock(inner));
+        return `<div data-details-idx="${idx}"></div>`;
+      });
+
+      let parsedHtml = marked.parse(processed);
+
+      // Restore details blocks (marked passes through block-level HTML as-is)
+      for (let i = 0; i < detailsBlocks.length; i++) {
+        parsedHtml = parsedHtml.replace(`<div data-details-idx="${i}"></div>`, detailsBlocks[i]);
+      }
 
       return parsedHtml;
     } catch (error) {
