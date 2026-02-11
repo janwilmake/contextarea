@@ -1,7 +1,12 @@
 # Improvements
 
-- get mcp names and icons right from the initialization step
-- ensure to get suggestion to go to dashboard for MCPs that aren't found
+- ✅ ensure to get suggestion to go to dashboard for MCPs that aren't found
+- get mcp names and icons right from the initialization step:
+  - see https://contextarea.com/rules-httpsraw-coj33ter39ts8x
+    - we can implement this new sep before any mcp adopts it
+    - we can try /initialize method but authed servers won't show it
+    - we could use icons from the hostname /favicon-32x32.png or so
+    - we can create a marketplace where we customly provide names and icons
 - create a marketplace of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
 - determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
 

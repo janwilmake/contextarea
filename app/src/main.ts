@@ -1,9 +1,16 @@
 // @ts-check
 /// <reference types="@cloudflare/workers-types" />
 /// <reference lib="esnext" />
+import { studioMiddleware } from "queryable-object";
 
 import { UserContext, withSimplerAuth } from "simplerauth-client";
-import { createIdpMiddleware, fetchUrlContext, getAuthorizationForContext, createTools, type IdpKV } from "./idp-middleware";
+import {
+  createIdpMiddleware,
+  fetchUrlContext,
+  getAuthorizationForContext,
+  createTools,
+  type IdpKV
+} from "./idp-middleware";
 import { chatCompletionsProxy } from "./mcp-completions-stateless";
 import { ImageResponse } from "workers-og";
 import { DurableObject } from "cloudflare:workers";
@@ -13,7 +20,8 @@ import {
   type StripeUser,
   DORM,
   handleStripeWebhook,
-  getStripeflareUser
+  getStripeflareUser,
+  AGGREGATE_NAME
 } from "./stripeflare-simple";
 import { generateTitleWithAI } from "./generateTitle.js";
 
@@ -48,9 +56,15 @@ interface Env extends StripeflareEnv, LLMSecrets {
 
 function kvFromNamespace(ns: KVNamespace): IdpKV {
   return {
-    async get(key) { return ns.get(key); },
-    async set(key, value) { await ns.put(key, value); },
-    async del(key) { await ns.delete(key); },
+    async get(key) {
+      return ns.get(key);
+    },
+    async set(key, value) {
+      await ns.put(key, value);
+    },
+    async del(key) {
+      await ns.delete(key);
+    },
     async list(prefix) {
       const keys: string[] = [];
       let cursor: string | undefined;
@@ -485,12 +499,18 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Pre-fetch URL context using idp-middleware
       const kv = kvFromNamespace(this.env.IDP_KV);
       const urlContextResult = await fetchUrlContext(
-        prompt, user?.userId || "", "default", kv
+        prompt,
+        user?.userId || "",
+        "default",
+        kv
       );
 
-      if (urlContextResult.status === 200 && urlContextResult.results.length > 0) {
+      if (
+        urlContextResult.status === 200 &&
+        urlContextResult.results.length > 0
+      ) {
         const contextText = urlContextResult.results
-          .map(r => `<context url="${r.url}">\n${r.content}\n</context>`)
+          .map((r) => `<context url="${r.url}">\n${r.content}\n</context>`)
           .join("\n\n");
         messages.unshift({ role: "system", content: contextText });
       }
@@ -498,10 +518,12 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Extract MCP server URLs from front matter and @-tagged URLs in prompt
       const mcpUrls: string[] = [];
       if (frontMatter?.mcp) {
-        for (const url of String(frontMatter.mcp).split(',')) {
+        for (const url of String(frontMatter.mcp).split(",")) {
           const trimmed = url.trim();
           if (trimmed) {
-            mcpUrls.push(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+            mcpUrls.push(
+              trimmed.startsWith("http") ? trimmed : `https://${trimmed}`
+            );
           }
         }
       }
@@ -509,34 +531,42 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const atUrlRe = /@(https?:\/\/[^\s]+)/g;
       let atMatch;
       while ((atMatch = atUrlRe.exec(prompt)) !== null) {
-        const url = atMatch[1].replace(/[)\].,;:!?'"]+$/, '');
+        const url = atMatch[1].replace(/[)\].,;:!?'"]+$/, "");
         if (!mcpUrls.includes(url)) mcpUrls.push(url);
       }
 
       // Resolve MCP tool authorization via idp-middleware
-      const mcpTools: { type: "mcp"; server_url: string; authorization?: string; require_approval: "never" }[] = [];
+      const mcpTools: {
+        type: "mcp";
+        server_url: string;
+        authorization?: string;
+        require_approval: "never";
+      }[] = [];
       if (mcpUrls.length > 0) {
         const toolResults = await createTools(
-          mcpUrls.map(url => ({ server_url: url })),
+          mcpUrls.map((url) => ({ server_url: url })),
           user?.userId || "",
           "default",
           kv
         );
         for (const url of mcpUrls) {
-          const result = toolResults.find(t => t.server_url === url);
+          const result = toolResults.find((t) => t.server_url === url);
           mcpTools.push({
             type: "mcp",
             server_url: url,
-            ...(result?.authorization && { authorization: result.authorization }),
-            require_approval: "never",
+            ...(result?.authorization && {
+              authorization: result.authorization
+            }),
+            require_approval: "never"
           });
         }
       }
 
       // Use MCP-aware fetch proxy when MCP tools are present
-      const fetchFn = mcpTools.length > 0
-        ? chatCompletionsProxy({ clientInfo: CLIENT_INFO }).fetchProxy
-        : fetch;
+      const fetchFn =
+        mcpTools.length > 0
+          ? chatCompletionsProxy({ clientInfo: CLIENT_INFO }).fetchProxy
+          : fetch;
 
       const llmResponse = await fetchFn(fullUrl, {
         method: "POST",
@@ -1233,7 +1263,7 @@ async function handlePaste(
     });
   }
 
-  const id = crypto.randomUUID().slice(0, 8);
+  const id = crypto.randomUUID().slice(0, 16);
   const content = await request.text();
   const contentType = request.headers.get("Content-Type") || "text/plain";
 
@@ -1271,7 +1301,11 @@ async function handleGetPaste(url: URL, env: Env): Promise<Response> {
   });
 }
 
-async function handleContext(url: URL, env: Env, userId: string | null): Promise<Response> {
+async function handleContext(
+  url: URL,
+  env: Env,
+  userId: string | null
+): Promise<Response> {
   const targetUrl = url.searchParams.get("url");
   if (!targetUrl) {
     return new Response(JSON.stringify({ error: "Missing url parameter" }), {
@@ -1304,10 +1338,16 @@ async function handleContext(url: URL, env: Env, userId: string | null): Promise
     // If user is logged in, try to get auth for this URL
     if (userId) {
       const kv = kvFromNamespace(env.IDP_KV);
-      const auth = await getAuthorizationForContext(kv, userId, targetUrl, "default", {
-        baseUrl: "https://contextarea.com",
-        pathPrefix: "/mcp"
-      });
+      const auth = await getAuthorizationForContext(
+        kv,
+        userId,
+        targetUrl,
+        "default",
+        {
+          baseUrl: "https://contextarea.com",
+          pathPrefix: "/mcp"
+        }
+      );
       if (auth.Authorization) {
         headers["Authorization"] = auth.Authorization;
       }
@@ -1323,26 +1363,32 @@ async function handleContext(url: URL, env: Env, userId: string | null): Promise
 
     // Return 401 with action info for the client
     if (response.status === 401) {
-      return new Response(JSON.stringify({
-        error: "Unauthorized",
-        status: 401,
-        action: `/dashboard?url=${encodeURIComponent(targetUrl)}`
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          status: 401,
+          action: `/dashboard?url=${encodeURIComponent(targetUrl)}`
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
     }
 
     // Return 404 with action info for the client
     if (response.status === 404) {
-      return new Response(JSON.stringify({
-        error: "Not found",
-        status: 404,
-        action: `/dashboard?url=${encodeURIComponent(targetUrl)}`
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Not found",
+          status: 404,
+          action: `/dashboard?url=${encodeURIComponent(targetUrl)}`
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
     }
 
     const contentType = response.headers.get("Content-Type") || "";
@@ -1424,6 +1470,16 @@ export default {
       // Get model configuration
       const userId = ctx.user?.id || null;
 
+      if (pathname === "/admin" && ctx.user?.username === "janwilmake") {
+        const stub = env.DORM_NAMESPACE.getByName(
+          `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}`
+        );
+
+        return studioMiddleware(request, stub.raw, {
+          dangerouslyDisableAuth: true
+        });
+      }
+
       if (pathname === "/context" && request.method === "GET") {
         return handleContext(url, env, userId);
       }
@@ -1453,7 +1509,9 @@ export default {
 
       // Serve dashboard page
       if (pathname === "/dashboard") {
-        return env.ASSETS.fetch(new Request(new URL("/dashboard.html", request.url)));
+        return env.ASSETS.fetch(
+          new Request(new URL("/dashboard.html", request.url))
+        );
       }
 
       // IDP middleware handles /mcp/login/* and /mcp/callback/*
@@ -1470,12 +1528,15 @@ export default {
         return Response.json(await idpHandlers.getContextEntries());
       }
       if (pathname === "/mcp/api/mcp-servers" && request.method === "DELETE") {
-        const body = await request.json() as { url: string; profile: string };
+        const body = (await request.json()) as { url: string; profile: string };
         await idpHandlers.removeMcpServer(body.url, body.profile);
         return Response.json({ ok: true });
       }
-      if (pathname === "/mcp/api/context-entries" && request.method === "DELETE") {
-        const body = await request.json() as { url: string; profile: string };
+      if (
+        pathname === "/mcp/api/context-entries" &&
+        request.method === "DELETE"
+      ) {
+        const body = (await request.json()) as { url: string; profile: string };
         await idpHandlers.removeContext(body.url, body.profile);
         return Response.json({ ok: true });
       }

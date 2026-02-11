@@ -14,9 +14,9 @@ import { Migratable } from "migratable-object";
         email TEXT
       )`,
       `CREATE INDEX idx_users_balance ON users(balance)`,
-      `CREATE INDEX idx_users_email ON users(email)`,
-    ],
-  },
+      `CREATE INDEX idx_users_email ON users(email)`
+    ]
+  }
 })
 @Queryable()
 export class DORM extends DurableObject {
@@ -28,11 +28,12 @@ export class DORM extends DurableObject {
   }
 }
 
-const AGGREGATE_NAME = "aggregate";
+export const AGGREGATE_NAME = "aggregate";
 
 export interface Env {
   DORM_NAMESPACE: DurableObjectNamespace<DORM & QueryableHandler>;
   STRIPE_PAYMENT_LINK: string;
+  STRIPE_PAYMENT_LINK_ID: string;
   STRIPE_SECRET: string;
   STRIPE_WEBHOOK_SIGNING_SECRET: string;
   STRIPEFLARE_VERSION: string;
@@ -46,7 +47,7 @@ export type StripeUser = {
   paymentLink: string;
   charge: (
     amountCent: number,
-    allowNegativeBalance: boolean,
+    allowNegativeBalance: boolean
   ) => Promise<{
     charged: boolean;
     message: string;
@@ -54,7 +55,7 @@ export type StripeUser = {
 };
 
 const streamToBuffer = async (
-  readableStream: ReadableStream<Uint8Array>,
+  readableStream: ReadableStream<Uint8Array>
 ): Promise<Uint8Array> => {
   const chunks: Uint8Array[] = [];
   const reader = readableStream.getReader();
@@ -87,7 +88,7 @@ const streamToBuffer = async (
 export async function getStripeflareUser(
   userId: string | null,
   env: Env,
-  ctx: ExecutionContext,
+  ctx: ExecutionContext
 ): Promise<StripeUser | null> {
   if (!userId) {
     return null;
@@ -106,9 +107,9 @@ export async function getStripeflareUser(
     env.DORM_NAMESPACE,
     [
       { name: stubName },
-      { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
+      { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` }
     ],
-    ctx,
+    ctx
   );
 
   let user: StripeUser | null = null;
@@ -116,7 +117,7 @@ export async function getStripeflareUser(
   try {
     const userResult = (await client.exec(
       "SELECT * FROM users WHERE user_id = ?",
-      userId,
+      userId
     )) as unknown as { array: StripeUser[] };
 
     user = userResult.array?.[0] || null;
@@ -134,7 +135,7 @@ export async function getStripeflareUser(
 
   async function charge(
     amountCent: number,
-    allowNegativeBalance: boolean,
+    allowNegativeBalance: boolean
   ): Promise<{
     charged: boolean;
     message: string;
@@ -142,7 +143,7 @@ export async function getStripeflareUser(
     if (!user) {
       return {
         charged: false,
-        message: "User has not made a payment yet",
+        message: "User has not made a payment yet"
       };
     }
 
@@ -150,22 +151,22 @@ export async function getStripeflareUser(
       env.DORM_NAMESPACE,
       [
         { name: stubName },
-        { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
+        { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` }
       ],
-      ctx,
+      ctx
     );
 
     const result = allowNegativeBalance
       ? await client.exec(
           "UPDATE users SET balance = balance - ? WHERE user_id = ?",
           amountCent,
-          userId,
+          userId
         )
       : await client.exec(
           "UPDATE users SET balance = balance - ? WHERE user_id = ? AND balance >= ?",
           amountCent,
           userId,
-          amountCent,
+          amountCent
         );
 
     if (result.rowsWritten === 0) {
@@ -184,12 +185,12 @@ export async function getStripeflareUser(
 export async function handleStripeWebhook(
   request: Request,
   env: Env,
-  ctx: ExecutionContext,
+  ctx: ExecutionContext
 ): Promise<Response> {
   if (!request.body) {
     return new Response(JSON.stringify({ error: "No body" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     });
   }
 
@@ -197,14 +198,14 @@ export async function handleStripeWebhook(
   const rawBodyString = new TextDecoder().decode(rawBody);
 
   const stripe = new Stripe(env.STRIPE_SECRET, {
-    apiVersion: "2025-09-30.clover",
+    apiVersion: "2025-09-30.clover"
   });
 
   const stripeSignature = request.headers.get("stripe-signature");
   if (!stripeSignature) {
     return new Response(JSON.stringify({ error: "No signature" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" }
     });
   }
 
@@ -213,7 +214,7 @@ export async function handleStripeWebhook(
     event = await stripe.webhooks.constructEventAsync(
       rawBodyString,
       stripeSignature,
-      env.STRIPE_WEBHOOK_SIGNING_SECRET,
+      env.STRIPE_WEBHOOK_SIGNING_SECRET
     );
   } catch (err: any) {
     console.log("Webhook error:", err.message);
@@ -237,21 +238,28 @@ export async function handleStripeWebhook(
       return new Response("Missing customer email", { status: 400 });
     }
 
+    if (
+      env.STRIPE_PAYMENT_LINK_ID &&
+      session.payment_link !== env.STRIPE_PAYMENT_LINK_ID
+    ) {
+      return new Response("Payment link mismatch", { status: 200 });
+    }
+
     const userId = client_reference_id;
 
     const client = getMultiStub(
       env.DORM_NAMESPACE,
       [
         { name: `${env.STRIPEFLARE_VERSION}-user-${userId}` },
-        { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` },
+        { name: `${env.STRIPEFLARE_VERSION}-${AGGREGATE_NAME}` }
       ],
-      ctx,
+      ctx
     );
 
     // Check if user exists
     const userResult: any = await client.exec(
       "SELECT * FROM users WHERE user_id = ?",
-      userId,
+      userId
     );
 
     const existingUser = userResult.array?.[0] as StripeUser | undefined;
@@ -263,7 +271,7 @@ export async function handleStripeWebhook(
         amount_total,
         customer_details.email,
         customer_details.name || null,
-        userId,
+        userId
       );
     } else {
       // Create new user
@@ -272,7 +280,7 @@ export async function handleStripeWebhook(
         userId,
         amount_total,
         customer_details.email,
-        customer_details.name || null,
+        customer_details.name || null
       );
     }
 

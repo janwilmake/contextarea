@@ -42,6 +42,8 @@
             .monaco-editor .url-decoration-error { text-decoration: underline wavy #ff4d4d; cursor: pointer; }
             .monaco-editor .url-decoration-error:hover { background: rgba(255,77,77,0.1) !important; }
             .monaco-editor .ca-mention { color: #7cb7ff !important; font-weight: 600; background: rgba(124,183,255,0.1); border-radius: 3px; padding: 0 2px; }
+            .monaco-editor .ca-mention-error { text-decoration: underline wavy #ff4d4d; cursor: pointer; color: #ff6b6b !important; }
+            .monaco-editor .ca-mention-error:hover { background: rgba(255,77,77,0.1) !important; }
             .ca-drop-overlay { position:absolute;inset:0;background:rgba(0,42,226,.95);border:4px dashed #fff;border-radius:10px;display:none;align-items:center;justify-content:center;z-index:10000;pointer-events:none; }
             .ca-drop-overlay.active { display:flex; }
             .ca-drop-content { text-align:center;color:#fff; }
@@ -74,6 +76,9 @@
             this.currentUrlsInText = new Map();
             this.urlDecorations = [];
             this.mentionDecorations = [];
+            this.unknownMcpDecorations = [];
+            this.unknownMcpUrls = new Map();
+            this._mcpFetchTimeout = null;
             this.disposables = [];
             this.dragCounter = 0;
             this.contextFetchTimeout = null;
@@ -103,6 +108,7 @@
                 inlayHints: { enabled: 'on', fontSize: 12 },
                 codeLens: false,
                 links: false,
+                fixedOverflowWidgets: true,
                 quickSuggestions: false,
                 suggestOnTriggerCharacters: (options.suggestions?.length > 0),
             }, options.editorOptions);
@@ -118,6 +124,18 @@
                         if (ContextAreaInstance._active) {
                             ContextAreaInstance._active._handleExpandUrl(url, range);
                         }
+                    },
+                });
+                monaco.editor.addCommand({
+                    id: 'openMcpAuth',
+                    run: (_accessor, url) => {
+                        window.open('/dashboard?mcp=' + encodeURIComponent(url), '_blank');
+                    },
+                });
+                monaco.editor.addCommand({
+                    id: 'openUrl',
+                    run: (_accessor, url) => {
+                        window.open(url, '_blank');
                     },
                 });
             }
@@ -137,9 +155,11 @@
             this.editor.onDidChangeModelContent(() => {
                 this._updateUrlDecorations();
                 if (this.suggestions.length) this._updateMentionDecorations();
+                this._updateUnknownMcpDecorations();
             });
             this._updateUrlDecorations();
             if (this.suggestions.length) this._updateMentionDecorations();
+            this._updateUnknownMcpDecorations();
             this.editor.focus();
         }
 
@@ -281,7 +301,8 @@
                                 }
                                 if (!data) return null;
                                 if (data.error && data.action) {
-                                    return { range, contents: [{ value: `**${data.error}**\n\n[Authorize in Dashboard](${data.action})`, isTrusted: true }] };
+                                    const authArgs = encodeURIComponent(JSON.stringify([data.action]));
+                                    return { range, contents: [{ value: `**${data.error}**\n\n[Authorize in Dashboard](command:openUrl?${authArgs})`, isTrusted: true }] };
                                 }
                                 if (data.error) {
                                     return { range, contents: [{ value: `**Error:** ${data.error}`, isTrusted: true }] };
@@ -330,6 +351,35 @@
                             }
                         }
                         return { hints, dispose() {} };
+                    },
+                })
+            );
+
+            // Hover for unknown @https:// MCP mentions
+            this.disposables.push(
+                monaco.languages.registerHoverProvider('markdown', {
+                    provideHover(model, position) {
+                        for (const [url, positions] of self.unknownMcpUrls.entries()) {
+                            for (const { range } of positions) {
+                                if (!range.containsPosition(position)) continue;
+                                if (self.pendingContextFetches.has(url)) {
+                                    return { range, contents: [{ value: 'Checking MCP server...', isTrusted: true }] };
+                                }
+                                const data = self.contextCache.get(url);
+                                if (data && data.error && data.status !== 401) {
+                                    return { range, contents: [{ value: '**MCP could not be found**', isTrusted: true }] };
+                                }
+                                const args = encodeURIComponent(JSON.stringify([url]));
+                                return {
+                                    range,
+                                    contents: [{
+                                        value: `**MCP server not authenticated**\n\n[Authenticate](command:openMcpAuth?${args})`,
+                                        isTrusted: true,
+                                    }],
+                                };
+                            }
+                        }
+                        return null;
                     },
                 })
             );
@@ -508,7 +558,7 @@
                                 insertText: s.insertText ?? `@${s.name}`,
                                 range,
                                 sortText: String(i).padStart(3, '0'),
-                                detail: s.description,
+                                detail: s.name,
                                 documentation: {
                                     value: `<img src="${s.icon}" width="16" height="16">&nbsp; **${s.name}**\n\n${s.description}\n\n[${s.url}](${s.url})`,
                                     supportHtml: true,
@@ -628,6 +678,59 @@
             });
 
             this.mentionDecorations = this.editor.deltaDecorations(this.mentionDecorations, decorations);
+        }
+
+        // ── unknown @https:// MCP detection ─────────────────────────────
+
+        _updateUnknownMcpDecorations() {
+            const model = this.editor.getModel();
+            const lines = model.getValue().split('\n');
+            const decorations = [];
+            const unknownUrls = new Map();
+
+            // Build set of known MCP URLs from suggestions
+            const knownUrls = new Set();
+            for (const s of this.suggestions) {
+                if (s.insertText && s.insertText.startsWith('@')) {
+                    knownUrls.add(s.insertText.slice(1));
+                }
+            }
+
+            const re = /@(https:\/\/[^\s]+)/g;
+            lines.forEach((line, i) => {
+                let m;
+                while ((m = re.exec(line)) !== null) {
+                    const url = m[1];
+                    if (knownUrls.has(url)) continue;
+                    const range = new monaco.Range(i + 1, m.index + 1, i + 1, m.index + 1 + m[0].length);
+                    if (!unknownUrls.has(url)) unknownUrls.set(url, []);
+                    unknownUrls.get(url).push({ range, lineIndex: i + 1 });
+                    decorations.push({
+                        range,
+                        options: { inlineClassName: 'ca-mention-error' },
+                    });
+                }
+            });
+
+            this.unknownMcpDecorations = this.editor.deltaDecorations(this.unknownMcpDecorations, decorations);
+            this.unknownMcpUrls = unknownUrls;
+            this._debouncedFetchUnknownMcp(unknownUrls);
+        }
+
+        _debouncedFetchUnknownMcp(urlsMap) {
+            clearTimeout(this._mcpFetchTimeout);
+            this._mcpFetchTimeout = setTimeout(async () => {
+                const promises = [];
+                for (const url of urlsMap.keys()) {
+                    if (!this.contextCache.has(url) && !this.pendingContextFetches.has(url)) {
+                        promises.push(this._fetchContext(url).catch(() => null));
+                    }
+                }
+                if (promises.length) {
+                    await Promise.all(promises);
+                    this._updateUnknownMcpDecorations();
+                }
+            }, this.config.contextDebounce);
         }
 
         // ── helpers ─────────────────────────────────────────────────────

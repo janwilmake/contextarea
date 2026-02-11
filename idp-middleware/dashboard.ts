@@ -1,3 +1,5 @@
+// this is an exmaple dashboard; not the one used for contextarea!
+
 /// <reference types="@cloudflare/workers-types" />
 import {
   createIdpMiddleware,
@@ -67,11 +69,21 @@ const CLIENT_INFO: ClientInfo = {
   uri: "https://idp-dashboard.example.com"
 };
 
-function getIdpForUser(username: string, profile: string, env: Env, baseUrl: string) {
+function getIdpForUser(
+  username: string,
+  profile: string,
+  env: Env,
+  baseUrl: string
+) {
   const kv = kvFromNamespace(env.KV_STORE);
-  return createIdpMiddleware(
-    { kv, userId: username, profile, clientInfo: CLIENT_INFO, baseUrl, pathPrefix: "/oauth" }
-  );
+  return createIdpMiddleware({
+    kv,
+    userId: username,
+    profile,
+    clientInfo: CLIENT_INFO,
+    baseUrl,
+    pathPrefix: "/oauth"
+  });
 }
 
 function getDashboardHTML(
@@ -746,10 +758,7 @@ function getDashboardHTML(
 }
 
 export default {
-  async fetch(
-    request: Request,
-    env: Env
-  ): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const isLocalhost = url.hostname === "localhost";
     const user = getUserFromCookie(request);
@@ -765,7 +774,12 @@ export default {
         return Response.json({ error: "Missing fields" }, { status: 400 });
       }
       // Register this profile in the user's DO
-      const loginIdp = getIdpForUser(body.username, body.profile, env, `${url.protocol}//${url.host}`);
+      const loginIdp = getIdpForUser(
+        body.username,
+        body.profile,
+        env,
+        `${url.protocol}//${url.host}`
+      );
       await loginIdp.registerProfile(body.profile);
       return Response.json(
         { ok: true },
@@ -787,7 +801,12 @@ export default {
       if (!username) {
         return Response.json({ error: "Missing username" }, { status: 400 });
       }
-      const profileIdp = getIdpForUser(username, "default", env, `${url.protocol}//${url.host}`);
+      const profileIdp = getIdpForUser(
+        username,
+        "default",
+        env,
+        `${url.protocol}//${url.host}`
+      );
       const profiles = await profileIdp.getProfiles();
       return Response.json(profiles);
     }

@@ -475,16 +475,31 @@ async function discoverProtectedResourceMetadata(
 
 // --- MCP Initialize Probe ---
 
+interface McpInitializeResult {
+  name: string;
+  title?: string;
+  version?: string;
+  description?: string;
+  icons?: { src: string; mimeType?: string; sizes?: string[] }[];
+  websiteUrl?: string;
+}
+
 async function tryMcpInitialize(
-  url: string
-): Promise<{ name: string; version?: string } | null> {
+  url: string,
+  accessToken?: string
+): Promise<McpInitializeResult | null> {
   try {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream"
+    };
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
     const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json, text/event-stream"
-      },
+      headers,
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
@@ -512,13 +527,65 @@ async function tryMcpInitialize(
     }
 
     if (data?.result?.serverInfo?.name) {
+      const serverInfo = data.result.serverInfo;
       return {
-        name: data.result.serverInfo.name,
-        version: data.result.serverInfo.version
+        name: serverInfo.name,
+        title: serverInfo.title,
+        version: serverInfo.version,
+        description: serverInfo.description,
+        icons: serverInfo.icons,
+        websiteUrl: serverInfo.websiteUrl
       };
     }
 
     return null;
+  } catch {
+    return null;
+  }
+}
+
+// --- Apex Domain Favicon Scraping ---
+
+function getApexDomain(hostname: string): string {
+  const parts = hostname.split(".");
+  if (parts.length <= 2) return hostname;
+  return parts.slice(-2).join(".");
+}
+
+async function fetchApexFavicon(url: string): Promise<string | null> {
+  try {
+    const hostname = new URL(url).hostname;
+    const apex = getApexDomain(hostname);
+    const pageUrl = `https://${apex}`;
+
+    const response = await fetch(pageUrl, {
+      headers: { Accept: "text/html" },
+      redirect: "follow"
+    });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+
+    // Look for <link rel="icon" ...> or <link rel="shortcut icon" ...> or apple-touch-icon
+    const iconPatterns = [
+      /<link[^>]*rel=["'](?:apple-touch-icon|icon|shortcut icon)["'][^>]*href=["']([^"']+)["']/i,
+      /<link[^>]*href=["']([^"']+)["'][^>]*rel=["'](?:apple-touch-icon|icon|shortcut icon)["']/i
+    ];
+
+    for (const pattern of iconPatterns) {
+      const match = html.match(pattern);
+      if (match?.[1]) {
+        const iconHref = match[1];
+        if (iconHref.startsWith("http")) return iconHref;
+        if (iconHref.startsWith("//")) return `https:${iconHref}`;
+        if (iconHref.startsWith("/")) return `https://${apex}${iconHref}`;
+        return `https://${apex}/${iconHref}`;
+      }
+    }
+
+    // Fallback: try /favicon.ico
+    return `https://${apex}/favicon.ico`;
   } catch {
     return null;
   }
@@ -1343,6 +1410,29 @@ async function handleLogin(
         }
       }
 
+      // For MCP, get name and icon from initialize response
+      if (resourceType === "mcp") {
+        const mcpInfo = await tryMcpInitialize(resourceUrl);
+        if (mcpInfo) {
+          name = mcpInfo.title || mcpInfo.name;
+          metadata = metadata || {};
+          if (mcpInfo.version) metadata.version = mcpInfo.version;
+          if (mcpInfo.description) metadata.description = mcpInfo.description;
+          if (mcpInfo.icons?.length) {
+            metadata.icon = mcpInfo.icons[0].src;
+          }
+          if (mcpInfo.websiteUrl) metadata.websiteUrl = mcpInfo.websiteUrl;
+        }
+        // Fallback: scrape icon from apex domain
+        if (!metadata?.icon) {
+          const faviconUrl = await fetchApexFavicon(resourceUrl);
+          if (faviconUrl) {
+            metadata = metadata || {};
+            metadata.icon = faviconUrl;
+          }
+        }
+      }
+
       if (resourceType === "mcp") {
         await storage.addMcpServer(resourceUrl, name, profile, {
           isPublic: true,
@@ -1377,9 +1467,20 @@ async function handleLogin(
     if (resourceType === "mcp" && resourceUrl) {
       const mcpInfo = await tryMcpInitialize(resourceUrl);
       if (mcpInfo) {
-        const name = mcpInfo.name;
+        const name = mcpInfo.title || mcpInfo.name;
         const metadata: Record<string, unknown> = {};
         if (mcpInfo.version) metadata.version = mcpInfo.version;
+        if (mcpInfo.description) metadata.description = mcpInfo.description;
+        if (mcpInfo.icons?.length) {
+          metadata.icon = mcpInfo.icons[0].src;
+        }
+        if (mcpInfo.websiteUrl) metadata.websiteUrl = mcpInfo.websiteUrl;
+
+        // Fallback: scrape icon from apex domain
+        if (!metadata.icon) {
+          const faviconUrl = await fetchApexFavicon(resourceUrl);
+          if (faviconUrl) metadata.icon = faviconUrl;
+        }
 
         await storage.addMcpServer(resourceUrl, name, profile, {
           isPublic: true,
@@ -1482,6 +1583,32 @@ async function handleCallback(
         metadata = result.metadata;
       } catch (e) {
         // Use default name
+      }
+    }
+
+    // For MCP, get name and icon from initialize response (with auth token)
+    if (resourceType === "mcp") {
+      const mcpInfo = await tryMcpInitialize(
+        authFlowData.resourceUrl,
+        tokenData.access_token
+      );
+      if (mcpInfo) {
+        name = mcpInfo.title || mcpInfo.name;
+        metadata = metadata || {};
+        if (mcpInfo.version) metadata.version = mcpInfo.version;
+        if (mcpInfo.description) metadata.description = mcpInfo.description;
+        if (mcpInfo.icons?.length) {
+          metadata.icon = mcpInfo.icons[0].src;
+        }
+        if (mcpInfo.websiteUrl) metadata.websiteUrl = mcpInfo.websiteUrl;
+      }
+      // Fallback: scrape icon from apex domain
+      if (!metadata?.icon) {
+        const faviconUrl = await fetchApexFavicon(authFlowData.resourceUrl);
+        if (faviconUrl) {
+          metadata = metadata || {};
+          metadata.icon = faviconUrl;
+        }
       }
     }
 

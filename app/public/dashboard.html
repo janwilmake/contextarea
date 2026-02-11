@@ -9,8 +9,6 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
-    <link rel="stylesheet" href="https://js.contextarea.com/style.css">
-    <script src="https://js.contextarea.com/lib.js" defer></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -677,8 +675,13 @@
             div.className = 'item';
 
             const isAuthenticated = !!server.access_token;
+            const iconUrl = server.metadata?.icon;
+            const iconHtml = iconUrl
+                ? `<img src="${escapeHtml(iconUrl)}" alt="" style="width:24px;height:24px;border-radius:4px;flex-shrink:0;object-fit:contain;" onerror="this.style.display='none'" />`
+                : '';
 
             div.innerHTML = `
+                ${iconHtml}
                 <div class="item-info">
                     <div class="item-name">${escapeHtml(server.name || 'Unnamed Server')}</div>
                     <div class="item-url">${escapeHtml(server.url)}</div>
@@ -771,11 +774,16 @@
             setTimeout(() => loadMcpServers(), 2000);
         });
 
-        // Handle query param for pre-filling context URL
+        // Handle query params for pre-filling inputs
         const urlParams = new URLSearchParams(window.location.search);
         const urlParam = urlParams.get('url');
         if (urlParam) {
             document.getElementById('contextUrlInput').value = urlParam;
+        }
+        const mcpParam = urlParams.get('mcp');
+        if (mcpParam) {
+            document.getElementById('mcpUrlInput').value = mcpParam;
+            document.getElementById('addMcpButton').click();
         }
 
         // Utility function

@@ -15,8 +15,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
     <script src="/markdown-highlighter.js"></script>
-    <link rel="stylesheet" href="https://js.contextarea.com/style.css">
-    <script src="https://js.contextarea.com/lib.js" defer></script>
 
     <style>
         /* System theme variables - VS Code style */
@@ -1700,8 +1698,8 @@
                         return {
                             name: s.name || hostname.replace(/\./g, '-'),
                             url: s.url,
-                            icon: '',
-                            description: s.url,
+                            icon: s.metadata?.icon || '',
+                            description: s.metadata?.description || s.url,
                             insertText: '@'+s.url,
                         };
                     });
