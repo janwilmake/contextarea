@@ -326,6 +326,225 @@
             font-size: 14px;
         }
 
+        /* Account section */
+        .account-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .account-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .account-details {
+            flex: 1;
+        }
+
+        .account-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .account-username {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .account-balance {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .account-balance-amount {
+            font-size: 24px;
+            font-weight: 300;
+            color: var(--accent-primary);
+        }
+
+        .account-balance-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .account-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .account-actions a,
+        .account-actions button {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-primary);
+            background-color: transparent;
+            color: var(--text-primary);
+        }
+
+        .account-actions a:hover,
+        .account-actions button:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        .account-actions .primary-action {
+            background-color: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+
+        .account-actions .primary-action:hover {
+            background-color: var(--accent-secondary);
+            border-color: var(--accent-secondary);
+        }
+
+        /* API section */
+        .api-key-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .api-key-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        .api-key-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .api-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .api-links a {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-primary);
+            background-color: transparent;
+            color: var(--text-primary);
+        }
+
+        .api-links a:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        /* System Prompt section */
+        .system-prompt-textarea {
+            width: 100%;
+            min-height: 150px;
+            max-height: 400px;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-size: 14px;
+            padding: 12px;
+            resize: vertical;
+            outline: none;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            line-height: 1.5;
+            transition: border-color 0.2s ease;
+        }
+
+        .system-prompt-textarea:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .system-prompt-textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .system-prompt-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+
+        .system-prompt-footer .char-count {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .system-prompt-footer .autosave-indicator {
+            font-size: 12px;
+            color: var(--text-muted);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .system-prompt-footer .autosave-indicator.saving {
+            opacity: 1;
+            color: var(--warning-color);
+        }
+
+        .system-prompt-footer .autosave-indicator.saved {
+            opacity: 1;
+            color: var(--success-color);
+        }
+
+        .system-prompt-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .system-prompt-actions button {
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-primary);
+            background-color: transparent;
+            color: var(--text-primary);
+        }
+
+        .system-prompt-actions button:hover {
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+
+        .system-prompt-actions .danger-btn {
+            color: var(--error-color);
+            border-color: var(--error-color);
+        }
+
+        .system-prompt-actions .danger-btn:hover {
+            background-color: var(--error-color);
+            color: white;
+        }
+
         /* Toast notification */
         .toast {
             position: fixed;
@@ -518,6 +737,39 @@
                 <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
                     <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
                 </a>
+            </div>
+        </div>
+
+        <!-- Account Section -->
+        <div class="section" id="accountSection" style="display:none;">
+            <h2 class="section-title">Account</h2>
+            <div id="accountContent"></div>
+        </div>
+
+        <!-- API Section -->
+        <div class="section" id="apiSection" style="display:none;">
+            <h2 class="section-title">API</h2>
+            <div class="api-key-row">
+                <input type="text" class="api-key-input" id="apiKeyInput" readonly value="" placeholder="Login to see your API token" />
+                <button class="action-button" id="copyApiKeyButton">Copy</button>
+            </div>
+            <div class="api-links">
+                <a href="/openapi" target="_blank">API Docs</a>
+                <a href="/openapi.json" target="_blank">OpenAPI Spec</a>
+            </div>
+        </div>
+
+        <!-- System Prompt Section -->
+        <div class="section">
+            <h2 class="section-title">System Prompt</h2>
+            <textarea class="system-prompt-textarea" id="systemPrompt" placeholder="Enter your system prompt here..."></textarea>
+            <div class="system-prompt-footer">
+                <span class="autosave-indicator" id="autosaveIndicator">Autosaved</span>
+                <span class="char-count" id="charCount">0 characters</span>
+            </div>
+            <div class="system-prompt-actions">
+                <button id="resetPromptBtn">Reset to Default</button>
+                <button class="danger-btn" id="clearPromptBtn">Clear</button>
             </div>
         </div>
 
@@ -880,16 +1132,170 @@
             }
         }
 
+        // Account section
+        function renderAccountSection(me) {
+            const section = document.getElementById('accountSection');
+            const content = document.getElementById('accountContent');
+            const apiSection = document.getElementById('apiSection');
+
+            if (!me || Object.keys(me).length === 0) {
+                section.style.display = 'none';
+                apiSection.style.display = 'none';
+                return;
+            }
+
+            section.style.display = '';
+            apiSection.style.display = '';
+
+            const balanceDisplay = me.balance != null
+                ? `$${(me.balance / 100).toFixed(2)}`
+                : '$0.00';
+            const balanceWarning = me.balance != null && me.balance < 100 && me.balance >= 0
+                ? '<div style="color: var(--warning-color); font-size: 12px; margin-top: 4px;">Balance is getting low</div>'
+                : me.balance != null && me.balance < 0
+                ? '<div style="color: var(--error-color); font-size: 12px; margin-top: 4px;">No balance remaining</div>'
+                : '';
+
+            content.innerHTML = `
+                <div class="account-info">
+                    <img src="${escapeHtml(me.profile_image_url)}" alt="${escapeHtml(me.name)}" class="account-avatar" />
+                    <div class="account-details">
+                        <div class="account-name">${escapeHtml(me.name)}</div>
+                        <div class="account-username">@${escapeHtml(me.username)}</div>
+                    </div>
+                    <div class="account-balance">
+                        <div class="account-balance-amount">${balanceDisplay}</div>
+                        <div class="account-balance-label">balance</div>
+                        ${balanceWarning}
+                    </div>
+                </div>
+                <div class="account-actions">
+                    <a href="https://buy.stripe.com/5kAdTEfun4TXaGKeni?client_reference_id=${escapeHtml(me.id)}" target="_blank" class="primary-action">Add Balance</a>
+                    <a href="/logout">Logout</a>
+                </div>
+            `;
+
+            // Set API token (masked display, full value for copy)
+            const token = me.accessToken || '';
+            window._fullApiToken = token;
+            const input = document.getElementById('apiKeyInput');
+            if (token.length > 8) {
+                input.value = token.substring(0, 4) + '\u2022'.repeat(Math.min(token.length - 8, 32)) + token.substring(token.length - 4);
+            } else {
+                input.value = token;
+            }
+        }
+
+        // Copy API token
+        document.getElementById('copyApiKeyButton').addEventListener('click', () => {
+            const token = window._fullApiToken;
+            if (!token) {
+                showToast('No API token available', 'error');
+                return;
+            }
+            navigator.clipboard.writeText(token).then(() => {
+                showToast('API token copied to clipboard', 'success');
+            }).catch(() => {
+                // Fallback: temporarily set the full value, select, copy, then restore masked
+                const input = document.getElementById('apiKeyInput');
+                const masked = input.value;
+                input.value = token;
+                input.select();
+                document.execCommand('copy');
+                input.value = masked;
+                showToast('API token copied to clipboard', 'success');
+            });
+        });
+
+        // System Prompt
+        const systemPromptTextarea = document.getElementById('systemPrompt');
+        const resetPromptBtn = document.getElementById('resetPromptBtn');
+        const clearPromptBtn = document.getElementById('clearPromptBtn');
+        const charCount = document.getElementById('charCount');
+        const autosaveIndicator = document.getElementById('autosaveIndicator');
+        let autosaveTimeout;
+
+        function loadSystemPrompt() {
+            const prompt = localStorage.getItem('system.md') || '';
+            systemPromptTextarea.value = prompt;
+            updateCharCount();
+        }
+
+        function saveSystemPrompt() {
+            localStorage.setItem('system.md', systemPromptTextarea.value);
+            autosaveIndicator.className = 'autosave-indicator saved';
+            setTimeout(() => {
+                autosaveIndicator.className = 'autosave-indicator';
+            }, 2000);
+        }
+
+        function updateCharCount() {
+            charCount.textContent = systemPromptTextarea.value.length + ' characters';
+        }
+
+        systemPromptTextarea.addEventListener('input', () => {
+            updateCharCount();
+            if (autosaveTimeout) clearTimeout(autosaveTimeout);
+            autosaveIndicator.className = 'autosave-indicator saving';
+            autosaveTimeout = setTimeout(saveSystemPrompt, 1000);
+        });
+
+        resetPromptBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/system.md');
+                if (response.ok) {
+                    systemPromptTextarea.value = await response.text();
+                    updateCharCount();
+                    saveSystemPrompt();
+                    showToast('Reset to default system prompt', 'success');
+                } else {
+                    showToast('No default system prompt found', 'error');
+                }
+            } catch {
+                showToast('Error loading default prompt', 'error');
+            }
+        });
+
+        clearPromptBtn.addEventListener('click', () => {
+            if (confirm('Clear system prompt?')) {
+                systemPromptTextarea.value = '';
+                updateCharCount();
+                saveSystemPrompt();
+                showToast('System prompt cleared', 'success');
+            }
+        });
+
+        loadSystemPrompt();
+
+        // Save on Ctrl+S
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+                e.preventDefault();
+                if (autosaveTimeout) clearTimeout(autosaveTimeout);
+                saveSystemPrompt();
+            }
+        });
+
+        // Save on page unload
+        window.addEventListener('beforeunload', () => {
+            if (autosaveTimeout) {
+                clearTimeout(autosaveTimeout);
+                localStorage.setItem('system.md', systemPromptTextarea.value);
+            }
+        });
+
         fetch('/user').then(res => res.ok ? res.json() : {}).then(me => {
             const widget = document.getElementById('login-widget');
             const widgetMobile = document.getElementById('login-widget-mobile');
             if (widget) renderLoginWidget(widget, me);
             if (widgetMobile) renderLoginWidget(widgetMobile, me);
+            renderAccountSection(me);
         }).catch(() => {
             const widget = document.getElementById('login-widget');
             const widgetMobile = document.getElementById('login-widget-mobile');
             if (widget) renderLoginWidget(widget, null);
             if (widgetMobile) renderLoginWidget(widgetMobile, null);
+            renderAccountSection(null);
         });
     </script>
 </body>

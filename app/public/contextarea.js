@@ -693,9 +693,9 @@
                 insertText: s.insertText ?? `@${s.name}`,
                 range,
                 sortText: String(i).padStart(3, "0"),
-                detail: null,
+                // detail: null,
                 documentation: {
-                  value: `<img src="${s.icon}" width="16" height="16">&nbsp; **${s.name}**\n\n${s.description}\n\n[${s.url}](${s.url})`,
+                  value: `<img src="${s.icon}" width="16" height="16">&nbsp; **${s.name}**\n\n${s.description}<br><br>[${s.url}](${s.url})<br><br><br>`,
                   supportHtml: true,
                   isTrusted: true
                 },
@@ -728,7 +728,7 @@
               range,
               contents: [
                 {
-                  value: `<img src="${server.icon}" width="16" height="16">&nbsp; **${server.name}**\n\n${server.description}\n\n[${server.url}](${server.url})`,
+                  value: `<img src="${server.icon}" width="16" height="16">&nbsp; **${server.name}**<br><br>${server.description}<br><br>[${server.url}](${server.url})`,
                   supportHtml: true,
                   isTrusted: true
                 }

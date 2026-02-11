@@ -2,6 +2,8 @@
 
 - ✅ ensure to get suggestion to go to dashboard for MCPs that aren't found
 - ✅ get mcp names and icons right from the initialization step
+- ✅ Lay-out Design - Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
+- ✅ Improve dashboard
 - create a marketplace of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
 - determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
 
@@ -47,10 +49,6 @@ https://contextarea.com/httpspastebincon-v88taesm3uo0t5
 https://contextarea.com/rules-httpsuithu-qlei2s9rl7uo6e
 
 if space, doesnt work. if mentioning that thats' a problem it gets even worse.
-
-# Lay-out Design
-
-Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
 
 # ContextArea LAUNCH
 

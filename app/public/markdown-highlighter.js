@@ -6,6 +6,8 @@ class MarkdownHighlighter {
     this.injectStyles();
     this.codeBlockView = localStorage.getItem("codeblockView") || "code"; // Default to 'code' if not set
     this.initializeMarked();
+    this.initializeDOMPurify();
+    this.setupIframeResizeListener();
   }
 
   // Initialize marked with custom renderer
@@ -31,6 +33,41 @@ class MarkdownHighlighter {
       console.error("Failed to load marked library");
     };
     document.head.appendChild(script);
+  }
+
+  // Initialize DOMPurify for HTML sanitization
+  initializeDOMPurify() {
+    if (typeof DOMPurify === "undefined") {
+      console.warn("DOMPurify not found. Loading from CDN...");
+      this.loadDOMPurify();
+    }
+  }
+
+  // Load DOMPurify from CDN if not available
+  loadDOMPurify() {
+    const script = document.createElement("script");
+    script.src =
+      "https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js";
+    script.onerror = () => {
+      console.error("Failed to load DOMPurify library");
+    };
+    document.head.appendChild(script);
+  }
+
+  // Listen for postMessage-based height reports from sandboxed iframes
+  setupIframeResizeListener() {
+    window.addEventListener("message", (event) => {
+      if (
+        event.data?.type === "iframe-resize" &&
+        event.data.id &&
+        event.data.height
+      ) {
+        const iframe = document.getElementById(event.data.id);
+        if (iframe) {
+          iframe.style.height = `${event.data.height + 20}px`;
+        }
+      }
+    });
   }
 
   calculateCodeHash(code) {
@@ -465,41 +502,30 @@ class MarkdownHighlighter {
     }
   }
 
-  // Create an iframe for HTML rendering
+  // Create an iframe for HTML rendering (sandboxed — no same-origin access)
   createRenderIframe(htmlContent, blockId) {
     const iframeId = `iframe-${blockId}`;
     const iframe = document.createElement("iframe");
     iframe.id = iframeId;
     iframe.className = "code-render-container";
-    iframe.setAttribute("credentialless", "");
-    // Set initial height based on content length (can be adjusted)
+    // allow-scripts lets the content run JS, but without allow-same-origin
+    // the iframe cannot access parent cookies, fetch authenticated endpoints,
+    // or read parent DOM — preventing token theft via /user.
+    iframe.setAttribute("sandbox", "allow-scripts");
     iframe.style.height = `${Math.max(
       200,
       Math.min(600, htmlContent.length / 10)
     )}px`;
 
-    // Return the iframe element - we'll inject the content after it's added to DOM
+    // Use srcdoc so content works within the sandbox.
+    // Append a height-reporter script that uses postMessage.
+    iframe.srcdoc = `<!DOCTYPE html><html><head><style>body{margin:0;}</style></head><body>${htmlContent}<script>function _rh(){window.parent.postMessage({type:'iframe-resize',id:'${iframeId}',height:document.documentElement.scrollHeight},'*');}setTimeout(_rh,0);window.addEventListener('load',_rh);<\/script></body></html>`;
+
     return iframe;
   }
 
-  // Inject HTML content into an iframe
-  injectHtmlIntoIframe(iframeId, htmlContent) {
-    const iframe = document.getElementById(iframeId);
-    if (!iframe) return;
-
-    setTimeout(() => {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(htmlContent);
-      iframeDoc.close();
-
-      // Adjust iframe height based on content
-      setTimeout(() => {
-        const height = iframeDoc.body.scrollHeight;
-        iframe.style.height = `${height + 20}px`;
-      }, 100);
-    }, 0);
-  }
+  // No-op: content is now set via srcdoc in createRenderIframe
+  injectHtmlIntoIframe(iframeId, htmlContent) {}
 
   // Generate code block HTML
   generateCodeBlockHtml(blockData) {
@@ -666,6 +692,14 @@ class MarkdownHighlighter {
       // Restore details blocks (marked passes through block-level HTML as-is)
       for (let i = 0; i < detailsBlocks.length; i++) {
         parsedHtml = parsedHtml.replace(`<div data-details-idx="${i}"></div>`, detailsBlocks[i]);
+      }
+
+      // Sanitize to strip <script>, event handlers, javascript: URIs, etc.
+      if (typeof DOMPurify !== "undefined") {
+        parsedHtml = DOMPurify.sanitize(parsedHtml, {
+          USE_PROFILES: { html: true, svg: true },
+          ALLOW_DATA_ATTR: true,
+        });
       }
 
       return parsedHtml;

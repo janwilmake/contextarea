@@ -1495,7 +1495,8 @@ export default {
       console.log({ stripeMiddlewareMs: Date.now() - t });
 
       if (pathname === "/user") {
-        return new Response(JSON.stringify(user || {}, undefined, 2), {});
+        const userData = user ? { ...user, accessToken: ctx.accessToken } : {};
+        return new Response(JSON.stringify(userData, undefined, 2), {});
       }
 
       const idpHandlers = createIdpMiddleware({

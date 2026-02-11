@@ -581,15 +581,6 @@
                     <div id="contextarea-editor"></div>
                     <div class="buttons-row">
                         <div class="left-buttons">
-                            <button type="button" class="icon-button" id="configButton" title="Configuration">
-                                <svg viewBox="0 0 24 24">
-                                    <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" fill="none" />
-                                    <path
-                                        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001.51 1H15a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.79a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
-                                        stroke="currentColor" fill="none" />
-                                </svg>
-                                Config
-                            </button>
                             <!-- modal for selecting models -->
                             <script src="./model-modal.js"></script>
                             <div id="model-modal"></div>
@@ -807,7 +798,6 @@
         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
         require(['vs/editor/editor.main'], async function () {
             const submitButton = document.getElementById('submitButton');
-            const configButton = document.getElementById('configButton');
             const initialContent = getInitialContent();
 
             // Load user's MCP servers for @-suggestions
@@ -857,10 +847,6 @@
             document.getElementById('promptForm').addEventListener('submit', (e) => {
                 e.preventDefault();
                 handleSubmit(ca.getValue());
-            });
-
-            configButton.addEventListener('click', () => {
-                window.open('config.html', '_blank');
             });
 
             // Load system prompt on page load
