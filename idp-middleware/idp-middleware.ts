@@ -1031,9 +1031,7 @@ export function createIdpMiddleware(
 
   const storage = userId ? createStorage(kv, userId) : null;
 
-  const middleware = async (
-    request: Request
-  ): Promise<Response | null> => {
+  const middleware = async (request: Request): Promise<Response | null> => {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -1042,7 +1040,10 @@ export function createIdpMiddleware(
     }
 
     if (!userId || !storage) {
-      return new Response("Unauthorized: No user session", { status: 401 });
+      return new Response(
+        "Unauthorized: No user session. Please login first.",
+        { status: 401 }
+      );
     }
 
     const origin = baseUrl || url.origin;
@@ -1097,10 +1098,7 @@ export function createIdpMiddleware(
     await storage.removeMcpServer(url, profile);
   };
 
-  const removeContext = async (
-    url: string,
-    profile: string
-  ): Promise<void> => {
+  const removeContext = async (url: string, profile: string): Promise<void> => {
     if (!storage) throw new Error("No user session");
     await storage.removeContext(url, profile);
   };
@@ -1185,11 +1183,7 @@ export function createIdpMiddleware(
     const now = Math.floor(Date.now() / 1000);
 
     const expiredEntries = entries.filter((entry) => {
-      if (
-        !entry.refresh_token ||
-        !entry.token_endpoint ||
-        !entry.expires_in
-      ) {
+      if (!entry.refresh_token || !entry.token_endpoint || !entry.expires_in) {
         return false;
       }
       const updatedAtSeconds = Math.floor(
@@ -1876,9 +1870,7 @@ export async function fetchUrlContext(
     let accessToken = ctx.access_token;
     if (ctx.refresh_token && ctx.expires_in && ctx.token_endpoint) {
       const now = Math.floor(Date.now() / 1000);
-      const updatedAt = Math.floor(
-        new Date(ctx.updated_at).getTime() / 1000
-      );
+      const updatedAt = Math.floor(new Date(ctx.updated_at).getTime() / 1000);
       if (now >= updatedAt + ctx.expires_in - 300) {
         try {
           const tokenData = await refreshAccessToken(

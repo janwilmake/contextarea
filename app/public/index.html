@@ -139,6 +139,55 @@
         .header-links {
             display: flex;
             align-items: center;
+            gap: 12px;
+        }
+
+        .login-btn {
+            background-color: #1da1f2;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .login-btn:hover {
+            background-color: #1a91da;
+        }
+
+        .login-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: inherit;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .login-user:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .login-user img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .login-user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
         }
 
         /* Hero section */
@@ -212,6 +261,13 @@
         #contextarea-editor {
             flex: 1;
             min-height: 0;
+            background-color: #fffffe;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            #contextarea-editor {
+                background-color: #1e1e1e;
+            }
         }
 
         .buttons-row {
@@ -506,6 +562,7 @@
             <h1>CONTEXTAREA</h1>
         </div>
         <div class="header-links">
+            <div id="login-widget"></div>
             <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
                 <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
             </a>
@@ -808,6 +865,23 @@
 
             // Load system prompt on page load
             loadSystemPrompt();
+        });
+    </script>
+
+    <script>
+        function escapeHtml(s) {
+            return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+        }
+        fetch('/user').then(r => r.ok ? r.json() : {}).then(me => {
+            const w = document.getElementById('login-widget');
+            if (!me || Object.keys(me).length === 0) {
+                w.innerHTML = '<a href="/authorize" class="login-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login with X</a>';
+            } else {
+                w.innerHTML = '<a href="/dashboard" class="login-user" title="Go to Dashboard"><img src="'+escapeHtml(me.profile_image_url)+'" alt="'+escapeHtml(me.name)+'" /><span class="login-user-name">'+escapeHtml(me.name)+'</span></a>';
+            }
+        }).catch(() => {
+            const w = document.getElementById('login-widget');
+            w.innerHTML = '<a href="/authorize" class="login-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login with X</a>';
         });
     </script>
 

@@ -1,23 +1,27 @@
 # Improvements
 
 - ✅ ensure to get suggestion to go to dashboard for MCPs that aren't found
-- get mcp names and icons right from the initialization step:
-  - see https://contextarea.com/rules-httpsraw-coj33ter39ts8x
-    - we can implement this new sep before any mcp adopts it
-    - we can try /initialize method but authed servers won't show it
-    - we could use icons from the hostname /favicon-32x32.png or so
-    - we can create a marketplace where we customly provide names and icons
+- ✅ get mcp names and icons right from the initialization step
 - create a marketplace of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
 - determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
 
-#
+# Make 'Wilmake Browse' good
 
-<!-- After this works, lets work on an email MCP so agents can actually do browsing stuff with email verification codes -->
+- add proper name, icon, description (may need to internalize code)
+- add images support so i can drop screenshots into contextarea
+- add support for images in `mcp-completions-stateless` so the screenshot tool works.
 
-- budget cc mcp
-- email mcp
-- sms mcp
-- browser automation mcp
+# Skills / Powers support
+
+We want to use progressive disclosure and a way to easily add/remove skills to the users api
+
+Skills can be an MCP but it can also be natively built-in.
+
+Powers are skills that enable MCPs when chosen.
+
+# MCP MCP
+
+MCP management could be done through an MCP making it much more dynamic
 
 # Dashboard
 
@@ -33,8 +37,6 @@ Also have `/responses` interface. Makes actually more sense for my UI because th
 
 # MCP backlog
 
-MCP pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
-
 Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
 
 Huge if I can make 'MCP UI' work nicely. Great for testing too.
@@ -44,7 +46,19 @@ Huge if I can make 'MCP UI' work nicely. Great for testing too.
 https://contextarea.com/httpspastebincon-v88taesm3uo0t5
 https://contextarea.com/rules-httpsuithu-qlei2s9rl7uo6e
 
-if space, doesnt work. if mentioning that thats' a problem it getsx even worse.
+if space, doesnt work. if mentioning that thats' a problem it gets even worse.
+
+# Lay-out Design
+
+Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
+
+# ContextArea LAUNCH
+
+- Personal website: https://contextarea.com/make-me-a-personal-w-36k23j0
+- DBZ Janwilmake & Friends - https://contextarea.com/httpshttpsmarkdow-gb4y8k0
+- Durable Object - https://contextarea.com/httpsuithubcomj-uh41p00
+- Website for a friend - https://contextarea.com/httpsmarkdownfeed-gpouhd0
+- Worker with Assets - https://contextarea.com/httpsuithubcomj-4ssea90
 
 # MCP & OpenRouter
 
@@ -88,7 +102,9 @@ What if it were a 'background agent' that could be made interoperable with sever
 - Ability to hold running the API waiting for a human to authorize, then continue fulfilling the request after that's solved. Potentially, a parameter `onUserMessage:(details)=>Promise<void>` could be added, which would send the authorization request (just an url and message) to that endpoint, with the same secret. That function could then send email, w'app, or notify in UI. Anything.
 - Expose chat completions as async MCP tool with oauth (basically a sub-agent!)
 
-## Skill router
+## MCP router
+
+MCP pre-processor is GOAT - https://x.com/janwilmake/status/1980346301540888847
 
 This may not need to be something fully chained to the chat completions endpoint, but definitely a great thing to offer as well. A company should be able to list all their tools centrally so all employees can use all tools every prompt. A pre-selector prompt can do this.
 
@@ -96,11 +112,11 @@ Questions:
 
 - How do we create a platform in which it's easy for companies to assign which users are their employees?
   - X: See X company and who got added (expensive, not everyone has it)
-  - Email: see if people use company email (e.g. `@parallel.ai`)
+  - Email: see if people use company email (e.g. `@parallel.ai`) (not complete, need custom exceptions)
   - Slack: everyone who's in Slack arguably is inside of the org.
 - Do we need to let users be approved/invited into an org, or can the skill routing configuration be made public? May be more POC to be public. Also has benefits.
 
-## Parallel:
+## Parallel
 
 - Create Integration-friendly Task API with MCP IDP built-in (by passing stable `user: string` ID) that instantly responds with a markdown-URL and JSON-URL on which the result will be able to be found without auth (`store:true` indefinitely, `store:false` for 24 hours)
 - Create task API as chat completions endpoint.
@@ -125,14 +141,6 @@ What is interesting:
 This is 'top-down' approach
 
 Bottom-up is small exapmles in cookbook, won't go as viral, won't be usable for daily use. But also doing that.
-
-# LMPIFY LAUNCH
-
-- Personal website: https://contextarea.com/make-me-a-personal-w-36k23j0
-- DBZ Janwilmake & Friends - https://contextarea.com/httpshttpsmarkdow-gb4y8k0
-- Durable Object - https://contextarea.com/httpsuithubcomj-uh41p00
-- Website for a friend - https://contextarea.com/httpsmarkdownfeed-gpouhd0
-- Worker with Assets - https://contextarea.com/httpsuithubcomj-4ssea90
 
 # Model Changes
 
@@ -188,10 +196,6 @@ PROMPT:
 We could start with a simple thing like this, and allow people to add hooks by just defining frontmatter. If frontmatter contains `hook: prompt|result` we can show a button to add this to your models.
 
 This makes it super easy to create hooks and turn them on/off.
-
-# Lay-out Design
-
-Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
 
 # Parallel Execution - prompt-each idea
 

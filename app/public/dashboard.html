@@ -123,7 +123,8 @@
 
         .header-links {
             display: flex;
-            gap: 8px;
+            gap: 12px;
+            align-items: center;
         }
 
         .header-links a {
@@ -498,7 +499,7 @@
             <h1>CONTEXTAREA</h1>
         </div>
         <div class="nav-links">
-            <a href="/dashboard" class="active" title="Manage MCP & Context">Dashboard</a>
+            <div id="login-widget-mobile"></div>
             <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
                 <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
             </a>
@@ -513,7 +514,7 @@
                 <h1>CONTEXTAREA</h1>
             </a>
             <div class="header-links">
-                <a href="/dashboard" class="active" title="Manage MCP & Context">Dashboard</a>
+                <div id="login-widget"></div>
                 <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
                     <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
                 </a>
@@ -548,6 +549,63 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .login-btn {
+            background-color: #1da1f2;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .login-btn:hover {
+            background-color: #1a91da;
+        }
+
+        .login-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .login-user img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .login-user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .login-logout {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-primary);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .login-logout:hover {
+            color: var(--text-primary);
+            background-color: var(--bg-tertiary);
+            border-color: var(--border-secondary);
+        }
+    </style>
 
     <!-- Toast notification -->
     <div class="toast" id="toast">
@@ -804,6 +862,34 @@
         window.addEventListener('focus', () => {
             loadContextEntries();
             loadMcpServers();
+        });
+
+        // Login widget
+        function renderLoginWidget(container, me) {
+            if (!me || Object.keys(me).length === 0) {
+                container.innerHTML = `<a href="/authorize" class="login-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Login with X
+                </a>`;
+            } else {
+                container.innerHTML = `<div class="login-user">
+                    <img src="${escapeHtml(me.profile_image_url)}" alt="${escapeHtml(me.name)}" />
+                    <span class="login-user-name">${escapeHtml(me.name)}</span>
+                    <a href="/logout" class="login-logout">Logout</a>
+                </div>`;
+            }
+        }
+
+        fetch('/user').then(res => res.ok ? res.json() : {}).then(me => {
+            const widget = document.getElementById('login-widget');
+            const widgetMobile = document.getElementById('login-widget-mobile');
+            if (widget) renderLoginWidget(widget, me);
+            if (widgetMobile) renderLoginWidget(widgetMobile, me);
+        }).catch(() => {
+            const widget = document.getElementById('login-widget');
+            const widgetMobile = document.getElementById('login-widget-mobile');
+            if (widget) renderLoginWidget(widget, null);
+            if (widgetMobile) renderLoginWidget(widgetMobile, null);
         });
     </script>
 </body>
