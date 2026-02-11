@@ -279,41 +279,6 @@
           }
         }
       }
-    },
-    "/from/{url}": {
-      "get": {
-        "summary": "Create prompt from URL",
-        "description": "Fetch content from a URL and create a prompt from it",
-        "parameters": [
-          {
-            "name": "url",
-            "in": "path",
-            "required": true,
-            "description": "URL-encoded URL to fetch content from",
-            "schema": {
-              "type": "string",
-              "format": "url"
-            },
-            "example": "https%3A%2F%2Fexample.com%2Fapi%2Fdata"
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": "Redirect to created prompt",
-            "headers": {
-              "Location": {
-                "schema": {
-                  "type": "string"
-                },
-                "description": "Path to the created prompt"
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          }
-        }
-      }
     }
   },
   "components": {

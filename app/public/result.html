@@ -361,11 +361,10 @@
 
         .header {
             display: flex;
-            justify-content: flex-start;
+            justify-content: space-between;
             align-items: center;
             gap: 12px;
             margin-bottom: 12px;
-            width: fit-content;
         }
 
         .header-logo {
@@ -397,6 +396,7 @@
         .header-links {
             display: flex;
             gap: 8px;
+            align-items: center;
         }
 
         .header-links a {
@@ -856,7 +856,7 @@
             <h1>CONTEXTAREA</h1>
         </div>
         <div class="nav-links">
-            <a href="/dashboard" title="Manage MCP & Context">Dashboard</a>
+            <div id="login-widget-mobile"></div>
             <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
                 <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
             </a>
@@ -871,7 +871,7 @@
                 <h1>CONTEXTAREA</h1>
             </a>
             <div class="header-links">
-                <a href="/dashboard" title="Manage MCP & Context">Dashboard</a>
+                <div id="login-widget"></div>
                 <a href="https://github.com/janwilmake/contextarea" target="_blank" title="Star on GitHub">
                     <img src="https://img.shields.io/github/stars/janwilmake/contextarea?style=social" alt="GitHub Stars" height="20">
                 </a>
@@ -1007,6 +1007,56 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .login-btn {
+            background-color: #1da1f2;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .login-btn:hover {
+            background-color: #1a91da;
+        }
+
+        .login-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            color: inherit;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+
+        .login-user:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .login-user img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .login-user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+    </style>
 
     <script src="/model-modal.js"></script>
     <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
@@ -1766,6 +1816,27 @@
                     sseHandler.close();
                 });
             }
+        });
+    </script>
+
+    <script>
+        function escapeHtml(s) {
+            return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+        }
+        fetch('/user').then(r => r.ok ? r.json() : {}).then(me => {
+            const widgets = [document.getElementById('login-widget'), document.getElementById('login-widget-mobile')].filter(Boolean);
+            widgets.forEach(w => {
+                if (!me || Object.keys(me).length === 0) {
+                    w.innerHTML = '<a href="/authorize" class="login-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login with X</a>';
+                } else {
+                    w.innerHTML = '<a href="/dashboard" class="login-user" title="Go to Dashboard"><img src="'+escapeHtml(me.profile_image_url)+'" alt="'+escapeHtml(me.name)+'" /><span class="login-user-name">'+escapeHtml(me.name)+'</span></a>';
+                }
+            });
+        }).catch(() => {
+            const widgets = [document.getElementById('login-widget'), document.getElementById('login-widget-mobile')].filter(Boolean);
+            widgets.forEach(w => {
+                w.innerHTML = '<a href="/authorize" class="login-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Login with X</a>';
+            });
         });
     </script>
 </body>

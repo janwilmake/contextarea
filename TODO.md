@@ -4,14 +4,21 @@
 - ✅ get mcp names and icons right from the initialization step
 - ✅ Lay-out Design - Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
 - ✅ Improve dashboard
-- create a marketplace of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
-- determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
+- ✅ Allow api access without creating a security risk
+- Create a `marketplace.html` of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
 
 # Make 'Wilmake Browse' good
 
 - add proper name, icon, description (may need to internalize code)
 - add images support so i can drop screenshots into contextarea
 - add support for images in `mcp-completions-stateless` so the screenshot tool works.
+
+# Make it an API
+
+Determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
+
+- simpler JSON API: POST {model,prompt} => stream string?
+- allow oauth into here with dialog
 
 # Skills / Powers support
 

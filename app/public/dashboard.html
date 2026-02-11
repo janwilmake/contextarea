@@ -790,6 +790,12 @@
         <!-- MCP Servers Section -->
         <div class="section">
             <h2 class="section-title">MCP Servers</h2>
+            <div style="margin-bottom: 16px;">
+                <a href="/marketplace" class="action-button" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 6px 12px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                    Explore MCP Servers
+                </a>
+            </div>
             <div class="add-form">
                 <input type="url" id="mcpUrlInput" placeholder="Enter MCP server URL..." />
                 <button class="add-button" id="addMcpButton">Add</button>
@@ -1127,7 +1133,6 @@
                 container.innerHTML = `<div class="login-user">
                     <img src="${escapeHtml(me.profile_image_url)}" alt="${escapeHtml(me.name)}" />
                     <span class="login-user-name">${escapeHtml(me.name)}</span>
-                    <a href="/logout" class="login-logout">Logout</a>
                 </div>`;
             }
         }
