@@ -9,7 +9,8 @@ import {
   fetchUrlContext,
   getAuthorizationForContext,
   createTools,
-  type IdpKV
+  type IdpKV,
+  ClientInfo
 } from "./idp-middleware";
 import { chatCompletionsProxy } from "./mcp-completions-stateless";
 import { ImageResponse } from "workers-og";
@@ -37,8 +38,10 @@ const PRICE_MARKUP_FACTOR = 1.5;
 const CLIENT_INFO = {
   name: "Context Area",
   title: "Context Area",
+  logo_uri: "https://contextarea.com/logo.png",
+  uri: "https://contextarea.com",
   version: "1.0.0"
-};
+} satisfies ClientInfo;
 
 type LLMSecrets = {
   [key: `${string}_SECRET`]: string;

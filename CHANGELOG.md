@@ -350,3 +350,16 @@ bonus: refresh openrouter models automatically every hour or so.
 ✅ Clear up API interface: `/chat/completions[/{completion_id}]` with `{user:string,store:boolean,tools:[{type:"custom",custom:{name:"url_context"}}]}`
 
 ✅ Change API boundary to `/chat/completions` and ensure it's called when submitting through `env.SELF`.
+
+# Improvements (2026-02-11)
+
+- ✅ ensure to get suggestion to go to dashboard for MCPs that aren't found
+- ✅ get mcp names and icons right from the initialization step
+- ✅ Lay-out Design - Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
+- ✅ Improve dashboard
+- ✅ Allow api access without creating a security risk
+- ✅ Create a `marketplace.html` of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
+
+# Bug in MCP registration (2026-02-12)
+
+- ✅ https://mcp.stripe.com doesnt work but works fine in inspector. found bug and reported it at https://x.com/janwilmake/status/2021918904482771435

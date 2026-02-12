@@ -666,11 +666,12 @@ async function registerClientDynamic(
   }
 
   const registrationData: Record<string, unknown> = {
+    client_name: clientInfo.name,
+    response_types: ["code"],
     redirect_uris: [callbackUrl],
     grant_types: ["authorization_code"],
-    response_types: ["code"],
-    client_name: clientInfo.name,
-    application_type: "native",
+    application_type: "web",
+    //scope: "mcp",
     token_endpoint_auth_method: "none"
   };
 
@@ -690,9 +691,8 @@ async function registerClientDynamic(
     });
 
     if (!regResponse.ok) {
-      const errorText = await regResponse.text().catch(() => "Unknown error");
       throw new Error(
-        `Client registration failed: ${regResponse.status} - ${errorText}`
+        `Client registration failed:\n\n${authMetadata.registration_endpoint}\n\n${JSON.stringify(registrationData, undefined, 2)}\n\n ${regResponse.status}\n\n${await regResponse.text().catch(() => "Unknown error")}`
       );
     }
 
@@ -706,7 +706,7 @@ async function registerClientDynamic(
     };
   } catch (error) {
     throw new Error(
-      `Dynamic client registration failed: ${(error as Error).message}`
+      `Dynamic client registration failed: ${(error as Error).message}}`
     );
   }
 }

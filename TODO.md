@@ -1,24 +1,29 @@
-# Improvements
-
-- ✅ ensure to get suggestion to go to dashboard for MCPs that aren't found
-- ✅ get mcp names and icons right from the initialization step
-- ✅ Lay-out Design - Massive improvements possible - https://x.com/kregenrek/status/1946152950872879590
-- ✅ Improve dashboard
-- ✅ Allow api access without creating a security risk
-- Create a `marketplace.html` of famous mcps like linear, notion, etc; see https://code.claude.com/docs/en/mcp
-
-# Make 'Wilmake Browse' good
-
-- add proper name, icon, description (may need to internalize code)
-- add images support so i can drop screenshots into contextarea
-- add support for images in `mcp-completions-stateless` so the screenshot tool works.
-
-# Make it an API
+# Make it an API ‼️
 
 Determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
 
-- simpler JSON API: POST {model,prompt} => stream string?
+- have `/responses` api? Makes actually more sense for my UI because there are no messages.
+- simpler JSON API: POST `{model,prompt} => stream string`?
 - allow oauth into here with dialog
+- make this a cli (nlang)
+
+# MCP MCP ‼️
+
+tools
+
+- list mcps
+- (add mcp, remove mcp) --> this one is harder due to HITL
+- prompt (with mcps as @) returning url
+- prompt waiting for full result
+- prompt waiting for result, taking last file as response
+
+^ this mcp should be installed by default.
+
+# Make 'Wilmake Browse' good ‼️
+
+- add proper name, icon, description (may need to internalize code)
+- add images support so I can drop screenshots into contextarea
+- add support for images in `mcp-completions-stateless` so the screenshot tool works.
 
 # Skills / Powers support
 
@@ -27,28 +32,6 @@ We want to use progressive disclosure and a way to easily add/remove skills to t
 Skills can be an MCP but it can also be natively built-in.
 
 Powers are skills that enable MCPs when chosen.
-
-# MCP MCP
-
-MCP management could be done through an MCP making it much more dynamic
-
-# Dashboard
-
-Test `/chat/completions`. I'm interested in making different UIs for this as well as integration with several CLIs, so let's see if I can do this. Maybe it's also better to seperate the backend from the front-end?
-
-https://github.com/simonw/llm Can I integrate with this?
-
-Duplicates https://openrouter.ai/chat but only minimal features of selecting models
-
-Expose OpenAPI and create some docs for it (Mintlify?)
-
-Also have `/responses` interface. Makes actually more sense for my UI because there are no messages.
-
-# MCP backlog
-
-Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
-
-Huge if I can make 'MCP UI' work nicely. Great for testing too.
 
 # bug in file paths
 
@@ -64,6 +47,12 @@ if space, doesnt work. if mentioning that thats' a problem it gets even worse.
 - Durable Object - https://contextarea.com/httpsuithubcomj-uh41p00
 - Website for a friend - https://contextarea.com/httpsmarkdownfeed-gpouhd0
 - Worker with Assets - https://contextarea.com/httpsuithubcomj-4ssea90
+
+# MCP backlog
+
+Implement code execution with MCP (https://www.anthropic.com/engineering/code-execution-with-mcp, https://blog.cloudflare.com/code-mode/). Recommended way of using MCPs now.
+
+Huge if I can make 'MCP UI' work nicely. Great for testing too.
 
 # MCP & OpenRouter
 
