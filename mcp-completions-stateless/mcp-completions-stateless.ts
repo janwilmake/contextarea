@@ -125,15 +125,15 @@ async function initializeMCPSession(
   authorization?: string,
   clientInfo: { name: string; version: string } = {
     name: "MCPCompletions",
-    version: "1.0.0",
+    version: "1.0.0"
   },
-  fetchFn: typeof globalThis.fetch = globalThis.fetch,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ) {
   const mcpHeaders: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json,text/event-stream",
     "MCP-Protocol-Version": "2025-06-18",
-    ...(authorization && { Authorization: authorization }),
+    ...(authorization && { Authorization: authorization })
   };
 
   const initResponse = await fetchFn(serverUrl, {
@@ -146,9 +146,9 @@ async function initializeMCPSession(
       params: {
         protocolVersion: "2025-06-18",
         capabilities: { roots: { listChanged: true }, sampling: {} },
-        clientInfo,
-      },
-    }),
+        clientInfo
+      }
+    })
   });
 
   if (!initResponse.ok) throw new Error(`Init failed: ${initResponse.status}`);
@@ -165,8 +165,8 @@ async function initializeMCPSession(
     headers: mcpHeaders,
     body: JSON.stringify({
       jsonrpc: "2.0",
-      method: "notifications/initialized",
-    }),
+      method: "notifications/initialized"
+    })
   });
 
   const toolsResponse = await fetchFn(serverUrl, {
@@ -175,8 +175,8 @@ async function initializeMCPSession(
     body: JSON.stringify({
       jsonrpc: "2.0",
       id: Date.now() + 1,
-      method: "tools/list",
-    }),
+      method: "tools/list"
+    })
   });
 
   const toolsResult = await parseMCPResponse(toolsResponse);
@@ -191,11 +191,14 @@ export const chatCompletionsProxy = (config: {
   /** Optional fetch override for MCP server requests (e.g. service bindings to avoid 522). */
   mcpFetch?: typeof globalThis.fetch;
 }) => {
-  const { clientInfo = { name: "MCPCompletions", version: "1.0.0" }, mcpFetch = globalThis.fetch } = config;
+  const {
+    clientInfo = { name: "MCPCompletions", version: "1.0.0" },
+    mcpFetch = globalThis.fetch
+  } = config;
 
   const fetchProxy = async (
     input: RequestInfo | URL,
-    init?: RequestInit,
+    init?: RequestInit
   ): Promise<Response> => {
     const llmEndpoint = typeof input === "string" ? input : input.toString();
     const headers = init?.headers ? new Headers(init.headers) : new Headers();
@@ -241,10 +244,10 @@ export const chatCompletionsProxy = (config: {
         JSON.stringify({
           error: {
             message: "Invalid JSON in request body",
-            type: "invalid_request_error",
-          },
+            type: "invalid_request_error"
+          }
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -259,17 +262,17 @@ export const chatCompletionsProxy = (config: {
       const invalidMcpTools = mcpTools.filter(
         (x) =>
           ((x as MCPToolSpec).require_approval || "never") !== "never" ||
-          !(x as MCPToolSpec).server_url,
+          !(x as MCPToolSpec).server_url
       );
       if (invalidMcpTools.length > 0) {
         return new Response(
           JSON.stringify({
             error: {
               message: "Invalid MCP tools",
-              type: "invalid_request_error",
-            },
+              type: "invalid_request_error"
+            }
           }),
-          { status: 400, headers: { "Content-Type": "application/json" } },
+          { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }
     }
@@ -292,7 +295,7 @@ export const chatCompletionsProxy = (config: {
 
         // Initialize all MCP sessions and discover tools
         const mcpToolSpecs = body.tools.filter(
-          (x) => x.type === "mcp",
+          (x) => x.type === "mcp"
         ) as MCPToolSpec[];
 
         for (const toolSpec of mcpToolSpecs) {
@@ -305,18 +308,18 @@ export const chatCompletionsProxy = (config: {
                 toolSpec.server_url,
                 toolSpec.authorization,
                 clientInfo,
-                mcpFetch,
+                mcpFetch
               );
               session = {
                 sessionId: sessionData.sessionId || undefined,
                 initialized: true,
-                tools: sessionData.tools,
+                tools: sessionData.tools
               };
               mcpSessions.set(sessionKey, session);
             } catch (error) {
               console.error(
                 `Failed to initialize MCP session for ${toolSpec.server_url}:`,
-                error,
+                error
               );
               continue;
             }
@@ -337,7 +340,7 @@ export const chatCompletionsProxy = (config: {
             toolMap.set(functionName, {
               serverUrl: toolSpec.server_url,
               originalName: mcpTool.name,
-              authorization: toolSpec.authorization,
+              authorization: toolSpec.authorization
             });
 
             transformedTools.push({
@@ -347,8 +350,8 @@ export const chatCompletionsProxy = (config: {
                 description: `${
                   mcpTool.description || mcpTool.name
                 } (via MCP server: ${hostname})`,
-                parameters: mcpTool.inputSchema || {},
-              },
+                parameters: mcpTool.inputSchema || {}
+              }
             });
           }
         }
@@ -384,13 +387,13 @@ export const chatCompletionsProxy = (config: {
             const totalUsage: UsageStats = {
               prompt_tokens: 0,
               completion_tokens: 0,
-              total_tokens: 0,
+              total_tokens: 0
             };
 
             const emitChunk = (chunk: any) => {
               if (userRequestedStream) {
                 controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`),
+                  encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
                 );
               }
               // Collect content for non-streaming response
@@ -412,9 +415,9 @@ export const chatCompletionsProxy = (config: {
                 {
                   index: 0,
                   delta: { role: "assistant" },
-                  finish_reason: null,
-                },
-              ],
+                  finish_reason: null
+                }
+              ]
             });
 
             while (remainingTokens === undefined || remainingTokens > 0) {
@@ -434,13 +437,13 @@ export const chatCompletionsProxy = (config: {
               const response = await fetch(llmEndpoint, {
                 method: "POST",
                 headers,
-                body: JSON.stringify(stepBody),
+                body: JSON.stringify(stepBody)
               });
 
               if (!response.ok) {
                 const message = await response.text();
                 throw new Error(
-                  `API request failed: ${llmEndpoint} - ${response.status} - ${message}`,
+                  `API request failed: ${llmEndpoint} - ${response.status} - ${message}`
                 );
               }
 
@@ -499,11 +502,11 @@ export const chatCompletionsProxy = (config: {
                                 content: choice.delta.content,
                                 refusal: choice.delta.refusal,
                                 reasoning_content:
-                                  choice.delta.reasoning_content,
+                                  choice.delta.reasoning_content
                               },
-                              finish_reason: null,
-                            },
-                          ],
+                              finish_reason: null
+                            }
+                          ]
                         });
                       }
 
@@ -514,7 +517,7 @@ export const chatCompletionsProxy = (config: {
                             toolCallBuffer.set(toolIndex, {
                               id: "",
                               name: "",
-                              arguments: "",
+                              arguments: ""
                             });
                           }
                           const bufferedCall = toolCallBuffer.get(toolIndex);
@@ -534,12 +537,12 @@ export const chatCompletionsProxy = (config: {
                               toolCalls.push({
                                 id: bufferedCall.id,
                                 name: bufferedCall.name,
-                                arguments: JSON.parse(bufferedCall.arguments),
+                                arguments: JSON.parse(bufferedCall.arguments)
                               });
                             } catch (e) {
                               console.error(
                                 "Error parsing tool call arguments:",
-                                e,
+                                e
                               );
                             }
                           }
@@ -574,7 +577,7 @@ export const chatCompletionsProxy = (config: {
               if (assistantMessage || toolCalls.length) {
                 const assistantMsg: any = {
                   role: "assistant",
-                  content: assistantMessage || null,
+                  content: assistantMessage || null
                 };
 
                 if (toolCalls.length) {
@@ -583,8 +586,8 @@ export const chatCompletionsProxy = (config: {
                     type: "function",
                     function: {
                       name: tc.name,
-                      arguments: JSON.stringify(tc.arguments),
-                    },
+                      arguments: JSON.stringify(tc.arguments)
+                    }
                   }));
                 }
 
@@ -608,7 +611,7 @@ export const chatCompletionsProxy = (config: {
                   } (${hostname})</summary>\n\n\`\`\`json\n${JSON.stringify(
                     toolCall.arguments,
                     null,
-                    2,
+                    2
                   )}\n\`\`\`\n\n</details>`;
                   emitChunk({
                     id: requestId,
@@ -619,9 +622,9 @@ export const chatCompletionsProxy = (config: {
                       {
                         index: 0,
                         delta: { content: toolInput },
-                        finish_reason: null,
-                      },
-                    ],
+                        finish_reason: null
+                      }
+                    ]
                   });
 
                   try {
@@ -633,12 +636,12 @@ export const chatCompletionsProxy = (config: {
                         toolInfo.serverUrl,
                         toolInfo.authorization,
                         clientInfo,
-                        mcpFetch,
+                        mcpFetch
                       );
                       session = {
                         sessionId: sessionData.sessionId || undefined,
                         initialized: true,
-                        tools: sessionData.tools,
+                        tools: sessionData.tools
                       };
                       mcpSessions.set(sessionKey, session);
                     }
@@ -648,11 +651,11 @@ export const chatCompletionsProxy = (config: {
                       Accept: "application/json,text/event-stream",
                       "MCP-Protocol-Version": "2025-06-18",
                       ...(toolInfo.authorization && {
-                        Authorization: toolInfo.authorization,
+                        Authorization: toolInfo.authorization
                       }),
                       ...(session.sessionId && {
-                        "Mcp-Session-Id": session.sessionId,
-                      }),
+                        "Mcp-Session-Id": session.sessionId
+                      })
                     };
 
                     const toolResponse = await mcpFetch(toolInfo.serverUrl, {
@@ -664,27 +667,27 @@ export const chatCompletionsProxy = (config: {
                         method: "tools/call",
                         params: {
                           name: toolInfo.originalName,
-                          arguments: toolCall.arguments,
-                        },
-                      }),
+                          arguments: toolCall.arguments
+                        }
+                      })
                     });
 
                     if (toolResponse.status === 404 && session.sessionId) {
                       mcpSessions.delete(sessionKey);
                       throw new Error(
-                        "Session expired, please retry the request",
+                        "Session expired, please retry the request"
                       );
                     }
 
                     if (!toolResponse.ok) {
                       if (toolResponse.status === 401) {
                         throw new Error(
-                          `Authentication failed for ${hostname}. Please check your authorization token.`,
+                          `Authentication failed for ${hostname}. Please check your authorization token.`
                         );
                       } else {
                         const errorText = await toolResponse.text();
                         throw new Error(
-                          `Tool ${toolInfo.originalName} failed with status ${toolResponse.status}: ${errorText}`,
+                          `Tool ${toolInfo.originalName} failed with status ${toolResponse.status}: ${errorText}`
                         );
                       }
                     }
@@ -692,7 +695,7 @@ export const chatCompletionsProxy = (config: {
                     const toolResult = await parseMCPResponse(toolResponse);
                     if (toolResult.error) {
                       throw new Error(
-                        `${toolResult.error.message} (code: ${toolResult.error.code})`,
+                        `${toolResult.error.message} (code: ${toolResult.error.code})`
                       );
                     }
 
@@ -702,7 +705,7 @@ export const chatCompletionsProxy = (config: {
                     if (!content || !Array.isArray(content)) {
                       const jsonString = JSON.stringify(toolResult, null, 2);
                       formattedResult = `<details><summary>Error Result (±${Math.round(
-                        jsonString.length / 5,
+                        jsonString.length / 5
                       )} tokens)</summary>\n\n\`\`\`json\n${jsonString}\n\`\`\`\n\n</details>\n\nTool returned invalid response structure`;
                     } else {
                       const contentBlocks = content
@@ -713,7 +716,7 @@ export const chatCompletionsProxy = (config: {
                               return `\`\`\`json\n${JSON.stringify(
                                 parsed,
                                 null,
-                                2,
+                                2
                               )}\n\`\`\``;
                             } catch {
                               return `\`\`\`markdown\n${item.text}\n\`\`\``;
@@ -724,7 +727,7 @@ export const chatCompletionsProxy = (config: {
                             return `\`\`\`json\n${JSON.stringify(
                               item,
                               null,
-                              2,
+                              2
                             )}\n\`\`\``;
                           }
                         })
@@ -740,14 +743,14 @@ export const chatCompletionsProxy = (config: {
                       }, 0);
 
                       formattedResult = `<details><summary>Result (±${Math.round(
-                        totalSize / 5,
+                        totalSize / 5
                       )} tokens)</summary>\n\n${contentBlocks}\n\n</details>`;
                     }
 
                     currentMessages.push({
                       role: "tool",
                       tool_call_id: toolCall.id,
-                      content: formattedResult,
+                      content: formattedResult
                     });
 
                     const toolFeedback = `\n\n${formattedResult}\n\n`;
@@ -760,16 +763,16 @@ export const chatCompletionsProxy = (config: {
                         {
                           index: 0,
                           delta: { content: toolFeedback },
-                          finish_reason: null,
-                        },
-                      ],
+                          finish_reason: null
+                        }
+                      ]
                     });
                   } catch (error: any) {
                     const errorMsg = `**Error**: ${error.message}`;
                     currentMessages.push({
                       role: "tool",
                       tool_call_id: toolCall.id,
-                      content: errorMsg,
+                      content: errorMsg
                     });
 
                     emitChunk({
@@ -781,9 +784,9 @@ export const chatCompletionsProxy = (config: {
                         {
                           index: 0,
                           delta: { content: `\n\n${errorMsg}\n\n` },
-                          finish_reason: null,
-                        },
-                      ],
+                          finish_reason: null
+                        }
+                      ]
                     });
                   }
                 }
@@ -797,7 +800,7 @@ export const chatCompletionsProxy = (config: {
                 object: "chat.completion.chunk",
                 created: Math.floor(Date.now() / 1000),
                 model: body.model,
-                choices: [{ index: 0, delta: {}, finish_reason: "stop" }],
+                choices: [{ index: 0, delta: {}, finish_reason: "stop" }]
               };
 
               if (userRequestedUsage && totalUsage.total_tokens > 0) {
@@ -805,7 +808,7 @@ export const chatCompletionsProxy = (config: {
               }
 
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`),
+                encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`)
               );
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
             } else {
@@ -822,17 +825,17 @@ export const chatCompletionsProxy = (config: {
                       role: "assistant",
                       content: collectedContent || null,
                       ...(collectedReasoningContent && {
-                        reasoning_content: collectedReasoningContent,
-                      }),
+                        reasoning_content: collectedReasoningContent
+                      })
                     },
-                    finish_reason: "stop",
-                  },
+                    finish_reason: "stop"
+                  }
                 ],
-                usage: totalUsage,
+                usage: totalUsage
               };
 
               controller.enqueue(
-                encoder.encode(JSON.stringify(nonStreamingResponse)),
+                encoder.encode(JSON.stringify(nonStreamingResponse))
               );
             }
             controller.close();
@@ -840,7 +843,7 @@ export const chatCompletionsProxy = (config: {
             console.error("Stream error:", error);
             controller.error(error);
           }
-        },
+        }
       });
 
       return new Response(stream, {
@@ -848,19 +851,19 @@ export const chatCompletionsProxy = (config: {
           ? {
               "Content-Type": "text/event-stream",
               "Cache-Control": "no-cache",
-              Connection: "keep-alive",
+              Connection: "keep-alive"
             }
           : {
-              "Content-Type": "application/json",
-            },
+              "Content-Type": "application/json"
+            }
       });
     } catch (error) {
       console.error("Proxy error:", error);
       return new Response(
         JSON.stringify({
-          error: { message: "Internal server error", type: "internal_error" },
+          error: { message: "Internal server error", type: "internal_error" }
         }),
-        { status: 500, headers: { "Content-Type": "application/json" } },
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
   };

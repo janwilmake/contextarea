@@ -78,22 +78,6 @@ function extractLastCodeblock(text: string): string | null {
   return blocks[blocks.length - 1].text;
 }
 
-async function pollForCompletion(
-  doStub: any,
-  timeoutMs: number
-): Promise<{ status: string; result?: string }> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    const res = await doStub.fetch(new Request("https://do/current"));
-    const data: any = await res.json();
-    if (data.status === "complete" || data.status === "error") {
-      return data;
-    }
-    await new Promise((r) => setTimeout(r, 1000));
-  }
-  return { status: "timeout" };
-}
-
 const TOOL_DEFINITIONS = [
   {
     name: "list_mcps",
@@ -102,9 +86,9 @@ const TOOL_DEFINITIONS = [
     inputSchema: { type: "object" as const, properties: {} }
   },
   {
-    name: "prompt_instant",
+    name: "prompt",
     description:
-      "Send a prompt to an LLM model and immediately return a URL where the result will be available. Does not wait for completion.",
+      "Send a prompt to an LLM model. Returns an ID to check the result with check_result. You can use URLs as context in your prompt and reference MCP servers using @mcp_url.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -119,37 +103,24 @@ const TOOL_DEFINITIONS = [
     }
   },
   {
-    name: "prompt_wait",
+    name: "check_result",
     description:
-      "Send a prompt to an LLM model and wait up to 25 seconds for the result. Returns the full text result if complete, or a URL if still processing.",
+      "Check the result of a previously submitted prompt by its ID.",
     inputSchema: {
       type: "object" as const,
       properties: {
-        model: {
+        id: {
           type: "string",
-          description:
-            "Model name (e.g. 'deepseek-chat'). Defaults to first available model."
+          description: "The prompt ID returned by the prompt tool"
         },
-        prompt: { type: "string", description: "The prompt to send" }
-      },
-      required: ["prompt"]
-    }
-  },
-  {
-    name: "prompt_wait_file",
-    description:
-      "Send a prompt to an LLM and wait for the result, then extract the last code block from the response. Useful for generating code or structured output.",
-    inputSchema: {
-      type: "object" as const,
-      properties: {
-        model: {
+        type: {
           type: "string",
+          enum: ["full", "last_file"],
           description:
-            "Model name (e.g. 'deepseek-chat'). Defaults to first available model."
-        },
-        prompt: { type: "string", description: "The prompt to send" }
+            "Result type: 'full' returns the complete response, 'last_file' extracts the last code block from the response."
+        }
       },
-      required: ["prompt"]
+      required: ["id", "type"]
     }
   }
 ];
@@ -288,78 +259,58 @@ async function handleToolCall(
       };
     }
 
-    case "prompt_instant": {
-      const { url } = await setupPrompt(env, args, stripeflareUser);
+    case "prompt": {
+      const { id } = await setupPrompt(env, args, stripeflareUser);
       return {
-        content: [
-          {
-            type: "text",
-            text: `Prompt submitted. View result at: ${url}`
-          }
-        ]
+        content: [{ type: "text", text: JSON.stringify({ id }) }]
       };
     }
 
-    case "prompt_wait": {
-      const { url, doStub } = await setupPrompt(env, args, stripeflareUser);
-      const poll = await pollForCompletion(doStub, 25000);
+    case "check_result": {
+      const { id, type } = args;
+      if (!id) throw new Error("Missing id");
+      if (!type || !["full", "last_file"].includes(type))
+        throw new Error("type must be 'full' or 'last_file'");
 
-      if (poll.status === "complete" && poll.result) {
-        return {
-          content: [{ type: "text", text: poll.result }]
-        };
+      const pathname = `/${id}`;
+      const doId = env.SQL_STREAM_PROMPT_DO.idFromName(pathname);
+      const doStub = env.SQL_STREAM_PROMPT_DO.get(doId);
+
+      let data: any;
+      const deadline = Date.now() + 60000;
+      while (Date.now() < deadline) {
+        const res = await doStub.fetch(new Request("https://do/current"));
+        data = await res.json();
+        if (data.status === "complete" || data.status === "error") break;
+        await new Promise((r) => setTimeout(r, 1000));
       }
 
-      if (poll.status === "error") {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `Error: ${(poll as any).error || "Unknown error"}`
-            }
-          ],
-          isError: true
-        };
-      }
-
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Still processing. View result at: ${url}`
+      if (data.status === "complete" && data.result) {
+        if (type === "last_file") {
+          const codeblock = extractLastCodeblock(data.result);
+          if (codeblock) {
+            return { content: [{ type: "text", text: codeblock }] };
           }
-        ]
-      };
-    }
-
-    case "prompt_wait_file": {
-      const { url, doStub } = await setupPrompt(env, args, stripeflareUser);
-      const poll = await pollForCompletion(doStub, 25000);
-
-      if (poll.status === "complete" && poll.result) {
-        const codeblock = extractLastCodeblock(poll.result);
-        if (codeblock) {
           return {
-            content: [{ type: "text", text: codeblock }]
+            content: [
+              {
+                type: "text",
+                text:
+                  "No code block found in result. Full result:\n\n" +
+                  data.result
+              }
+            ]
           };
         }
-        return {
-          content: [
-            {
-              type: "text",
-              text:
-                "No code block found in result. Full result:\n\n" + poll.result
-            }
-          ]
-        };
+        return { content: [{ type: "text", text: data.result }] };
       }
 
-      if (poll.status === "error") {
+      if (data.status === "error") {
         return {
           content: [
             {
               type: "text",
-              text: `Error: ${(poll as any).error || "Unknown error"}`
+              text: `Error: ${data.error || "Unknown error"}`
             }
           ],
           isError: true
@@ -370,7 +321,7 @@ async function handleToolCall(
         content: [
           {
             type: "text",
-            text: `Still processing. View result at: ${url}`
+            text: JSON.stringify({ status: "processing", id })
           }
         ]
       };
