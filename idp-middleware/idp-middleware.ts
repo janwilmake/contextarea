@@ -417,11 +417,12 @@ export function parseWWWAuthenticate(header: string): WWWAuthenticateInfo {
 
 async function discoverProtectedResourceMetadata(
   resourceUrl: string,
-  wwwAuthInfo?: WWWAuthenticateInfo
+  wwwAuthInfo?: WWWAuthenticateInfo,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<ProtectedResourceMetadata> {
   if (wwwAuthInfo?.resourceMetadataUrl) {
     try {
-      const response = await fetch(wwwAuthInfo.resourceMetadataUrl);
+      const response = await fetchFn(wwwAuthInfo.resourceMetadataUrl);
       if (response.ok) {
         return (await response.json()) as ProtectedResourceMetadata;
       }
@@ -446,7 +447,7 @@ async function discoverProtectedResourceMetadata(
   for (const endpoint of endpoints) {
     try {
       const metadataUrl = new URL(endpoint, urlObj.origin);
-      const response = await fetch(metadataUrl);
+      const response = await fetchFn(metadataUrl);
       if (response.ok) {
         const metadata = (await response.json()) as ProtectedResourceMetadata;
 
@@ -486,7 +487,8 @@ interface McpInitializeResult {
 
 async function tryMcpInitialize(
   url: string,
-  accessToken?: string
+  accessToken?: string,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<McpInitializeResult | null> {
   try {
     const headers: Record<string, string> = {
@@ -497,7 +499,7 @@ async function tryMcpInitialize(
       headers["Authorization"] = `Bearer ${accessToken}`;
     }
 
-    const response = await fetch(url, {
+    const response = await fetchFn(url, {
       method: "POST",
       headers,
       body: JSON.stringify({
@@ -552,13 +554,16 @@ function getApexDomain(hostname: string): string {
   return parts.slice(-2).join(".");
 }
 
-async function fetchApexFavicon(url: string): Promise<string | null> {
+async function fetchApexFavicon(
+  url: string,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
+): Promise<string | null> {
   try {
     const hostname = new URL(url).hostname;
     const apex = getApexDomain(hostname);
     const pageUrl = `https://${apex}`;
 
-    const response = await fetch(pageUrl, {
+    const response = await fetchFn(pageUrl, {
       headers: { Accept: "text/html" },
       redirect: "follow"
     });
@@ -594,7 +599,8 @@ async function fetchApexFavicon(url: string): Promise<string | null> {
 // --- Authorization Server Discovery ---
 
 async function discoverAuthServerMetadata(
-  issuerUrl: string
+  issuerUrl: string,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<AuthServerMetadata> {
   const url = new URL(issuerUrl);
   const basePath = url.pathname === "/" ? "" : url.pathname;
@@ -619,7 +625,7 @@ async function discoverAuthServerMetadata(
   for (const endpoint of endpoints) {
     try {
       const metadataUrl = new URL(endpoint, url.origin);
-      const response = await fetch(metadataUrl);
+      const response = await fetchFn(metadataUrl);
       if (response.ok) {
         const metadata = (await response.json()) as AuthServerMetadata;
 
@@ -657,7 +663,8 @@ async function registerClientWithCIMD(
 async function registerClientDynamic(
   authMetadata: AuthServerMetadata,
   clientInfo: ClientInfo,
-  callbackUrl: string
+  callbackUrl: string,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<{ clientId: string; clientSecret?: string }> {
   if (!authMetadata.registration_endpoint) {
     throw new Error(
@@ -684,7 +691,7 @@ async function registerClientDynamic(
   }
 
   try {
-    const regResponse = await fetch(authMetadata.registration_endpoint, {
+    const regResponse = await fetchFn(authMetadata.registration_endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(registrationData)
@@ -722,8 +729,10 @@ export async function constructAuthorizationUrl(
     wwwAuthenticateInfo?: WWWAuthenticateInfo;
     scope?: string;
     testRequest?: () => Promise<Response>;
+    fetchFn?: typeof globalThis.fetch;
   } = {}
 ): Promise<AuthorizationFlowData> {
+  const fetchFn = options.fetchFn || globalThis.fetch;
   let resourceMetadata: ProtectedResourceMetadata;
   let scope = options.scope;
 
@@ -758,7 +767,8 @@ export async function constructAuthorizationUrl(
   try {
     resourceMetadata = await discoverProtectedResourceMetadata(
       resourceUrl,
-      options.wwwAuthenticateInfo
+      options.wwwAuthenticateInfo,
+      fetchFn
     );
   } catch (error) {
     throw new Error(
@@ -783,7 +793,7 @@ export async function constructAuthorizationUrl(
 
   for (const authServerUrl of resourceMetadata.authorization_servers) {
     try {
-      authMetadata = await discoverAuthServerMetadata(authServerUrl);
+      authMetadata = await discoverAuthServerMetadata(authServerUrl, fetchFn);
       selectedAuthServer = authServerUrl;
       break;
     } catch (error) {
@@ -827,7 +837,8 @@ export async function constructAuthorizationUrl(
     const registration = await registerClientDynamic(
       authMetadata,
       clientInfo,
-      callbackUrl
+      callbackUrl,
+      fetchFn
     );
     clientId = registration.clientId;
     clientSecret = registration.clientSecret;
@@ -879,7 +890,8 @@ export async function constructAuthorizationUrl(
 export async function exchangeCodeForToken(
   code: string,
   authFlowData: AuthorizationFlowData,
-  redirectUri: string
+  redirectUri: string,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<{
   access_token: string;
   refresh_token?: string;
@@ -899,7 +911,7 @@ export async function exchangeCodeForToken(
     tokenRequestBody.append("client_secret", authFlowData.clientSecret);
   }
 
-  const tokenResponse = await fetch(authFlowData.tokenEndpoint!, {
+  const tokenResponse = await fetchFn(authFlowData.tokenEndpoint!, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -923,7 +935,8 @@ export async function refreshAccessToken(
   clientId?: string,
   clientSecret?: string,
   tokenEndpoint?: string,
-  resourceUrl?: string
+  resourceUrl?: string,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<{
   access_token: string;
   refresh_token?: string;
@@ -950,7 +963,7 @@ export async function refreshAccessToken(
     tokenRequestBody.append("resource", resourceUrl);
   }
 
-  const tokenResponse = await fetch(tokenEndpoint, {
+  const tokenResponse = await fetchFn(tokenEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -981,6 +994,8 @@ export interface IdpMiddlewareConfig {
   clientInfo: ClientInfo;
   baseUrl?: string;
   pathPrefix?: string;
+  /** Optional fetch override for same-domain requests (e.g. Cloudflare service bindings to avoid 522). */
+  fetchFn?: typeof globalThis.fetch;
   onAuthSuccess?: (
     resourceUrl: string,
     resourceType: "mcp" | "context",
@@ -1026,6 +1041,7 @@ export function createIdpMiddleware(
     baseUrl,
     clientInfo,
     pathPrefix = "/oauth",
+    fetchFn = globalThis.fetch,
     onAuthSuccess
   } = config;
 
@@ -1061,7 +1077,8 @@ export function createIdpMiddleware(
         clientInfo,
         pathPrefix,
         resourceType,
-        onAuthSuccess
+        onAuthSuccess,
+        fetchFn
       );
     }
 
@@ -1083,7 +1100,8 @@ export function createIdpMiddleware(
         clientInfo,
         pathPrefix,
         resourceType,
-        onAuthSuccess
+        onAuthSuccess,
+        fetchFn
       );
     }
 
@@ -1159,7 +1177,8 @@ export function createIdpMiddleware(
             server.client_id || undefined,
             server.client_secret || undefined,
             server.token_endpoint!,
-            server.url
+            server.url,
+            fetchFn
           );
           await storage.updateTokens(
             "mcp_servers",
@@ -1200,7 +1219,8 @@ export function createIdpMiddleware(
             entry.client_id || undefined,
             entry.client_secret || undefined,
             entry.token_endpoint!,
-            entry.url
+            entry.url,
+            fetchFn
           );
           await storage.updateTokens(
             "context",
@@ -1358,7 +1378,8 @@ async function handleLogin(
     resourceUrl: string,
     resourceType: "mcp" | "context",
     accessToken: string
-  ) => Promise<{ name: string; metadata?: Record<string, unknown> }>
+  ) => Promise<{ name: string; metadata?: Record<string, unknown> }>,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<Response> {
   const url = new URL(request.url);
   const isLocalhost = url.hostname === "localhost";
@@ -1381,8 +1402,9 @@ async function handleLogin(
       resourceType,
       {
         scope,
+        fetchFn,
         testRequest: async () => {
-          return fetch(resourceUrl, {
+          return fetchFn(resourceUrl, {
             method: "HEAD",
             headers: { Accept: "*/*" }
           });
@@ -1406,7 +1428,7 @@ async function handleLogin(
 
       // For MCP, get name and icon from initialize response
       if (resourceType === "mcp") {
-        const mcpInfo = await tryMcpInitialize(resourceUrl);
+        const mcpInfo = await tryMcpInitialize(resourceUrl, undefined, fetchFn);
         if (mcpInfo) {
           name = mcpInfo.title || mcpInfo.name;
           metadata = metadata || {};
@@ -1419,7 +1441,7 @@ async function handleLogin(
         }
         // Fallback: scrape icon from apex domain
         if (!metadata?.icon) {
-          const faviconUrl = await fetchApexFavicon(resourceUrl);
+          const faviconUrl = await fetchApexFavicon(resourceUrl, fetchFn);
           if (faviconUrl) {
             metadata = metadata || {};
             metadata.icon = faviconUrl;
@@ -1459,7 +1481,7 @@ async function handleLogin(
     });
   } catch (error) {
     if (resourceType === "mcp" && resourceUrl) {
-      const mcpInfo = await tryMcpInitialize(resourceUrl);
+      const mcpInfo = await tryMcpInitialize(resourceUrl, undefined, fetchFn);
       if (mcpInfo) {
         const name = mcpInfo.title || mcpInfo.name;
         const metadata: Record<string, unknown> = {};
@@ -1472,7 +1494,7 @@ async function handleLogin(
 
         // Fallback: scrape icon from apex domain
         if (!metadata.icon) {
-          const faviconUrl = await fetchApexFavicon(resourceUrl);
+          const faviconUrl = await fetchApexFavicon(resourceUrl, fetchFn);
           if (faviconUrl) metadata.icon = faviconUrl;
         }
 
@@ -1506,7 +1528,8 @@ async function handleCallback(
     resourceUrl: string,
     resourceType: "mcp" | "context",
     accessToken: string
-  ) => Promise<{ name: string; metadata?: Record<string, unknown> }>
+  ) => Promise<{ name: string; metadata?: Record<string, unknown> }>,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<Response> {
   const url = new URL(request.url);
   const isLocalhost = url.hostname === "localhost";
@@ -1556,7 +1579,8 @@ async function handleCallback(
     const tokenData = await exchangeCodeForToken(
       code,
       authFlowData,
-      `${origin}${pathPrefix}/callback/${resourceType}/${hostname}`
+      `${origin}${pathPrefix}/callback/${resourceType}/${hostname}`,
+      fetchFn
     );
 
     if (!tokenData.access_token) {
@@ -1584,7 +1608,8 @@ async function handleCallback(
     if (resourceType === "mcp") {
       const mcpInfo = await tryMcpInitialize(
         authFlowData.resourceUrl,
-        tokenData.access_token
+        tokenData.access_token,
+        fetchFn
       );
       if (mcpInfo) {
         name = mcpInfo.title || mcpInfo.name;
@@ -1598,7 +1623,7 @@ async function handleCallback(
       }
       // Fallback: scrape icon from apex domain
       if (!metadata?.icon) {
-        const faviconUrl = await fetchApexFavicon(authFlowData.resourceUrl);
+        const faviconUrl = await fetchApexFavicon(authFlowData.resourceUrl, fetchFn);
         if (faviconUrl) {
           metadata = metadata || {};
           metadata.icon = faviconUrl;
@@ -1661,8 +1686,10 @@ export async function getAuthorizationForMcpServer(
     clientInfo?: ClientInfo;
     baseUrl?: string;
     pathPrefix?: string;
+    fetchFn?: typeof globalThis.fetch;
   } = {}
 ): Promise<{ Authorization?: string; loginUrl?: string }> {
+  const fetchFn = options.fetchFn || globalThis.fetch;
   try {
     const storage = createStorage(kv, userId);
     const server = await storage.findMcpServerForUrl(serverUrl, profile);
@@ -1680,7 +1707,8 @@ export async function getAuthorizationForMcpServer(
             server.client_id || undefined,
             server.client_secret || undefined,
             server.token_endpoint,
-            server.url
+            server.url,
+            fetchFn
           );
           await storage.updateTokens(
             "mcp_servers",
@@ -1728,8 +1756,10 @@ export async function getAuthorizationForContext(
     clientInfo?: ClientInfo;
     baseUrl?: string;
     pathPrefix?: string;
+    fetchFn?: typeof globalThis.fetch;
   } = {}
 ): Promise<{ Authorization?: string; loginUrl?: string }> {
+  const fetchFn = options.fetchFn || globalThis.fetch;
   try {
     const storage = createStorage(kv, userId);
     const context = await storage.findContextForUrl(contextUrl, profile);
@@ -1751,7 +1781,8 @@ export async function getAuthorizationForContext(
             context.client_id || undefined,
             context.client_secret || undefined,
             context.token_endpoint,
-            context.url
+            context.url,
+            fetchFn
           );
           await storage.updateTokens(
             "context",
@@ -1796,7 +1827,8 @@ export async function fetchUrlContext(
   content: string,
   userId: string,
   profile: string,
-  kv: IdpKV
+  kv: IdpKV,
+  fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<
   | { status: 401; error: string; url: string }
   | { status: 200; results: { url: string; content: string }[] }
@@ -1817,7 +1849,7 @@ export async function fetchUrlContext(
 
   for (const url of urls) {
     // Try fetching directly first — if unprotected, return immediately
-    const directResponse = await fetch(url);
+    const directResponse = await fetchFn(url);
 
     if (directResponse.ok) {
       results.push({ url, content: await directResponse.text() });
@@ -1836,7 +1868,8 @@ export async function fetchUrlContext(
     try {
       const resourceMetadata = await discoverProtectedResourceMetadata(
         url,
-        wwwAuthInfo
+        wwwAuthInfo,
+        fetchFn
       );
       resourceUrl = resourceMetadata.resource;
     } catch {
@@ -1878,7 +1911,8 @@ export async function fetchUrlContext(
             ctx.client_id || undefined,
             ctx.client_secret || undefined,
             ctx.token_endpoint,
-            ctx.url
+            ctx.url,
+            fetchFn
           );
           await storage.updateTokens(
             "context",
@@ -1895,7 +1929,7 @@ export async function fetchUrlContext(
       }
     }
 
-    const response = await fetch(url, {
+    const response = await fetchFn(url, {
       headers: {
         Authorization: `${ctx.token_type || "Bearer"} ${accessToken}`
       }

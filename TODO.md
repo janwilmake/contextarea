@@ -2,22 +2,23 @@
 
 Determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
 
-- have `/responses` api? Makes actually more sense for my UI because there are no messages.
-- simpler JSON API: POST `{model,prompt} => stream string`?
-- allow oauth into here with dialog
-- make this a cli (nlang)
+- ✅ simpler JSON API: POST `/{id}({model,prompt}) => response`?
+- ❌ have `/responses` api? Makes actually more sense for my UI because there are no messages.
 
 # MCP MCP ‼️
 
-tools
+Add `mcp.ts` with all endpoints needed to perform an oauth flow (see: https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization.md ) with dialog to give access to any mcp client, and `/mcp` with tools:
 
-- list mcps
-- (add mcp, remove mcp) --> this one is harder due to HITL
-- prompt (with mcps as @) returning url
-- prompt waiting for full result
-- prompt waiting for result, taking last file as response
+- list_mcps(): returns mcps available as shown in dashboard
+- prompt_instant(model,prompt): directly returns url
+- prompt_wait(model,prompt): prompt waiting for full result
+- prompt_wait_file(model,prompt): waiting for result, taking last file as result
+
+Make this available by adding the right handlers in main.ts
 
 ^ this mcp should be installed by default.
+
+- (add mcp, remove mcp) --> this one is harder due to HITL
 
 # Make 'Wilmake Browse' good ‼️
 

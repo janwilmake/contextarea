@@ -91,7 +91,7 @@ export const flattenMarkdownString = (
 /**
  * find all codeblocks  (stuff between triple bracket)
  */
-const findCodeblocks = (
+export const findCodeblocks = (
   markdownString: string,
 ): {
   text: string;

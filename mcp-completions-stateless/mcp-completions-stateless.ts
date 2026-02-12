@@ -127,6 +127,7 @@ async function initializeMCPSession(
     name: "MCPCompletions",
     version: "1.0.0",
   },
+  fetchFn: typeof globalThis.fetch = globalThis.fetch,
 ) {
   const mcpHeaders: Record<string, string> = {
     "Content-Type": "application/json",
@@ -135,7 +136,7 @@ async function initializeMCPSession(
     ...(authorization && { Authorization: authorization }),
   };
 
-  const initResponse = await fetch(serverUrl, {
+  const initResponse = await fetchFn(serverUrl, {
     method: "POST",
     headers: mcpHeaders,
     body: JSON.stringify({
@@ -159,7 +160,7 @@ async function initializeMCPSession(
   const sessionId = initResponse.headers.get("Mcp-Session-Id");
   if (sessionId) mcpHeaders["Mcp-Session-Id"] = sessionId;
 
-  await fetch(serverUrl, {
+  await fetchFn(serverUrl, {
     method: "POST",
     headers: mcpHeaders,
     body: JSON.stringify({
@@ -168,7 +169,7 @@ async function initializeMCPSession(
     }),
   });
 
-  const toolsResponse = await fetch(serverUrl, {
+  const toolsResponse = await fetchFn(serverUrl, {
     method: "POST",
     headers: mcpHeaders,
     body: JSON.stringify({
@@ -187,8 +188,10 @@ async function initializeMCPSession(
 
 export const chatCompletionsProxy = (config: {
   clientInfo?: { name: string; version: string };
+  /** Optional fetch override for MCP server requests (e.g. service bindings to avoid 522). */
+  mcpFetch?: typeof globalThis.fetch;
 }) => {
-  const { clientInfo = { name: "MCPCompletions", version: "1.0.0" } } = config;
+  const { clientInfo = { name: "MCPCompletions", version: "1.0.0" }, mcpFetch = globalThis.fetch } = config;
 
   const fetchProxy = async (
     input: RequestInfo | URL,
@@ -302,6 +305,7 @@ export const chatCompletionsProxy = (config: {
                 toolSpec.server_url,
                 toolSpec.authorization,
                 clientInfo,
+                mcpFetch,
               );
               session = {
                 sessionId: sessionData.sessionId || undefined,
@@ -629,6 +633,7 @@ export const chatCompletionsProxy = (config: {
                         toolInfo.serverUrl,
                         toolInfo.authorization,
                         clientInfo,
+                        mcpFetch,
                       );
                       session = {
                         sessionId: sessionData.sessionId || undefined,
@@ -650,7 +655,7 @@ export const chatCompletionsProxy = (config: {
                       }),
                     };
 
-                    const toolResponse = await fetch(toolInfo.serverUrl, {
+                    const toolResponse = await mcpFetch(toolInfo.serverUrl, {
                       method: "POST",
                       headers: executeHeaders,
                       body: JSON.stringify({

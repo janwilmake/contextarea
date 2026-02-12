@@ -16,33 +16,10 @@
     }
   ],
   "paths": {
-    "/": {
-      "get": {
-        "summary": "Get homepage",
-        "description": "Returns the homepage in the requested format",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/AcceptHeader"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Homepage content",
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/{id}": {
       "get": {
         "summary": "Get prompt result",
-        "description": "Retrieve a prompt result by ID in various formats (HTML, JSON, Markdown, PNG, YAML)",
+        "description": "Retrieve a prompt result by ID. Supports HTML, JSON, Markdown, YAML, PNG, and Server-Sent Events (text/event-stream) for real-time streaming.",
         "parameters": [
           {
             "$ref": "#/components/parameters/IdPath"
@@ -90,6 +67,30 @@
                   "format": "binary"
                 },
                 "description": "OG image for social media sharing"
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$ref": "#/components/schemas/SSEEvent"
+                },
+                "description": "Real-time streaming updates via Server-Sent Events. Each event is sent as `data: <JSON>\\n\\n`.",
+                "examples": {
+                  "init": {
+                    "summary": "Initial event — sent immediately on connection",
+                    "value": "data: {\"type\":\"init\",\"data\":{\"type\":\"init\",\"prompt\":\"What is AI?\",\"model\":\"gpt-4\",\"context\":null,\"status\":\"pending\",\"result\":\"\",\"error\":null},\"timestamp\":1234567890}\n\n"
+                  },
+                  "token": {
+                    "summary": "Token event — sent for each content chunk",
+                    "value": "data: {\"type\":\"token\",\"data\":{\"type\":\"token\",\"text\":\"AI\",\"position\":0},\"timestamp\":1234567890}\n\n"
+                  },
+                  "complete": {
+                    "summary": "Complete event — sent when generation finishes",
+                    "value": "data: {\"type\":\"complete\",\"data\":{\"type\":\"complete\",\"result\":\"AI stands for Artificial Intelligence...\"},\"timestamp\":1234567890}\n\n"
+                  },
+                  "error": {
+                    "summary": "Error event — sent on failure",
+                    "value": "data: {\"type\":\"error\",\"data\":{\"type\":\"error\",\"message\":\"LLM API error: 500\"},\"timestamp\":1234567890}\n\n"
+                  }
+                }
               }
             }
           },
@@ -109,29 +110,14 @@
         "requestBody": {
           "required": true,
           "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromptInput"
+              }
+            },
             "multipart/form-data": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "prompt": {
-                    "type": "string",
-                    "description": "The prompt text to process",
-                    "example": "Explain quantum computing in simple terms"
-                  },
-                  "model": {
-                    "type": "string",
-                    "description": "The AI model to use",
-                    "example": "gpt-4",
-                    "enum": [
-                      "gpt-4",
-                      "gpt-3.5-turbo",
-                      "claude-3-opus",
-                      "claude-3-sonnet",
-                      "claude-3-haiku"
-                    ]
-                  }
-                },
-                "required": ["prompt"]
+                "$ref": "#/components/schemas/PromptInput"
               }
             }
           }
@@ -157,75 +143,6 @@
           },
           "429": {
             "$ref": "#/components/responses/RateLimit"
-          }
-        }
-      }
-    },
-    "/{id}/stream": {
-      "get": {
-        "summary": "Stream prompt result",
-        "description": "Get real-time streaming updates for a prompt result using Server-Sent Events",
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/IdPath"
-          },
-          {
-            "name": "Accept",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["text/event-stream"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Server-Sent Events stream",
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "type": "string"
-                },
-                "examples": {
-                  "init": {
-                    "summary": "Initial event",
-                    "value": "data: {\"type\":\"init\",\"data\":{\"prompt\":\"What is AI?\",\"model\":\"gpt-4\",\"status\":\"pending\"},\"timestamp\":1234567890}\n\n"
-                  },
-                  "token": {
-                    "summary": "Token event",
-                    "value": "data: {\"type\":\"token\",\"data\":{\"text\":\"AI\",\"position\":0},\"timestamp\":1234567890}\n\n"
-                  },
-                  "complete": {
-                    "summary": "Complete event",
-                    "value": "data: {\"type\":\"complete\",\"data\":{\"result\":\"AI stands for Artificial Intelligence...\"},\"timestamp\":1234567890}\n\n"
-                  }
-                }
-              }
-            },
-            "headers": {
-              "Cache-Control": {
-                "schema": {
-                  "type": "string"
-                },
-                "example": "no-cache"
-              },
-              "Connection": {
-                "schema": {
-                  "type": "string"
-                },
-                "example": "keep-alive"
-              },
-              "Access-Control-Allow-Origin": {
-                "schema": {
-                  "type": "string"
-                },
-                "example": "*"
-              }
-            }
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -332,6 +249,29 @@
       }
     },
     "schemas": {
+      "PromptInput": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The prompt text to process",
+            "example": "Explain quantum computing in simple terms"
+          },
+          "model": {
+            "type": "string",
+            "description": "The AI model to use",
+            "example": "gpt-4",
+            "enum": [
+              "gpt-4",
+              "gpt-3.5-turbo",
+              "claude-3-opus",
+              "claude-3-sonnet",
+              "claude-3-haiku"
+            ]
+          }
+        },
+        "required": ["prompt"]
+      },
       "PromptResult": {
         "type": "object",
         "properties": {
@@ -446,24 +386,6 @@
         },
         "required": ["text", "position"]
       },
-      "SSEUpdateData": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": ["update"]
-          },
-          "field": {
-            "type": "string",
-            "description": "The field being updated (e.g., 'context')"
-          },
-          "value": {
-            "type": "string",
-            "description": "The new value for the field"
-          }
-        },
-        "required": ["field", "value"]
-      },
       "SSECompleteData": {
         "type": "object",
         "properties": {
@@ -501,7 +423,7 @@
         "properties": {
           "type": {
             "type": "string",
-            "enum": ["init", "token", "update", "complete", "error"],
+            "enum": ["init", "token", "complete", "error"],
             "description": "Type of SSE event"
           },
           "data": {
@@ -511,9 +433,6 @@
               },
               {
                 "$ref": "#/components/schemas/SSETokenData"
-              },
-              {
-                "$ref": "#/components/schemas/SSEUpdateData"
               },
               {
                 "$ref": "#/components/schemas/SSECompleteData"

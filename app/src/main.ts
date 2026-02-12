@@ -30,6 +30,7 @@ import { generateTitleWithAI } from "./generateTitle.js";
 import providers from "../public/providers.json";
 import { RatelimitDO } from "./ratelimiter.js";
 import { getMarkdownResponse } from "./getMarkdownResponse.js";
+import { handleMcpRequest } from "./mcp";
 
 export { RatelimitDO };
 export { DORM };
@@ -81,6 +82,20 @@ function kvFromNamespace(ns: KVNamespace): IdpKV {
   };
 }
 
+/** Create a fetch function that routes same-domain requests through env.FETCHER to avoid 522 */
+function createSelfFetch(env: Env): typeof globalThis.fetch {
+  return ((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname === "contextarea.com" || parsed.hostname === "www.contextarea.com") {
+        return env.FETCHER.fetch(new Request(url, init));
+      }
+    } catch {}
+    return globalThis.fetch(input, init);
+  }) as typeof globalThis.fetch;
+}
+
 /**
  * KV data structure for storing request/result data
  */
@@ -95,11 +110,10 @@ interface KVData {
 }
 
 export interface SSEEvent {
-  type: "init" | "token" | "update" | "complete" | "error";
+  type: "init" | "token" | "complete" | "error";
   data:
     | SSEInitData
     | SSETokenData
-    | SSEUpdateData
     | SSECompleteData
     | SSEErrorData;
   timestamp: number;
@@ -119,12 +133,6 @@ export interface SSETokenData {
   type: "token";
   text: string;
   position: number;
-}
-
-export interface SSEUpdateData {
-  type: "update";
-  field: string;
-  value: string;
 }
 
 export interface SSECompleteData {
@@ -501,11 +509,13 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
 
       // Pre-fetch URL context using idp-middleware
       const kv = kvFromNamespace(this.env.IDP_KV);
+      const selfFetch = createSelfFetch(this.env);
       const urlContextResult = await fetchUrlContext(
         prompt,
         user?.userId || "",
         "default",
-        kv
+        kv,
+        selfFetch
       );
 
       if (
@@ -568,7 +578,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Use MCP-aware fetch proxy when MCP tools are present
       const fetchFn =
         mcpTools.length > 0
-          ? chatCompletionsProxy({ clientInfo: CLIENT_INFO }).fetchProxy
+          ? chatCompletionsProxy({ clientInfo: CLIENT_INFO, mcpFetch: selfFetch }).fetchProxy
           : fetch;
 
       const llmResponse = await fetchFn(fullUrl, {
@@ -1348,7 +1358,8 @@ async function handleContext(
         "default",
         {
           baseUrl: "https://contextarea.com",
-          pathPrefix: "/mcp"
+          pathPrefix: "/mcp",
+          fetchFn: createSelfFetch(env)
         }
       );
       if (auth.Authorization) {
@@ -1502,13 +1513,28 @@ export default {
         return new Response(JSON.stringify(userData, undefined, 2), {});
       }
 
+      if (
+        pathname === "/mcp" &&
+        (request.method === "POST" || request.method === "OPTIONS")
+      ) {
+        return handleMcpRequest(
+          request,
+          env,
+          userId
+            ? { id: userId, username: ctx.user?.username || "" }
+            : undefined,
+          stripeflareUser
+        );
+      }
+
       const idpHandlers = createIdpMiddleware({
         kv: kvFromNamespace(env.IDP_KV),
         userId,
         profile: "default",
         clientInfo: CLIENT_INFO,
         baseUrl: "https://contextarea.com",
-        pathPrefix: "/mcp"
+        pathPrefix: "/mcp",
+        fetchFn: createSelfFetch(env)
       });
 
       // Serve dashboard page
@@ -1613,9 +1639,17 @@ export default {
         const requestLimit = (stripeflareUser?.balance || 0) <= 0 ? 5 : 1000;
 
         if (request.method === "POST" && !result.prompt) {
-          const formData = await request.formData();
-          prompt = formData?.get("prompt")?.toString();
-          const modelName = formData?.get("model")?.toString();
+          let modelName: string | undefined;
+          const contentType = request.headers.get("Content-Type") || "";
+          if (contentType.includes("application/json")) {
+            const body = await request.json<{ prompt?: string; model?: string }>();
+            prompt = body.prompt;
+            modelName = body.model;
+          } else {
+            const formData = await request.formData();
+            prompt = formData?.get("prompt")?.toString();
+            modelName = formData?.get("model")?.toString();
+          }
           console.log("Received submission", modelName);
 
           // NB: submit this to /chat/completions from here!
