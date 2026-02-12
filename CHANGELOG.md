@@ -363,3 +363,23 @@ bonus: refresh openrouter models automatically every hour or so.
 # Bug in MCP registration (2026-02-12)
 
 - ✅ https://mcp.stripe.com doesnt work but works fine in inspector. found bug and reported it at https://x.com/janwilmake/status/2021918904482771435
+
+# Make it an API + MCP MCP (2026-02-12)
+
+Determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
+
+- ✅ simpler JSON API: POST `/{id}({model,prompt}) => response`?
+- ❌ have `/responses` api? Makes actually more sense for my UI because there are no messages.
+
+✅ Add `mcp.ts` with all endpoints needed to perform an oauth flow (see: https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization.md ) with dialog to give access to any mcp client, and `/mcp` with tools:
+
+- list_mcps(): returns mcps available as shown in dashboard
+- prompt_instant(model,prompt): directly returns url
+- prompt_wait(model,prompt): prompt waiting for full result
+- prompt_wait_file(model,prompt): waiting for result, taking last file as result
+
+Make this available by adding the right handlers in main.ts
+
+^ this mcp should be installed by default.
+
+❌ (add mcp, remove mcp) --> this one is harder due to HITL

@@ -1,24 +1,12 @@
-# Make it an API ‼️
+# Images as context, videos as context
 
-Determine what it takes to become an n8n competitor from here? maybe mcp-management mcp like tasklet.ai
+HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
 
-- ✅ simpler JSON API: POST `/{id}({model,prompt}) => response`?
-- ❌ have `/responses` api? Makes actually more sense for my UI because there are no messages.
+Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
 
-# MCP MCP ‼️
+Video urls should be inserted as video context to the model (if the model supports it)
 
-Add `mcp.ts` with all endpoints needed to perform an oauth flow (see: https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization.md ) with dialog to give access to any mcp client, and `/mcp` with tools:
-
-- list_mcps(): returns mcps available as shown in dashboard
-- prompt_instant(model,prompt): directly returns url
-- prompt_wait(model,prompt): prompt waiting for full result
-- prompt_wait_file(model,prompt): waiting for result, taking last file as result
-
-Make this available by adding the right handlers in main.ts
-
-^ this mcp should be installed by default.
-
-- (add mcp, remove mcp) --> this one is harder due to HITL
+Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
 
 # Make 'Wilmake Browse' good ‼️
 
@@ -111,60 +99,6 @@ Questions:
   - Slack: everyone who's in Slack arguably is inside of the org.
 - Do we need to let users be approved/invited into an org, or can the skill routing configuration be made public? May be more POC to be public. Also has benefits.
 
-## Parallel
-
-- Create Integration-friendly Task API with MCP IDP built-in (by passing stable `user: string` ID) that instantly responds with a markdown-URL and JSON-URL on which the result will be able to be found without auth (`store:true` indefinitely, `store:false` for 24 hours)
-- Create task API as chat completions endpoint.
-
-# LMPIFY for Parallel
-
-Why I can't post much about Parallel yet: Because I can't use it yet as part of the products I'm building. These are all things that will let me prototype faster:
-
-What is mainly nice for my day-to-day
-
-- Secondary models -> will allow showing parallel everywhere
-- Hooks -> Will allow making a 'context-retrieval-task' when needed using Parallel `/chat/completions` model.
-- flaredream agent -> will allow faster prototyping
-
-What is interesting:
-
-- Domain-based OAuth -> Will allow using different MCPs with easy sign-in, but also URL fetching.
-- MCP -> Allows experimenting with search/task MCP on daily basis
-- foreach -> will allow easy batch-prompting
-- frontmatter, cronjobs -> will allow creating fresh datasets and experiment with that easily.
-
-This is 'top-down' approach
-
-Bottom-up is small exapmles in cookbook, won't go as viral, won't be usable for daily use. But also doing that.
-
-# Model Changes
-
-**1) Allowing selection of secondary models** (index.html, result.html, model-modal.js)
-
-- Localstorage should have `{ model?: string, secondaryModels?:string[], secondaryModelsEnabled?:boolean }`
-- Button for toggling `secondaryModelsEnabled`.
-- If disabled, clicking a model should just change `model` and close model selector like now
-- If enabled
-  - Should be able to select/deselect multiple models (gets set to `localStorage`)
-  - For any selected model that is not `model`, button 'Set As Primary' should show up behind it (should set to `localStorage`)
-- Add `secondaryModelsEnabled` and `secondaryModels` to form submission.
-
-**2) Adding/removing custom models** (main.ts, result.html, model-modal.js)
-
-- Create endpoint `POST /model {model:string,action:"add"|"remove"}` adding/removing this model to user models in a KV belonging to user. This kv should have `{ customModels: { model:string, icon:string, color:string, type:"hook"|"default" }[] }`. Upon adding, icon and color can be inferred from base model.
-- 'Add Model' button should be disabled after changing something in the prompt with alt text "First submit this prompt"
-- 'Add model' button should send API call to backend
-- Also disable if current viewed result is already a model in user account.
-- "server-data" and `/me` should include `customModels`
-- In model-modal, ensure to render custom models with a button to delete that sends `POST /model {model,action:"remove"}`
-
-**3) Submission of all models**
-
-- In backend, submissions with received `secondaryModels` and `secondaryModelsEnabled` (if enabled) should trigger independent DO creation for each secondaryModel in `ctx.waitUntil`. These responses all become independent results, streaming in separate DOs, - Every result gets `linkedGenerationIds:string[]` set, which are all generation URLs, including this one.
-- The UI can show this by also linking to these other pages to easily switch, like tabs. Not invasive, but allows to quickly create multiple responses on any prompt.
-
-This opens the door for parallel prompting and easy experimentation with it. The cool part is it requires minimal UI changes this way.
-
 # "hooks" idea
 
 Models users can install that allow performing additional analysis on the prompt, context, and result. This could make my modelselection even more complex and make it a marketplace in itself.
@@ -252,38 +186,10 @@ limit:  5
 
 This would be super cool! Especially if it would stream each of them after each other in the response.
 
-# Idea of simplification of the `text/event-stream`
-
-Why don't I just make an endpoint `POST|GET /{id}/simple` that just returns a plain/markdown ReadableStream? This is much easier to use and stack, and could eventually replace the `text/event-stream` which should not be needed.
-
-# Improved Usability & Benchmark For Workers
-
-https://deploy.flaredream.com/https://uithub.com/janwilmake/xymake.profile didn't see route in `wrangler.toml`. Need perfect wrangler parsing!
-
-In https://contextarea.com/httpspastebincon-ujmnhs0, `/api/stats` returns a 409 and doesn't log any error. Code seems fine. Let's try locally and see what's up.
-
-Lot of generated things return errors. Tail worker often gets exception
-
-Landingpage flaredream.com should retrieve all `featured:true` from benchmark and render them with 'view'
-
-# COOL
-
-https://llm.md
-
 # Make `/chat/completions` with cache making it intelligently cheaper
 
 - Later: Every `context` can automatically be cached as a system prompt intelligently when needed reducing cost significantly. It would keep an up-to-date cached context available for a url, and people would be able to build products for this easily. Ultimately, get back to https://x.com/EastlondonDev/status/1925191566362030380 about it
 - Later: After this is there, a CLI like `npm i -g lmpify` and then `lmpify` to login and then `lmpify {url|path(|hash?)}` to change context and then `lmpify {message}` to chat and stream back response. This'd be epic.
-
-# Images as context, videos as context
-
-HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
-
-Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
-
-Video urls should be inserted as video context to the model (if the model supports it)
-
-Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
 
 # Variables
 

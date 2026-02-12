@@ -10,6 +10,7 @@ import {
   getAuthorizationForContext,
   createTools,
   type IdpKV,
+  type UrlContextResult,
   ClientInfo
 } from "./idp-middleware";
 import { chatCompletionsProxy } from "./mcp-completions-stateless";
@@ -85,10 +86,18 @@ function kvFromNamespace(ns: KVNamespace): IdpKV {
 /** Create a fetch function that routes same-domain requests through env.FETCHER to avoid 522 */
 function createSelfFetch(env: Env): typeof globalThis.fetch {
   return ((input: RequestInfo | URL, init?: RequestInit) => {
-    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+          ? input.href
+          : input.url;
     try {
       const parsed = new URL(url);
-      if (parsed.hostname === "contextarea.com" || parsed.hostname === "www.contextarea.com") {
+      if (
+        parsed.hostname === "contextarea.com" ||
+        parsed.hostname === "www.contextarea.com"
+      ) {
         return env.FETCHER.fetch(new Request(url, init));
       }
     } catch {}
@@ -111,11 +120,7 @@ interface KVData {
 
 export interface SSEEvent {
   type: "init" | "token" | "complete" | "error";
-  data:
-    | SSEInitData
-    | SSETokenData
-    | SSECompleteData
-    | SSEErrorData;
+  data: SSEInitData | SSETokenData | SSECompleteData | SSEErrorData;
   timestamp: number;
 }
 
@@ -490,7 +495,7 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       const content = prompt.replaceAll("{{prompt_id}}", pathname.slice(1));
 
       // Prepare LLM request
-      const messages = [
+      const messages: { role: string; content: any }[] = [
         { role: "user", content: this.parseFrontMatter(content).content }
       ];
 
@@ -522,10 +527,40 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
         urlContextResult.status === 200 &&
         urlContextResult.results.length > 0
       ) {
-        const contextText = urlContextResult.results
-          .map((r) => `<context url="${r.url}">\n${r.content}\n</context>`)
-          .join("\n\n");
-        messages.unshift({ role: "system", content: contextText });
+        const textResults = urlContextResult.results.filter(
+          (r): r is Extract<UrlContextResult, { type: "text" }> =>
+            r.type === "text"
+        );
+        const imageResults = urlContextResult.results.filter(
+          (r): r is Extract<UrlContextResult, { type: "image" }> =>
+            r.type === "image"
+        );
+
+        if (textResults.length > 0) {
+          const contextText = textResults
+            .map((r) => `<context url="${r.url}">\n${r.content}\n</context>`)
+            .join("\n\n");
+          messages.unshift({ role: "system", content: contextText });
+        }
+
+        if (imageResults.length > 0) {
+          // Convert user message to multimodal content parts with images
+          const userMsg = messages[messages.length - 1];
+          const parts: any[] = imageResults.map((r) => ({
+            type: "image_url",
+            image_url: {
+              url: `data:${r.mediaType};base64,${r.base64}`
+            }
+          }));
+          parts.push({
+            type: "text",
+            text:
+              typeof userMsg.content === "string"
+                ? userMsg.content
+                : JSON.stringify(userMsg.content)
+          });
+          userMsg.content = parts;
+        }
       }
 
       // Extract MCP server URLs from front matter and @-tagged URLs in prompt
@@ -578,7 +613,10 @@ export class SQLStreamPromptDO extends DurableObject<Env> {
       // Use MCP-aware fetch proxy when MCP tools are present
       const fetchFn =
         mcpTools.length > 0
-          ? chatCompletionsProxy({ clientInfo: CLIENT_INFO, mcpFetch: selfFetch }).fetchProxy
+          ? chatCompletionsProxy({
+              clientInfo: CLIENT_INFO,
+              mcpFetch: selfFetch
+            }).fetchProxy
           : fetch;
 
       const llmResponse = await fetchFn(fullUrl, {
@@ -1642,7 +1680,10 @@ export default {
           let modelName: string | undefined;
           const contentType = request.headers.get("Content-Type") || "";
           if (contentType.includes("application/json")) {
-            const body = await request.json<{ prompt?: string; model?: string }>();
+            const body = await request.json<{
+              prompt?: string;
+              model?: string;
+            }>();
             prompt = body.prompt;
             modelName = body.model;
           } else {
@@ -1725,7 +1766,7 @@ export default {
                 headers: {
                   ...ratelimited?.headers,
                   "WWW-Authenticate":
-                    'Bearer realm="LMPIFY",' +
+                    'Bearer realm="CONTEXTAREA",' +
                     'error="rate_limit_exceeded",' +
                     'error_description="Rate limit exceeded. Please purchase credit at https://contextarea.com for higher limits"'
                 }

@@ -1823,6 +1823,24 @@ export async function getAuthorizationForContext(
 
 // --- fetchUrlContext: extract URLs/markdown links, resolve auth via protected resource discovery, fetch ---
 
+export type UrlContextResult =
+  | { url: string; type: "text"; content: string }
+  | { url: string; type: "image"; mediaType: string; base64: string };
+
+async function responseToResult(
+  url: string,
+  response: Response
+): Promise<UrlContextResult> {
+  const contentType = response.headers.get("Content-Type") || "";
+  if (contentType.startsWith("image/")) {
+    const mediaType = contentType.split(";")[0].trim();
+    const buffer = await response.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    return { url, type: "image", mediaType, base64 };
+  }
+  return { url, type: "text", content: await response.text() };
+}
+
 export async function fetchUrlContext(
   content: string,
   userId: string,
@@ -1831,7 +1849,7 @@ export async function fetchUrlContext(
   fetchFn: typeof globalThis.fetch = globalThis.fetch
 ): Promise<
   | { status: 401; error: string; url: string }
-  | { status: 200; results: { url: string; content: string }[] }
+  | { status: 200; results: UrlContextResult[] }
 > {
   const urls = new Set<string>();
 
@@ -1845,14 +1863,14 @@ export async function fetchUrlContext(
   if (urls.size === 0) return { status: 200, results: [] };
 
   const storage = createStorage(kv, userId);
-  const results: { url: string; content: string }[] = [];
+  const results: UrlContextResult[] = [];
 
   for (const url of urls) {
     // Try fetching directly first — if unprotected, return immediately
     const directResponse = await fetchFn(url);
 
     if (directResponse.ok) {
-      results.push({ url, content: await directResponse.text() });
+      results.push(await responseToResult(url, directResponse));
       continue;
     }
 
@@ -1943,7 +1961,7 @@ export async function fetchUrlContext(
       };
     }
 
-    results.push({ url, content: await response.text() });
+    results.push(await responseToResult(url, response));
   }
 
   return { status: 200, results };
