@@ -1827,6 +1827,15 @@ export type UrlContextResult =
   | { url: string; type: "text"; content: string }
   | { url: string; type: "image"; mediaType: string; base64: string };
 
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 async function responseToResult(
   url: string,
   response: Response
@@ -1835,7 +1844,7 @@ async function responseToResult(
   if (contentType.startsWith("image/")) {
     const mediaType = contentType.split(";")[0].trim();
     const buffer = await response.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const base64 = arrayBufferToBase64(buffer);
     return { url, type: "image", mediaType, base64 };
   }
   return { url, type: "text", content: await response.text() };

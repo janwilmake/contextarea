@@ -36,6 +36,18 @@
   const URL_REGEX = /(https?:\/\/[^\s]+)/g;
   const MD_LINK_REGEX = /\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g;
 
+  function fileTypeLabel(mimeType) {
+    if (!mimeType) return "file";
+    if (mimeType.startsWith("image/")) return "image";
+    if (mimeType === "application/pdf") return "pdf";
+    if (mimeType.startsWith("video/")) return "video";
+    if (mimeType.startsWith("audio/")) return "audio";
+    if (mimeType.startsWith("text/")) return "text";
+    return "file";
+  }
+
+  const BINARY_TYPES = new Set(["image", "pdf", "video", "audio", "file"]);
+
   // Inject CSS once
   let cssInjected = false;
   function injectCss() {
@@ -385,8 +397,13 @@
                 if (data.type) msg += `Type: ${data.type}\n`;
                 if (data.tokens) msg += `Tokens: ${data.tokens}\n`;
                 if (data.description) msg += `\n${data.description}\n`;
-                const args = encodeURIComponent(JSON.stringify([url, range]));
-                msg += `\n[\ud83d\udd0d Expand](command:expandUrl?${args})`;
+                if (BINARY_TYPES.has(data.type)) {
+                  const openArgs = encodeURIComponent(JSON.stringify([url]));
+                  msg += `\n[\ud83d\udd17 Open](command:openUrl?${openArgs})`;
+                } else {
+                  const args = encodeURIComponent(JSON.stringify([url, range]));
+                  msg += `\n[\ud83d\udd0d Expand](command:expandUrl?${args})`;
+                }
                 return {
                   range,
                   contents: [{ value: msg, isTrusted: true, supportHtml: true }]
@@ -490,16 +507,29 @@
               for (const { range: ur } of positions) {
                 if (!ur.intersectRanges(range)) continue;
                 const data = self.contextCache.get(url);
-                actions.push({
-                  title: `\ud83d\udd0d Expand ${data?.title || "URL"}`,
-                  kind: "quickfix",
-                  isPreferred: true,
-                  command: {
-                    id: "expandUrl",
-                    title: "Expand URL",
-                    arguments: [url, ur]
-                  }
-                });
+                if (BINARY_TYPES.has(data?.type)) {
+                  actions.push({
+                    title: `\ud83d\udd17 Open ${data?.title || "file"}`,
+                    kind: "quickfix",
+                    isPreferred: true,
+                    command: {
+                      id: "openUrl",
+                      title: "Open file",
+                      arguments: [url]
+                    }
+                  });
+                } else {
+                  actions.push({
+                    title: `\ud83d\udd0d Expand ${data?.title || "URL"}`,
+                    kind: "quickfix",
+                    isPreferred: true,
+                    command: {
+                      id: "expandUrl",
+                      title: "Expand URL",
+                      arguments: [url, ur]
+                    }
+                  });
+                }
               }
             }
             return { actions, dispose() {} };
@@ -537,11 +567,52 @@
         if (e.key === "Shift") shiftPressed = false;
       });
 
-      // Capture scroll position before Monaco processes the paste
+      // Capture scroll position & handle file paste from clipboard
       this.editor.getDomNode().addEventListener(
         "paste",
-        () => {
+        async (e) => {
           self.scrollTopBeforePaste = self.editor.getScrollTop();
+
+          const items = Array.from(e.clipboardData?.items || []);
+          const fileItems = items.filter(
+            (item) => item.kind === "file" && !item.type.startsWith("text/")
+          );
+          if (!fileItems.length) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          self.onStatus(`Uploading ${fileItems.length} file(s)...`, true);
+          try {
+            const urls = [];
+            for (const item of fileItems) {
+              const file = item.getAsFile();
+              if (!file) continue;
+              const r = await fetch(self.config.pasteApiUrl, {
+                method: "POST",
+                body: file,
+                headers: { "Content-Type": file.type || "application/octet-stream" }
+              });
+              if (!r.ok) {
+                const msg = await r.text().catch(() => "");
+                if (r.status === 401)
+                  throw new Error(msg || "Login required to upload");
+                throw new Error(msg || r.status);
+              }
+              const url = await r.text();
+              urls.push(url);
+              const type = fileTypeLabel(file.type);
+              self.contextCache.set(url, {
+                title: file.name || type,
+                type
+              });
+            }
+            self._insertTextAtCursor(urls.join("\n") + "\n");
+            self._updateUrlDecorations();
+            self.onStatus(`Uploaded ${fileItems.length} file(s)`);
+          } catch (err) {
+            self.onStatus(`Upload failed: ${err.message}`);
+          }
         },
         true
       );
@@ -650,7 +721,15 @@
                 throw new Error(msg || "Login required to upload");
               throw new Error(msg || r.status);
             }
-            urls.push(await r.text());
+            const url = await r.text();
+            urls.push(url);
+            if (!file.type.startsWith("text/")) {
+              const type = fileTypeLabel(file.type);
+              self.contextCache.set(url, {
+                title: file.name || type,
+                type
+              });
+            }
           }
           self._insertTextAtCursor(urls.join("\n") + "\n");
           self.onStatus(`Uploaded ${files.length} file(s)`);

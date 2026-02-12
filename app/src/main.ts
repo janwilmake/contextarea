@@ -1315,11 +1315,15 @@ async function handlePaste(
   }
 
   const id = crypto.randomUUID().slice(0, 16);
-  const content = await request.text();
   const contentType = request.headers.get("Content-Type") || "text/plain";
+  const isBinary = !contentType.startsWith("text/");
+
+  const content = isBinary
+    ? await request.arrayBuffer()
+    : await request.text();
 
   await env.PASTES.put(id, content, {
-    metadata: { contentType },
+    metadata: { contentType, binary: isBinary },
     expirationTtl: 86400 * 30
   });
 
@@ -1338,16 +1342,18 @@ async function handleGetPaste(url: URL, env: Env): Promise<Response> {
   }
 
   const id = url.pathname.slice("/paste/".length);
-  const { value, metadata } = await env.PASTES.getWithMetadata(id);
+  const { value, metadata } = await env.PASTES.getWithMetadata(id, "arrayBuffer");
 
   if (!value) {
     return new Response("Not found", { status: 404, headers: corsHeaders });
   }
 
+  const contentType = (metadata as any)?.contentType || "text/plain";
+
   return new Response(value, {
     headers: {
       ...corsHeaders,
-      "Content-Type": (metadata as any)?.contentType || "text/plain"
+      "Content-Type": contentType
     }
   });
 }
@@ -1444,9 +1450,6 @@ async function handleContext(
     }
 
     const contentType = response.headers.get("Content-Type") || "";
-    const text = await response.text();
-
-    let type = "unknown";
 
     if (contentType.includes("text/html")) {
       return new Response(
@@ -1455,7 +1458,40 @@ async function handleContext(
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         }
       );
-    } else if (contentType.includes("application/json")) {
+    }
+
+    // Handle image types — return metadata only (no content)
+    if (contentType.startsWith("image/")) {
+      return new Response(
+        JSON.stringify({
+          title: targetUrl,
+          type: "image",
+          description: ""
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    // Handle PDF — return metadata only
+    if (contentType.includes("application/pdf")) {
+      return new Response(
+        JSON.stringify({
+          title: targetUrl,
+          type: "pdf",
+          description: ""
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
+    }
+
+    const text = await response.text();
+
+    let type = "unknown";
+    if (contentType.includes("application/json")) {
       type = "json";
     } else if (contentType.includes("text/")) {
       type = "text";

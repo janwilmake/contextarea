@@ -1,12 +1,10 @@
 # Images as context, videos as context
 
-HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
+✅ HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
 
-Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
+✅ Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
 
-Video urls should be inserted as video context to the model (if the model supports it)
-
-Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
+✅ Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
 
 # Make 'Wilmake Browse' good ‼️
 

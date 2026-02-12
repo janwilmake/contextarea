@@ -10,7 +10,7 @@ export interface ChatCompletionRequest {
   model: string;
   messages: Array<{
     role: "system" | "user" | "assistant" | "tool" | "function";
-    content?: string | null;
+    content?: string | null | Array<any>;
     name?: string;
     tool_calls?: Array<{
       id: string;
@@ -701,13 +701,20 @@ export const chatCompletionsProxy = (config: {
 
                     const content = toolResult.result?.content;
                     let formattedResult: string;
+                    let toolMessageContent: string | Array<any>;
 
                     if (!content || !Array.isArray(content)) {
                       const jsonString = JSON.stringify(toolResult, null, 2);
                       formattedResult = `<details><summary>Error Result (±${Math.round(
                         jsonString.length / 5
                       )} tokens)</summary>\n\n\`\`\`json\n${jsonString}\n\`\`\`\n\n</details>\n\nTool returned invalid response structure`;
+                      toolMessageContent = formattedResult;
                     } else {
+                      const hasImages = content.some(
+                        (item) => item.type === "image"
+                      );
+
+                      // Build text representation for streaming feedback
                       const contentBlocks = content
                         .map((item) => {
                           if (item.type === "text") {
@@ -722,7 +729,7 @@ export const chatCompletionsProxy = (config: {
                               return `\`\`\`markdown\n${item.text}\n\`\`\``;
                             }
                           } else if (item.type === "image") {
-                            return `\`\`\`\n[Image: ${item.data}]\n\`\`\``;
+                            return `[Image: ${item.mimeType || "image/png"}]`;
                           } else {
                             return `\`\`\`json\n${JSON.stringify(
                               item,
@@ -738,19 +745,44 @@ export const chatCompletionsProxy = (config: {
                           size +
                           (item.type === "text"
                             ? item.text?.length || 0
-                            : JSON.stringify(item).length)
+                            : item.type === "image"
+                              ? 1000
+                              : JSON.stringify(item).length)
                         );
                       }, 0);
 
                       formattedResult = `<details><summary>Result (±${Math.round(
                         totalSize / 5
                       )} tokens)</summary>\n\n${contentBlocks}\n\n</details>`;
+
+                      if (hasImages) {
+                        // Build multimodal content array for the model
+                        toolMessageContent = content.map((item) => {
+                          if (item.type === "image") {
+                            return {
+                              type: "image_url",
+                              image_url: {
+                                url: `data:${item.mimeType || "image/png"};base64,${item.data}`
+                              }
+                            };
+                          } else if (item.type === "text") {
+                            return { type: "text", text: item.text };
+                          } else {
+                            return {
+                              type: "text",
+                              text: JSON.stringify(item, null, 2)
+                            };
+                          }
+                        });
+                      } else {
+                        toolMessageContent = formattedResult;
+                      }
                     }
 
                     currentMessages.push({
                       role: "tool",
                       tool_call_id: toolCall.id,
-                      content: formattedResult
+                      content: toolMessageContent
                     });
 
                     const toolFeedback = `\n\n${formattedResult}\n\n`;
