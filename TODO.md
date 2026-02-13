@@ -1,11 +1,3 @@
-# Images as context, videos as context
-
-✅ HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
-
-✅ Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
-
-✅ Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
-
 # Make 'Wilmake Browse' good ‼️
 
 - add proper name, icon, description (may need to internalize code)
@@ -74,14 +66,6 @@ Or should it also be able to be done fully locally? Maybe that makes more sense 
 This goes against my ideals, but removes the barrier to testing (Cuz local) and with that makes it more likely that I get somehting I'd use myself.
 
 What if it were a 'background agent' that could be made interoperable with several coding systems? This would be really cool too.
-
-# Stateful chatcompletions with callbacks
-
-<!-- Valuable research/preparation for Parallel. Also needed to separate auth UI from model response. Separating UI from model response opens the door for CLIs, MCP QA Testing & Monitoring, MarkdownOps, and much more! -->
-
-- Allow for long-running MCP tools (in the same way as [this SEP](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/1391)) - this makes this stateful though so may need to be done in a different place!
-- Ability to hold running the API waiting for a human to authorize, then continue fulfilling the request after that's solved. Potentially, a parameter `onUserMessage:(details)=>Promise<void>` could be added, which would send the authorization request (just an url and message) to that endpoint, with the same secret. That function could then send email, w'app, or notify in UI. Anything.
-- Expose chat completions as async MCP tool with oauth (basically a sub-agent!)
 
 ## MCP router
 
@@ -249,18 +233,6 @@ User-owned pathnames that lead to the latest version and contain version history
 Now that we have user-owned pathnames, ensure you can also easily get all/recent/top creations by a specific user.
 
 Leaderboard! Who creates what, whose is shared the most, and whose chat completions are used? Make it fun. Separate worker.
-
-## Link behavior markdown standard syntax
-
-It could be interesting if we could make lmpify agentic more easily. I guess one of the ways to do this is by making found URLs and codeblocks alike easy to insert back into the prompt.
-
-But imagine we even had a way for the agent to go off and immediately go to a particular URL, or even execute a new prompt? In this case, we've just made it agentic as it can choose to continue until it's satisfied a certain condition.
-
-What if we use `goto://` as a protocol for this? If a link to `goto` is found in the response document, the behavior of lmpify client would be to immediately navigate there, even if the original prompt hasn't finished yet.
-
-This can also be combined with lookup of information. What if you could specify a new promopt in a codeblock, then goto a new prompt, executing it, from that codeblock? I guess every codeblock should definitely have a fixed URL that can be made known to the LLM so it can self-reference stuff.
-
-**Other way to look at it**: this should not be part of the UI, rather, it should be in the `/chat/completions` endpoint.
 
 ## Render links and urls as forms
 

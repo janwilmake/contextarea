@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Transcripts</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #e5e5e5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin-bottom: 24px;
+            font-size: 1.5rem;
+        }
+
+        .login-form {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .login-form input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #1a1a1a;
+            color: #e5e5e5;
+            font-size: 1rem;
+        }
+
+        .login-form input:focus {
+            outline: none;
+            border-color: #666;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+        button.danger:hover {
+            background: #b91c1c;
+        }
+
+        button.secondary {
+            background: #333;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+        }
+
+        button.secondary:hover {
+            background: #444;
+        }
+
+        .transcript-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .transcript-item {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .transcript-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 0.875rem;
+            color: #888;
+        }
+
+        .transcript-text {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #ccc;
+            white-space: pre-wrap;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .transcript-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px;
+            color: #666;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #22c55e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎙️ Voice Transcripts</h1>
+
+        <div id="login-section">
+            <form class="login-form" id="login-form">
+                <input type="password" id="password" placeholder="Enter password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        <div id="transcripts-section" class="hidden">
+            <button class="secondary logout-btn" id="logout-btn">Logout</button>
+            <div class="transcript-list" id="transcript-list">
+                <div class="empty-state">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Copied to clipboard!</div>
+
+    <script>
+        let token = localStorage.getItem('token');
+
+        const loginSection = document.getElementById('login-section');
+        const transcriptsSection = document.getElementById('transcripts-section');
+        const loginForm = document.getElementById('login-form');
+        const passwordInput = document.getElementById('password');
+        const transcriptList = document.getElementById('transcript-list');
+        const logoutBtn = document.getElementById('logout-btn');
+        const toast = document.getElementById('toast');
+
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr + 'Z');
+            return date.toLocaleString();
+        }
+
+        async function fetchTranscripts() {
+            try {
+                const res = await fetch('/api/transcripts', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.status === 401) {
+                    logout();
+                    return;
+                }
+
+                const transcripts = await res.json();
+                renderTranscripts(transcripts);
+            } catch (e) {
+                transcriptList.innerHTML = '<div class="empty-state">Error loading transcripts</div>';
+            }
+        }
+
+        function renderTranscripts(transcripts) {
+            if (transcripts.length === 0) {
+                transcriptList.innerHTML = '<div class="empty-state">No transcripts yet</div>';
+                return;
+            }
+
+            transcriptList.innerHTML = transcripts.map(t => `
+        <div class="transcript-item" data-id="${t.id}">
+          <div class="transcript-meta">
+            <span>${formatDate(t.created_at)} • ${t.from_number} • ${t.duration}s</span>
+          </div>
+          <div class="transcript-text">${escapeHtml(t.transcript || 'No transcript')}</div>
+          <div class="transcript-actions">
+            <button class="secondary copy-btn" data-transcript="${escapeAttr(t.transcript)}">Copy</button>
+            <button class="secondary danger delete-btn" data-id="${t.id}">Delete</button>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeAttr(text) {
+            return (text || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        async function deleteTranscript(id) {
+            if (!confirm('Delete this transcript?')) return;
+
+            await fetch(`/api/transcripts/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            fetchTranscripts();
+        }
+
+        function copyTranscript(text) {
+            navigator.clipboard.writeText(text);
+            showToast('Copied to clipboard!');
+        }
+
+        function showLoggedIn() {
+            loginSection.classList.add('hidden');
+            transcriptsSection.classList.remove('hidden');
+            fetchTranscripts();
+        }
+
+        function logout() {
+            token = null;
+            localStorage.removeItem('token');
+            loginSection.classList.remove('hidden');
+            transcriptsSection.classList.add('hidden');
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = passwordInput.value;
+
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                token = data.token;
+                localStorage.setItem('token', token);
+                passwordInput.value = '';
+                showLoggedIn();
+            } else {
+                showToast('Invalid password');
+            }
+        });
+
+        logoutBtn.addEventListener('click', logout);
+
+        transcriptList.addEventListener('click', (e) => {
+            if (e.target.classList.contains('copy-btn')) {
+                copyTranscript(e.target.dataset.transcript);
+            }
+            if (e.target.classList.contains('delete-btn')) {
+                deleteTranscript(e.target.dataset.id);
+            }
+        });
+
+        if (token) {
+            showLoggedIn();
+        }
+    </script>
+</body>
+
+</html>

@@ -383,3 +383,11 @@ Make this available by adding the right handlers in main.ts
 ^ this mcp should be installed by default.
 
 ❌ (add mcp, remove mcp) --> this one is harder due to HITL
+
+# Images as context (2026-02-12)
+
+✅ HTML is terrible since it's too big. However as a screenshot it can be great for making websites. Let's nudge people when they used a HTML context to instead use it as image. When clicked, it prepends https://quickog.com/{url}, which screenshots it.
+
+✅ Any URL that's an image should be inserted as image context to the model. Now we can do some sick sick stuff!
+
+✅ Whenever context is an image, it should show the # of tokens and it should show the fact that it's an image in the context UI.
