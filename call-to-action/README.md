@@ -25,4 +25,4 @@ TODO CTA
 - Ensure it can detect language instead of forcing English
 - Dashboard shows all pending, recurring, and recently finished agents
 
-<!-- having this allows me to create an OSS openclaw competitor -->
+<!-- having this allows me to create an OSS openclaw competitor... -->
