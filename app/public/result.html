@@ -1744,32 +1744,13 @@
 
         // Initialize Monaco editor for the prompt panel
         require.config({ paths: { vs: 'https://unpkg.com/monaco-editor@0.44.0/min/vs' } });
-        require(['vs/editor/editor.main'], async function () {
-            // Load user's MCP servers for @-suggestions
-            let mcpSuggestions = [];
-            try {
-                const res = await fetch('/mcp/api/mcp-servers');
-                if (res.ok) {
-                    const servers = await res.json();
-                    mcpSuggestions = servers.map(s => {
-                        const hostname = new URL(s.url).hostname;
-                        return {
-                            name: s.name || hostname.replace(/\./g, '-'),
-                            url: s.url,
-                            icon: s.metadata?.icon || '',
-                            description: s.metadata?.description || s.url,
-                            insertText: '@'+s.url,
-                        };
-                    });
-                }
-            } catch (e) { console.warn('Could not load MCP servers:', e); }
-            window._mcpSuggestions = mcpSuggestions;
-
+        require(['vs/editor/editor.main'], function () {
+            // Create editor immediately — no waiting for MCP servers
             const ca = ContextArea.create(document.getElementById('contextarea-editor'), {
                 pasteApiUrl: '/paste',
                 contextApiUrl: '/context',
                 value: '', // Will be set by updateUI
-                suggestions: mcpSuggestions,
+                suggestions: [],
                 editorOptions: {
                     lineNumbers: 'on',
                     wordWrap: 'on',
@@ -1793,6 +1774,24 @@
             uiManager.updateUI(data, true);
             resultButtonsManager.initializeButtonVisibility();
             tokenCounter.updateTokenCount();
+
+            // Load MCP servers in the background — doesn't block editor
+            fetch('/mcp/api/mcp-servers')
+                .then(res => res.ok ? res.json() : [])
+                .then(servers => {
+                    const mcpSuggestions = servers.map(s => {
+                        const hostname = new URL(s.url).hostname;
+                        return {
+                            name: s.name || hostname.replace(/\./g, '-'),
+                            url: s.url,
+                            icon: s.metadata?.icon || '',
+                            description: s.metadata?.description || s.url,
+                            insertText: '@' + s.url,
+                        };
+                    });
+                    ca.setSuggestions(mcpSuggestions);
+                })
+                .catch(e => console.warn('Could not load MCP servers:', e));
 
             // Initialize fetch-based SSE if needed
             if (data.streaming && data.status === "pending") {

@@ -1014,6 +1014,23 @@
       Object.assign(this.config, partial);
     }
 
+    /** Update suggestions at runtime (e.g. after async load). */
+    setSuggestions(suggestions) {
+      const hadSuggestions = this.suggestions.length > 0;
+      this.suggestions = suggestions || [];
+      window._mcpSuggestions = this.suggestions;
+
+      if (this.suggestions.length > 0 && !hadSuggestions) {
+        // Enable trigger characters and set up providers for the first time
+        this.editor.updateOptions({ suggestOnTriggerCharacters: true });
+        this._setupSuggestions();
+      }
+
+      // Re-run decorations
+      if (this.suggestions.length) this._updateMentionDecorations();
+      this._updateUnknownMcpDecorations();
+    }
+
     /** Clean up. */
     getValue() {
       return this.editor.getValue();
