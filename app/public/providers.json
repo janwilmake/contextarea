@@ -44,7 +44,7 @@
   },
 
   {
-    "model": "claude-sonnet-4-5-20250929",
+    "model": "claude-sonnet-4-6",
     "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
@@ -52,7 +52,7 @@
     "pricePerMillionInput": 3,
     "pricePerMillionOutput": 15,
     "maxTokens": 64000,
-    "name": "Anthropic - Claude Sonnet 4.5",
+    "name": "Anthropic - Claude Sonnet 4.6",
     "description": "",
     "color": "#da7250",
     "icon": "/providers/anthropic.png",
@@ -60,15 +60,15 @@
   },
 
   {
-    "model": "claude-opus-4-5-20251101",
+    "model": "claude-opus-4-6",
     "basePath": "https://api.anthropic.com/v1",
     "providerSlug": "anthropic",
     "premium": true,
     "mcp": true,
-    "pricePerMillionInput": 15,
-    "pricePerMillionOutput": 75,
+    "pricePerMillionInput": 5,
+    "pricePerMillionOutput": 25,
     "maxTokens": 64000,
-    "name": "Anthropic - Claude Opus 4.5",
+    "name": "Anthropic - Claude Opus 4.6",
     "description": "Smartest",
     "color": "#da7250",
     "icon": "/providers/anthropic.png",

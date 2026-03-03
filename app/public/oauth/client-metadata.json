@@ -1,0 +1,10 @@
+{
+  "client_id": "https://contextarea.com/oauth/client-metadata.json",
+  "client_name": "ContextArea",
+  "client_uri": "https://contextarea.com",
+  "logo_uri": "https://contextarea.com/logo.png",
+  "redirect_uris": ["https://contextarea.com/callback"],
+  "grant_types": ["authorization_code"],
+  "response_types": ["code"],
+  "token_endpoint_auth_method": "none"
+}

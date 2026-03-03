@@ -1623,7 +1623,10 @@ async function handleCallback(
       }
       // Fallback: scrape icon from apex domain
       if (!metadata?.icon) {
-        const faviconUrl = await fetchApexFavicon(authFlowData.resourceUrl, fetchFn);
+        const faviconUrl = await fetchApexFavicon(
+          authFlowData.resourceUrl,
+          fetchFn
+        );
         if (faviconUrl) {
           metadata = metadata || {};
           metadata.icon = faviconUrl;
@@ -1876,7 +1879,9 @@ export async function fetchUrlContext(
 
   for (const url of urls) {
     // Try fetching directly first — if unprotected, return immediately
-    const directResponse = await fetchFn(url);
+    const directResponse = await fetchFn(url, {
+      headers: { Accept: "text/markdown" }
+    });
 
     if (directResponse.ok) {
       results.push(await responseToResult(url, directResponse));
@@ -1958,6 +1963,7 @@ export async function fetchUrlContext(
 
     const response = await fetchFn(url, {
       headers: {
+        Accept: "text/markdown",
         Authorization: `${ctx.token_type || "Bearer"} ${accessToken}`
       }
     });
